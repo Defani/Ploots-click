@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="assets/logo_dark-removebg-preview.png" alt="Ploots Click logo" width="420">
-</p>
 
 # Ploots Click
 
