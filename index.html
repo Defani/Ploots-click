@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>!function(){try{"dark"===(localStorage.getItem("simpleplots-theme")||(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))&&document.documentElement.setAttribute("data-theme","dark")}catch(e){}}();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#18a0fb">
+<title>Ploots Click</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Google Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+<!-- Lazy loader: MathJax, math.js, Papa Parse, XLSX, Fabric.js, AG Grid and
+     jStat are no longer loaded here. They're fetched on a tiered schedule
+     (immediate / idle / on-demand) — see js/lazy-loader.js for why and
+     where each one is triggered. -->
+<script src="js/lazy-loader.js"></script>
+
+<style>:root{--accent:#18a0fb;--accent-soft:rgba(24, 160, 251, 0.12);--accent-strong:#0d8ce6;--danger:#f24822;--ink:#1a1a1a;--ink-soft:#8a8a8a;--line:rgba(0,0,0,.08);--line-strong:rgba(0,0,0,.15);--bg:#f4f5f7;--panel:#ffffff;--panel-2:#f5f5f5;--shadow:rgba(0,0,0,.08);--page-bg:#ffffff;--stage-bg:#e5e5e5}html[data-theme=dark]{--accent:#3fb2ff;--accent-soft:rgba(63, 178, 255, 0.16);--accent-strong:#63c2ff;--danger:#ff6b57;--ink:#eef0f2;--ink-soft:#9aa1a9;--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.16);--bg:#17181a;--panel:#212327;--panel-2:#2a2c31;--shadow:rgba(0,0,0,.4);--page-bg:#ffffff;--stage-bg:#0e0f10}html[data-theme=dark] img{filter:brightness(.92)}.brand-logo-light{display:inline-block}.brand-logo-dark{display:none}html[data-theme=dark] .brand-logo-light{display:none}html[data-theme=dark] .brand-logo-dark{display:inline-block}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,'Segoe UI',Arial,sans-serif;font-size:13px;transition:background .2s,color .2s;height:100vh;overflow:hidden}.glass{background:var(--panel);border-bottom:1px solid var(--line)}.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;gap:16px;position:sticky;top:0;z-index:50;height:60px;box-sizing:border-box}.brand{display:flex;align-items:center;gap:12px;flex-shrink:0}.brand-text h1{font-size:14px;margin:0;font-weight:600;letter-spacing:.2px}.brand-text span{font-size:11px;color:var(--ink-soft);display:block}.topbar-right{display:flex;align-items:center;gap:14px;flex-shrink:0}.theme-toggle-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel-2);color:var(--ink-soft);cursor:pointer;padding:0;transition:color .2s,background .2s,border-color .2s}.theme-toggle-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}.theme-toggle-btn .material-symbols-outlined{font-size:18px}.github-link{color:var(--ink-soft);display:flex;transition:color .2s}.github-link:hover{color:var(--accent)}.github-link svg{width:24px;height:24px}.topbar-center{display:flex;flex:1;align-items:center;justify-content:flex-start;gap:12px;overflow-x:auto;overflow-y:hidden;padding-bottom:2px;position:relative}.topbar-center::-webkit-scrollbar{display:none}.topbar-center-fade{position:absolute;top:0;bottom:2px;width:28px;pointer-events:none;opacity:0;transition:opacity .15s ease;z-index:5}.topbar-center-fade.left{left:0;background:linear-gradient(to right,var(--panel),rgba(255,255,255,0))}.topbar-center-fade.right{right:0;background:linear-gradient(to left,var(--panel),rgba(255,255,255,0))}.topbar-center-fade.show{opacity:1}.material-symbols-outlined{font-size:20px;line-height:1}.format-bar{display:none;align-items:center;gap:3px}.format-bar.active{display:flex}.topbar-center.view-data{justify-content:flex-end;opacity:.55;transition:opacity .15s ease}.topbar-center.view-data:hover{opacity:1}.topbar-center.view-data #mainTools .tool-btn{width:24px;height:24px}.topbar-center.view-data #mainTools .material-symbols-outlined{font-size:15px}.topbar-center.view-data #mainTools .tool-sep{height:16px;margin:0 4px}.tool-btn{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid transparent;background:0 0;color:var(--ink-soft);cursor:pointer;transition:all .15s;flex-shrink:0}.tool-group{display:flex;align-items:center;gap:2px;background:var(--panel-2);border-radius:9px;padding:3px;flex-shrink:0}.tool-group .tool-sep{display:none}.tool-btn.wide{width:auto;padding:0 10px;font-weight:500;font-size:12px}.tool-btn:hover{background:var(--panel-2);color:var(--ink)}.tool-btn.active{background:var(--accent-soft);color:var(--accent)}.tool-btn.active .material-symbols-outlined{color:var(--accent)}.tool-btn:disabled{opacity:.35;cursor:default;pointer-events:none}.draw-tool-wrap{position:relative}.draw-popover{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:50;width:250px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 8px 24px var(--shadow);padding:12px}.draw-popover.open{display:block}.draw-mode-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}.draw-mode-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel-2);color:var(--ink-soft);font-size:11px;cursor:pointer}.draw-mode-btn .material-symbols-outlined{font-size:18px}.draw-mode-btn:hover{color:var(--ink);border-color:var(--accent)}.draw-mode-btn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);font-weight:600}.draw-opt-row{display:flex;align-items:center;gap:8px;margin-top:8px}.draw-opt-row .field-label{width:62px;flex-shrink:0}.draw-opt-row input[type=range]{flex:1;accent-color:var(--accent)}.draw-opt-val{width:34px;text-align:right;font-size:11px;color:var(--ink-soft);flex-shrink:0}.draw-opt-row .color-tool-btn{width:auto;padding:0 8px;gap:6px}.tool-sep{width:1px;height:22px;background:var(--line-strong);margin:0 6px;flex-shrink:0}.compact-input,.compact-select{border:1px solid transparent;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:12px;background:0 0;color:var(--ink);height:28px;box-sizing:border-box;transition:border-color .15s,background .15s;cursor:pointer}.compact-input:hover,.compact-select:hover{background:var(--panel-2)}.compact-input:focus,.compact-select:focus{outline:0;border-color:var(--accent);background:var(--panel);cursor:text}.compact-input{width:44px;text-align:center}.compact-select{max-width:110px}.app{display:flex;height:calc(100vh - 60px);overflow:hidden}.sidebar-container{display:flex;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);position:relative;z-index:10}.sidebar-nav{width:60px;display:flex;flex-direction:column;align-items:center;padding-top:18px;padding-bottom:18px;border-right:1px solid var(--line);gap:8px;background:var(--panel);height:calc(100vh - 60px);box-sizing:border-box}.nav-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:none;background:0 0;color:var(--ink-soft);cursor:pointer;transition:all .2s}.nav-btn:hover{background:var(--panel-2);color:var(--ink)}.nav-btn.active{background:var(--accent-soft);color:var(--accent)}.nav-btn.active .material-symbols-outlined{color:var(--accent)}.sidebar{width:280px;padding-top:20px;padding-bottom:20px;padding-left:20px;padding-right:20px;overflow-y:auto;max-height:calc(100vh - 60px);background:var(--panel);transition:width .3s cubic-bezier(.25, .8, .25, 1),padding-left .3s cubic-bezier(.25, .8, .25, 1),padding-right .3s cubic-bezier(.25, .8, .25, 1),opacity .2s ease;opacity:1}.sidebar.closed{width:0;padding-left:0;padding-right:0;opacity:0;pointer-events:none;overflow:hidden}.sidebar-panel{display:none}.sidebar-panel.active{display:block;animation:fadeIn .2s ease-in-out}@keyframes fadeIn{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}.main{flex:1;padding:0;display:flex;flex-direction:column;align-items:stretch;overflow:hidden;min-width:280px;background:var(--stage-bg);position:relative}h2{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink);margin:24px 0 12px;font-weight:600;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding-bottom:8px}h2:first-of-type{margin-top:0}h2 .badge{font-size:9px;text-transform:none;letter-spacing:0;color:var(--ink-soft);font-weight:500;border:1px solid var(--line);padding:2px 6px;border-radius:4px;margin-left:auto}textarea{width:100%;height:100px;font-family:Consolas,'Courier New',monospace;font-size:12px;border:1px solid var(--line-strong);border-radius:6px;padding:10px;resize:vertical;background:var(--panel-2);color:var(--ink)}button{font-family:inherit;font-size:12px;cursor:pointer;border-radius:6px;border:1px solid var(--line-strong);background:var(--panel-2);padding:8px 12px;color:var(--ink);transition:all .2s;font-weight:500}button:hover{background:var(--line-strong)}.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);width:100%;margin-top:8px;font-weight:600}.btn-primary:hover{filter:brightness(.95);background:var(--accent)}.row{display:flex;gap:8px;margin-bottom:8px}.row button{flex:1}.toggle-group{display:flex;border:1px solid var(--line-strong);border-radius:6px;overflow:hidden;flex-wrap:wrap}.toggle-group button{flex:1;border:none;border-radius:0;margin:0;background:0 0;color:var(--ink-soft);min-width:56px;font-size:12px;padding:6px;display:flex;justify-content:center;align-items:center;gap:4px;font-weight:500}.toggle-group button:hover{background:var(--panel-2);color:var(--ink)}.toggle-group button.active{background:var(--accent-soft);color:var(--accent);font-weight:600}.toggle-group button.active .material-symbols-outlined{color:var(--accent)}.toggle-group button+button{border-left:1px solid var(--line-strong)}label.field-label{display:block;font-size:11px;color:var(--ink-soft);margin:14px 0 6px;font-weight:500;text-transform:uppercase;letter-spacing:.2px}.check-row{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:12px;font-weight:500}.check-row input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}input[type=number],input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line-strong);border-radius:6px;font-family:inherit;font-size:12px;background:var(--panel-2);color:var(--ink);transition:border .2s;font-weight:400}input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 1px var(--accent)}.input-row{display:flex;gap:6px}.input-row input{flex:1;min-width:0}.unit-picker{width:46px;flex-shrink:0;padding:6px 2px;font-size:13px;text-align:center;cursor:pointer}.swatch-row{display:flex;align-items:center;gap:3px}.swatch-btn{width:17px;height:17px;border-radius:5px;border:1px solid var(--line-strong);padding:0;cursor:pointer;flex-shrink:0;transition:transform .12s ease,border-color .12s ease;box-shadow:0 1px 1px var(--shadow)}.swatch-btn:hover{transform:scale(1.15)}.swatch-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}.color-btn{position:relative;width:22px;height:22px;border-radius:6px;flex-shrink:0;cursor:pointer;border:1.5px solid var(--line-strong);box-shadow:inset 0 0 0 2px #fff}.color-btn input[type=color]{position:absolute;inset:-6px;opacity:0;cursor:pointer;width:calc(100% + 12px);height:calc(100% + 12px);padding:0;border:none}input[type=color].swatch-style{-webkit-appearance:none;appearance:none;width:26px;height:26px;border:none;border-radius:50%;cursor:pointer;padding:0;background:0 0;transition:transform .2s}input[type=color].swatch-style:hover{transform:scale(1.1)}input[type=color].swatch-style::-webkit-color-swatch-wrapper{padding:0}input[type=color].swatch-style::-webkit-color-swatch{border:1px solid var(--line-strong);border-radius:50%}input[type=color].swatch-style::-moz-color-swatch{border:1px solid var(--line-strong);border-radius:50%}.full-color-picker{-webkit-appearance:none;-moz-appearance:none;appearance:none;width:100%;height:48px;border:1px solid var(--line-strong);border-radius:8px;cursor:pointer;padding:0;background:0 0;box-shadow:0 2px 6px var(--shadow);transition:border .2s}.full-color-picker:hover{border-color:var(--accent)}.full-color-picker::-webkit-color-swatch-wrapper{padding:0}.full-color-picker::-webkit-color-swatch{border:none;border-radius:8px}.full-color-picker::-moz-color-swatch{border:none;border-radius:8px}.full-color-picker-btn{width:100%;height:44px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel);cursor:pointer;display:flex;align-items:center;gap:10px;padding:0 12px;box-shadow:0 2px 6px var(--shadow);transition:border .2s;color:var(--ink);font-family:inherit;font-size:12px;font-weight:500}.full-color-picker-btn:hover{border-color:var(--accent)}.full-color-picker-btn.active{border-color:var(--accent)}#legendDetachBtn.active,#xLabelDetachBtn.active,#yLabelDetachBtn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);font-weight:600}.full-color-picker-btn .material-symbols-outlined{color:var(--ink-soft);font-size:18px;flex-shrink:0}.full-color-picker-btn span:nth-child(2){flex:1;text-align:left}.full-color-picker-swatch{width:22px;height:22px;border-radius:50%;border:1px solid var(--line-strong);flex-shrink:0;background:#1a1a1a}.cp-hint{font-size:11px;color:var(--ink-soft);line-height:1.5;margin:8px 0 0}.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.template-item{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;border-radius:6px;border:1px solid var(--line-strong);background:var(--panel);cursor:pointer;text-align:center;transition:all .2s;min-height:64px}.template-item:hover{background:var(--panel-2);border-color:var(--accent)}.template-item.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}.template-name{font-weight:600;font-size:11px;margin-bottom:4px;line-height:1.2;pointer-events:none}.template-dim{font-size:10px;color:var(--ink-soft);pointer-events:none}.template-item.active .template-dim{color:var(--accent);opacity:.8}.chart-type-cat{margin-bottom:14px}.chart-type-cat:last-child{margin-bottom:2px}.chart-type-cat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);margin:0 0 8px}.chart-type-list{display:flex;flex-direction:column}.chart-type-row-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border:1px solid var(--line-strong);border-radius:0;background:var(--panel);color:var(--ink);cursor:pointer;text-align:left;transition:all .15s}.chart-type-list .chart-type-row-btn+.chart-type-row-btn{border-top:none}.chart-type-list .chart-type-row-btn:first-child{border-radius:6px 6px 0 0}.chart-type-list .chart-type-row-btn:last-child{border-radius:0 0 6px 6px}.chart-type-list .chart-type-row-btn:only-child{border-radius:6px}.chart-type-row-btn .chart-type-label{font-size:12.5px;font-weight:500;pointer-events:none}.chart-type-row-btn .chart-type-check{font-size:16px;pointer-events:none;visibility:hidden;color:var(--accent)}.chart-type-row-btn:hover{background:var(--panel-2)}.chart-type-row-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600;z-index:1;position:relative}.chart-type-row-btn.active .chart-type-check{visibility:visible}.nav-icon-svg{width:20px;height:20px;display:flex;align-items:center;justify-content:center;pointer-events:none}.nav-icon-svg svg{width:100%;height:100%;display:block}.fmt-btn-icon{width:14px;height:14px;display:inline-flex;flex-shrink:0;pointer-events:none}.fmt-btn-icon svg{width:100%;height:100%;display:block}.series-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}.series-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}.series-item input[type=checkbox]{flex-shrink:0;width:14px;height:14px;accent-color:var(--accent)}.series-item input[type=text]{flex:1;padding:4px 6px;font-size:12px;border:1px solid transparent;background:0 0;color:var(--ink)}.series-item input[type=text]:focus,.series-item input[type=text]:hover{border-color:var(--line-strong);background:var(--panel-2)}.swatch{width:16px;height:16px;border:1px solid var(--line-strong);flex-shrink:0;cursor:pointer;border-radius:50%}.pattern-picker{display:none;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 2px 26px}.pattern-picker.open{display:grid}.pattern-picker div{width:24px;height:24px;border:1px solid var(--line-strong);cursor:pointer;border-radius:4px;background:var(--panel)}.pattern-picker div.selected{outline:2px solid var(--accent);outline-offset:1px}.marker-picker{display:none;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 2px 26px}.marker-picker.open{display:grid}.marker-picker div{width:24px;height:24px;border:1px solid var(--line-strong);cursor:pointer;border-radius:4px;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;user-select:none}.marker-picker div.selected{outline:2px solid var(--accent);outline-offset:1px}.series-style-wrap{position:relative;flex-shrink:0}.series-style-btn{width:26px;height:26px;padding:0;border-radius:5px;border:1px solid var(--line-strong);background-color:var(--panel);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1}.series-style-popover{display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:40;min-width:150px;max-width:190px;padding:8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel);box-shadow:0 6px 20px var(--shadow)}.series-style-popover.open{display:block}.series-style-popover .marker-picker,.series-style-popover .pattern-picker{margin:0 0 2px;grid-template-columns:repeat(4,1fr)}.marker-group-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);margin:8px 0 4px}.marker-group-label:first-child{margin-top:0}.palette-grid{display:grid;grid-template-columns:1fr;gap:5px;margin-top:6px;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--panel);max-height:260px;overflow-y:auto;overscroll-behavior:contain}.palette-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:4px;cursor:pointer}.palette-item:hover{background:var(--panel-2)}.palette-item.active{background:var(--accent-soft)}.palette-swatches{display:flex;flex-shrink:0}.palette-swatches div{width:12px;height:16px;margin-right:1px;border-radius:2px}.palette-name{font-size:11px;color:var(--ink);font-weight:500}.palette-empty{font-size:12px;color:var(--ink-soft);padding:10px 4px}.num-pair{display:flex;gap:8px}.num-pair>div{flex:1}.obj-editor{display:none}.obj-editor.active{display:block;animation:fadeIn .2s ease-in-out}.obj-hint{font-size:11px;color:var(--ink-soft);line-height:1.5;margin:0 0 14px;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px}.color-field{display:flex;align-items:center;justify-content:space-between;margin:10px 0;gap:10px}.color-field>span{font-size:12px;color:var(--ink);font-weight:500}.color-field input[type=color]{width:36px;height:28px;border:1px solid var(--line-strong);border-radius:6px;padding:0;cursor:pointer;background:0 0;flex-shrink:0}.color-field input[type=color]::-webkit-color-swatch-wrapper{padding:2px}.color-field input[type=color]::-webkit-color-swatch{border:none;border-radius:4px}.bi-row{display:flex;gap:6px;margin:10px 0 4px}.bi-row .tool-btn{border:1px solid var(--line-strong)}.obj-subhead{font-size:11px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;margin:18px 0 4px;padding-top:12px;border-top:1px solid var(--line)}.obj-subhead:first-of-type{border-top:none;padding-top:0;margin-top:6px}.drag-badge{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 14px;padding:8px 10px;border-radius:6px;font-size:11px;font-weight:500}.drag-badge.on{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}.drag-badge.off{background:var(--panel-2);color:var(--ink-soft);border:1px solid var(--line)}.drag-badge button{padding:4px 8px;font-size:11px}.shapes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin-bottom:6px}.shape-opt-lg{width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel-2);cursor:pointer;color:var(--ink);padding:0;transition:background .15s,border-color .15s,color .15s,transform .1s}.shape-opt-lg:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}.shape-opt-lg:active{transform:scale(.94)}.shape-opt-lg svg{width:22px;height:22px;fill:currentColor;overflow:visible}.file-btn{position:relative;overflow:hidden}.file-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}.dv-file-btn{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:7px 10px}.dv-file-icon{font-size:16px;flex-shrink:0}.dv-file-icon-sheets{color:#188038}.dv-file-icon-excel{color:#1d6f42}.dv-file-icon-json{color:var(--ink-soft)}#dataGrid .ag-cell.cell-range-selected{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}.dv-status-bar{display:flex;justify-content:flex-end;align-items:center;gap:18px;padding:5px 16px;margin:0 12px 10px;font-size:11.5px;color:var(--ink-soft);flex-shrink:0;border-top:1px solid var(--line)}.dv-status-bar span b{color:var(--ink);font-weight:600;margin-left:4px}.status{font-size:12px;margin-top:8px;padding:6px 8px;border-radius:6px;display:none}.status.error{display:block;background:#fff2f0;color:var(--danger);border:1px solid #ffccc7}.status.ok{display:block;background:#f0fcf4;color:#237804;border:1px solid #b7eb8f}.latex-textarea{min-height:76px;font-family:Consolas,'Courier New',monospace}.latex-template-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.latex-template-row button{font-size:11px;padding:5px 9px;font-family:Consolas,'Courier New',monospace}.latex-recent-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.latex-recent-chip{font-size:10px;padding:4px 9px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Consolas,'Courier New',monospace}.latex-recent-empty{font-size:11px;color:var(--ink-soft);margin-top:8px}.latex-editing-badge{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}.latex-editing-badge button{padding:3px 9px;font-size:10px;font-weight:600}.plot-hint{font-size:10.5px;line-height:1.5;color:var(--ink-soft);margin:6px 0 0}.plot-hint code{font-family:Consolas,Menlo,monospace;background:var(--panel-2);padding:1px 4px;border-radius:3px}.plot-add-row{display:flex;align-items:flex-start;gap:6px;margin-top:6px}.plot-add-row .latex-textarea{flex:1;min-height:38px}#plotFnColor{width:34px;height:34px;padding:2px;flex-shrink:0;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel-2);cursor:pointer}.plot-add-row .btn-primary{flex-shrink:0;height:34px;padding:0 12px;white-space:nowrap}.fn-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}.fn-item.fn-item-error{border-color:var(--danger);background:#fff2f0}.fn-item .swatch{border-radius:4px}.fn-item-formula{flex:1;min-width:0;font-size:12px;font-family:Consolas,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}.fn-item-empty{font-size:11.5px;color:var(--ink-soft);padding:4px 2px}.symbol-toolbar-row{display:flex;gap:6px;margin-top:10px}.symbol-search{flex:1;min-width:0;padding:7px 10px;font-size:12px;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);color:var(--ink);font-family:inherit}.symbol-search:focus{outline:0;border-color:var(--accent)}.symbol-font-select{flex:0 0 auto;max-width:88px;padding:7px 6px;font-size:11px;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);color:var(--ink);font-family:inherit}.symbol-font-select:focus{outline:0;border-color:var(--accent)}.symbol-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(26px,1fr));gap:4px;margin-top:8px;max-height:320px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--panel)}.symbol-btn{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;font-family:'Cambria Math',Cambria,'STIX Two Math','Latin Modern Math',serif;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel);padding:0;color:var(--ink);cursor:pointer;transition:all .15s;overflow:hidden}.symbol-btn:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}.symbol-grid-empty{grid-column:1/-1;font-size:11px;color:var(--ink-soft);text-align:center;padding:10px 4px}::-webkit-scrollbar{width:12px;height:12px}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:6px;border:3px solid transparent;background-clip:padding-box}::-webkit-scrollbar-track{background:0 0}.view-pane{flex:1;overflow:hidden;display:none;position:relative}.view-pane.active{display:flex;flex-direction:column}.ruler-corner{position:absolute;width:22px;height:22px;z-index:16;background:var(--panel-2);display:flex;align-items:center;justify-content:center}.ruler-corner span{font-size:8px;font-weight:700;letter-spacing:.2px;color:var(--ink-soft);text-transform:uppercase}.ruler-corner-tl{top:0;left:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}.ruler-corner-tr{top:0;right:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}.ruler-corner-bl{bottom:0;left:0;border-right:1px solid var(--line);border-top:1px solid var(--line)}.ruler-corner-br{bottom:0;right:0;border-left:1px solid var(--line);border-top:1px solid var(--line)}.ruler{position:absolute;z-index:15;background:var(--panel-2);cursor:default}.ruler-h{height:22px;left:22px;right:22px}.ruler-v{width:22px;top:22px;bottom:22px}.ruler-top{top:0;border-bottom:1px solid var(--line)}.ruler-bottom{bottom:0;border-top:1px solid var(--line)}.ruler-left{left:0;border-right:1px solid var(--line)}.ruler-right{right:0;border-left:1px solid var(--line)}.ruler-bottom,.ruler-top{cursor:ns-resize}.ruler-left,.ruler-right{cursor:ew-resize}.canvas-guide{position:absolute;z-index:14}.canvas-guide.horiz{left:0;right:0;height:1px;border-top:1px dashed var(--accent);cursor:ns-resize}.canvas-guide.vert{top:0;bottom:0;width:1px;border-left:1px dashed var(--accent);cursor:ew-resize}.canvas-guide.dragging{border-color:var(--accent-strong)}.ruler-guide-preview{position:absolute;z-index:20;pointer-events:none}.ruler-guide-preview.horiz{left:0;right:0;height:0;border-top:1px dashed var(--accent)}.ruler-guide-preview.vert{top:0;bottom:0;width:0;border-left:1px dashed var(--accent)}.canvas-scroll{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center}.canvas-stage-wrapper{display:flex;justify-content:center;align-items:center;position:relative}.canvas-stage{position:absolute;top:0;left:0;background:var(--page-bg);box-shadow:0 4px 24px var(--shadow);transform-origin:top left}.canvas-stage.image-drop-active{outline:3px dashed var(--accent);outline-offset:4px}.chart-block{position:absolute;z-index:1}.chart-block-inner{width:100%;height:100%;overflow:hidden}#fabricCanvasWrap{position:absolute;inset:0;z-index:10}#fabricCanvasWrap.locked{pointer-events:none}#fabricCanvasWrap.legend-hover{pointer-events:none}.fabric-ctx-menu{position:absolute;display:none;flex-direction:column;gap:2px;width:224px;background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;box-shadow:0 8px 24px var(--shadow);z-index:30;padding:5px}.fabric-ctx-menu .ctx-item{border:none;border-radius:6px;background:0 0;width:100%;height:38px;padding:0 10px;display:flex;align-items:center;gap:10px;color:var(--ink);font-size:13px;font-weight:500;text-align:left;white-space:nowrap}.fabric-ctx-menu .ctx-item .material-symbols-outlined{font-size:18px;color:var(--ink-soft);flex-shrink:0}.fabric-ctx-menu .ctx-item .ctx-item-label{flex:1}.fabric-ctx-menu .ctx-item .ctx-item-chevron{font-size:17px;flex:0 0 auto}.fabric-ctx-menu .ctx-item:hover{background:var(--panel-2)}.fabric-ctx-menu .ctx-item:hover .material-symbols-outlined{color:var(--accent)}.fabric-ctx-menu .ctx-item:disabled{opacity:.4;pointer-events:none}.fabric-ctx-menu .ctx-item.ctx-item-danger{color:var(--danger)}.fabric-ctx-menu .ctx-item.ctx-item-danger .material-symbols-outlined{color:var(--danger)}.fabric-ctx-menu .ctx-item.ctx-item-danger:hover{background:#fff2f0}.fabric-ctx-menu .ctx-item.ctx-item-active{background:var(--accent-soft);color:var(--accent)}.fabric-ctx-menu .ctx-item.ctx-item-active .material-symbols-outlined{color:var(--accent)}.fabric-ctx-menu .ctx-sep{height:1px;background:var(--line);margin:5px 2px}.ctx-item-wrap{position:relative}.ctx-item-wrap.ctx-submenu-open>.ctx-item{background:var(--panel-2)}.fabric-ctx-submenu{display:none;position:absolute;top:-5px;left:calc(100% + 4px);flex-direction:column;gap:2px;width:224px;background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;box-shadow:0 8px 24px var(--shadow);z-index:31;padding:5px}.ctx-item-wrap.ctx-submenu-open .fabric-ctx-submenu{display:flex}.ctx-item-wrap.ctx-submenu-left .fabric-ctx-submenu{left:auto;right:calc(100% + 4px)}#ctxFlipV .material-symbols-outlined{transform:rotate(90deg)}.data-view-wrap{padding:0;overflow:hidden;flex:1;min-height:0;background:var(--panel);display:flex;flex-direction:column}.dv-ribbon{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 12px;border-bottom:1px solid var(--line-strong);background:var(--panel-2);flex-shrink:0;flex-wrap:wrap}.dv-ribbon-group{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.dv-ribbon-sep{width:1px;height:20px;background:var(--line-strong);margin:0 3px;flex-shrink:0}.dv-ribbon-btn{font-size:11.5px;padding:4px 8px;border-radius:6px;border:1px solid var(--line-strong);background:var(--panel);color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;gap:4px;font-weight:500;white-space:nowrap}.dv-ribbon-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}.dv-ribbon-btn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}.dv-ribbon-btn .material-symbols-outlined{font-size:16px}.dv-ribbon .toggle-group{width:150px;flex-shrink:0}.dv-ribbon .toggle-group button{font-size:11.5px;padding:6px 4px}.dv-stats-panel{margin:0 16px 16px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel);box-shadow:0 2px 8px var(--shadow);max-height:260px;display:flex;flex-direction:column;flex-shrink:0}.dv-stats-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0}.dv-stats-header .material-symbols-outlined{font-size:18px;color:var(--accent)}.dv-stats-header h3{font-size:13px;margin:0;flex:1}.dv-stats-sub{font-size:10.5px;color:var(--ink-soft);background:var(--panel-2);border-radius:4px;padding:2px 6px}.dv-stats-body{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:12px 14px}.dv-stats-empty{font-size:12px;color:var(--ink-soft);padding:6px 0}.dv-stat-card{flex-shrink:0;width:168px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);padding:8px 10px}.dv-stat-card-title{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-bottom:6px;overflow:hidden}.dv-stat-card-title span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dv-stat-grid{display:flex;flex-direction:column;gap:2px}.dv-stat-row{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}.dv-stat-k{color:var(--ink-soft)}.dv-stat-v{font-weight:600}.row-idx-stat{justify-content:center;color:var(--accent);font-weight:700;font-size:12px}.dv-apply-btn{width:auto!important;margin-top:0!important;padding:8px 16px}.dv-import-wrap{position:relative}.dv-import-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:360px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 8px 24px var(--shadow);padding:14px}.dv-import-panel.open{display:block}.dv-import-panel textarea{min-height:120px}.import-btn-row{display:flex;gap:8px;flex-wrap:wrap}.sheet-picker-row{display:flex;align-items:center;gap:8px;margin-top:10px}.sheet-picker-row select{font-size:12px;padding:6px 8px}.dv-long-pickers{display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line-strong);background:var(--panel-2);flex-shrink:0}.dv-long-pickers .dv-lp-field{display:flex;align-items:center;gap:8px}.dv-long-pickers .field-label{margin:0;white-space:nowrap}.dv-long-pickers select{font-size:12px;padding:6px 8px;min-width:170px}.invalid-cell-notice{margin:8px 16px 0}.data-grid-wrap{flex:1;min-height:0;margin:6px 12px 12px;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px var(--shadow);position:relative;display:flex}#dataGrid{width:100%;height:100%;font-family:Consolas,Menlo,monospace}#dataGrid .ag-cell{font-size:12px}#dataGrid .ag-cell-inline-editing{font-family:inherit}#dataGrid .ag-cell.cell-formula{color:var(--accent-strong);font-style:italic}#dataGrid .ag-cell.cell-formula-error{color:var(--danger);font-weight:600}.dv-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink-soft);font-size:12.5px;background:var(--panel)}.dv-loading-spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--line-strong);border-top-color:var(--accent);animation:dvSpin .7s linear infinite}.dv-loading-error{color:var(--danger);flex-direction:row;font-size:12px;padding:0 20px;text-align:center}@keyframes dvSpin{to{transform:rotate(360deg)}}.dv-fxbar{display:flex;align-items:center;gap:8px;padding:5px 12px;border-bottom:1px solid var(--line-strong);background:var(--panel);flex-shrink:0}.dv-fxbar-fx{font-size:11px;font-weight:700;font-style:italic;color:var(--accent);flex-shrink:0}.dv-fxbar-addr{font-size:11px;font-weight:600;color:var(--ink-soft);min-width:28px;flex-shrink:0}.dv-fxbar input{flex:1;min-width:0;border:1px solid transparent;border-radius:5px;padding:4px 7px;font-size:12px;font-family:Consolas,Menlo,monospace;background:0 0;color:var(--ink)}.dv-fxbar input:focus{outline:0;border-color:var(--accent);background:var(--panel-2)}.dv-fxbar input:disabled{color:var(--ink-soft)}.dv-sort-wrap{display:flex;gap:1px;flex-shrink:0}.dv-sort-btn{width:16px;height:16px;padding:0;border:none;background:0 0;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;border-radius:3px;cursor:pointer;opacity:.55}.dv-sort-btn:hover{opacity:1;background:var(--panel-2)}.dv-sort-btn.active{opacity:1;color:var(--accent);background:var(--accent-soft)}.dv-sort-btn .material-symbols-outlined{font-size:12px}.sheet-tabs-bar{display:flex;align-items:flex-end;gap:2px;margin:-14px 16px 14px;padding:0 6px;overflow-x:auto;scrollbar-width:thin;position:relative;z-index:2}.sheet-tab{flex:0 0 auto;padding:6px 14px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid var(--line-strong);border-top:none;border-radius:0 0 7px 7px;background:var(--panel-2);color:var(--ink-soft);cursor:pointer;transition:background .15s ease,color .15s ease}.sheet-tab:hover{color:var(--ink);background:var(--accent-soft)}.sheet-tab.active{background:var(--panel);color:var(--accent);font-weight:700;border-color:var(--accent)}.dv-header{display:flex;flex-direction:column;gap:2px;width:100%;padding:4px 4px 3px;box-sizing:border-box;font-family:Poppins,sans-serif}.dv-header.role-X{background:var(--accent-soft);margin:-4px -6px -3px;padding:4px 6px 3px}.dv-header.role-Y{background:rgba(120,200,150,.16);margin:-4px -6px -3px;padding:4px 6px 3px}.dv-header .col-letter-badge{font-size:9.5px;font-weight:600;color:var(--ink-soft);letter-spacing:.03em;flex-shrink:0}.dv-header-top{display:flex;align-items:center;gap:3px}.dv-header .hname{flex:1;font-weight:700;font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:none;background:0 0;outline:0;padding:1px 0;min-width:0;font-family:inherit}.dv-header .hname:focus{background:var(--accent-soft);border-radius:3px;padding:1px 3px}.dv-header select{font-size:10px;padding:2px;margin:0;width:100%;height:20px}.dv-header .col-del-btn{border:none;background:0 0;color:var(--ink-soft);cursor:pointer;width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:opacity .12s}.dv-header:hover .col-del-btn{opacity:1}.dv-header .col-del-btn:hover{background:var(--danger);color:#fff}.dv-header .col-del-btn .material-symbols-outlined{font-size:13px}.row-idx-cell{position:relative;display:flex;align-items:center;justify-content:center;gap:2px;width:100%;color:var(--ink-soft);font-size:11.5px;font-weight:600}.row-del-btn{border:none;background:0 0;color:var(--ink-soft);cursor:pointer;width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s;position:absolute;right:0}.ag-row:hover .row-del-btn{opacity:1}.row-del-btn:hover{background:var(--danger);color:#fff}.row-del-btn .material-symbols-outlined{font-size:12px}#dataGrid .ag-cell.cell-invalid{background:rgba(242,72,34,.1);box-shadow:inset 0 0 0 1px rgba(242,72,34,.4);color:var(--danger)}.invalid-cell-notice{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--danger);background:#fff2f0;border:1px solid #ffccc7;border-radius:6px;padding:6px 10px;margin-bottom:8px}.invalid-cell-notice .material-symbols-outlined{font-size:16px}.fs-wrap{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel)}.fs-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line-strong);background:var(--panel-2);flex-shrink:0}.fs-toolbar-group{display:flex;align-items:center;gap:6px}.fs-toolbar-label{font-size:11px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.2px;margin-right:2px}.fs-toolbar-sep{width:1px;height:22px;background:var(--line-strong);margin:0 4px;flex-shrink:0}.fs-range-input{width:64px}.dv-ribbon-btn.fs-active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}.fs-body{flex:1;min-height:0;display:flex}.fs-canvas-wrap{flex:1;min-width:0;padding:16px;display:flex}.fs-canvas{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:10px;background:var(--page-bg);box-shadow:0 2px 8px var(--shadow);overflow:hidden}.fs-side{width:320px;flex-shrink:0;border-left:1px solid var(--line-strong);padding:16px;overflow-y:auto}.fs-range-row{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--ink-soft)}.fs-range-row .compact-input{width:80px}.fs-csv-import-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.fs-csv-import-row .dv-ribbon-btn{flex:1;justify-content:center}#fsCsvText{min-height:110px;font-family:Consolas,Menlo,monospace;font-size:12px}.fs-csv-cols-row{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}.fs-csv-cols-row .fs-toolbar-group{flex-direction:column;align-items:flex-start;gap:4px}.fs-csv-cols-row .compact-select{max-width:none;width:100%}.fs-csv-field-row{margin-top:10px}.fs-csv-field-row .fs-toolbar-group{width:100%;flex-direction:column;align-items:flex-start;gap:4px}.fs-csv-field-row .compact-select{max-width:none;width:100%}.fs-checkbox-row{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--ink-soft);cursor:pointer}.fs-checkbox-row input{margin:0}.fs-katex-preview{min-height:34px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);overflow-x:auto;font-size:14px}.fs-katex-preview:empty::before{content:'Preview';color:var(--ink-soft);font-size:11px;text-transform:uppercase;letter-spacing:.2px}.fs-katex-preview .katex-error{color:var(--danger);font-family:Consolas,Menlo,monospace;font-size:12px}.fs-piece-row{display:flex;gap:6px;align-items:flex-start;margin-bottom:6px}.fs-piece-row textarea{flex:1;min-height:34px}.fs-piece-row .cp-close{flex-shrink:0;margin-top:2px}@media (max-width:900px){.fs-side{width:260px}}.color-tool-btn{position:relative}.color-tool-btn .cp-swatch-bar{position:absolute;left:5px;right:5px;bottom:4px;height:3px;border-radius:2px;background:#1a1a1a;pointer-events:none}.color-tool-btn.active .cp-swatch-bar{box-shadow:0 0 0 1px #fff}.cp-backdrop{position:fixed;inset:0;z-index:190;display:none;background:0 0}.cp-backdrop.open{display:block}.cp-panel{position:fixed;top:60px;left:-300px;width:300px;height:calc(100vh - 60px);background:var(--panel);border-right:1px solid var(--line);box-shadow:6px 0 24px var(--shadow);z-index:200;transition:left .22s cubic-bezier(.25,.8,.25,1);display:flex;flex-direction:column;padding:18px;overflow-y:auto;box-sizing:border-box;font-size:12px}.cp-panel.open{left:60px}.cp-panel.cp-panel--inline{position:static;top:auto;right:auto;left:auto;height:auto;max-height:460px;width:100%;box-shadow:none;border:1px solid var(--line-strong);border-radius:14px;margin:10px 0 0;display:none;transition:none;z-index:auto}.cp-panel.cp-panel--inline.open{display:flex;right:auto}.cp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0}.cp-header .cp-title{font-size:13.5px;font-weight:700;letter-spacing:.01em;display:flex;align-items:center}.cp-header .cp-title .material-symbols-outlined{font-size:16px;color:var(--accent);margin-right:6px}.cp-close{width:26px;height:26px;padding:0;border:none;background:var(--panel-2);border-radius:8px;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;flex-shrink:0}.cp-close:hover{background:var(--danger);color:#fff}.cp-close .material-symbols-outlined{font-size:18px}.cp-hexrow{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-shrink:0}.cp-hex-field{flex:1;min-width:0;position:relative;display:flex;align-items:center}.cp-hex-field .material-symbols-outlined{position:absolute;left:11px;font-size:15px;color:var(--ink-soft);pointer-events:none}.cp-hex-top{width:100%;min-width:0;padding:10px 10px 10px 34px;border:1.5px solid var(--line-strong);border-radius:10px;font-family:'JetBrains Mono',Consolas,monospace;font-size:13px;background:var(--panel-2);color:var(--ink);font-weight:600;letter-spacing:.02em;transition:.15s}.cp-hex-top:focus{outline:0;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}.cp-add-swatch{width:42px;height:38px;border-radius:10px;border:1.5px solid var(--line-strong);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:#fff;background:var(--accent);transition:filter .15s}.cp-add-swatch:hover{filter:brightness(1.08)}.cp-add-swatch .material-symbols-outlined{font-size:18px}.cp-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700;margin:14px 0 8px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}.cp-section-label:first-of-type{margin-top:0}.cp-section-label .cnt{font-weight:500;letter-spacing:0;text-transform:none;opacity:.7}.cp-swatches-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:2px;min-height:26px;flex-shrink:0}.cp-swatch-item{width:26px;height:26px;border-radius:8px;border:1.5px solid var(--line-strong);cursor:pointer;flex-shrink:0;transition:transform .12s ease,box-shadow .12s ease;padding:0;position:relative}.cp-swatch-item:hover{transform:translateY(-2px) scale(1.06);box-shadow:0 4px 10px var(--shadow)}.cp-swatch-item.active{box-shadow:0 0 0 2px var(--panel),0 0 0 3.5px var(--accent)}.cp-swatch-empty{font-size:11px;color:var(--ink-soft)}.cp-wheel-wrap{position:relative;width:100%;max-width:220px;aspect-ratio:1/1;margin:0 auto 14px;cursor:crosshair;flex-shrink:0;touch-action:none}.cp-wheel-wrap canvas{width:100%;height:100%;display:block;border-radius:50%;box-shadow:0 1px 2px var(--shadow) inset,0 0 0 1px var(--line-strong) inset}.cp-wheel-thumb{position:absolute;width:18px;height:18px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.35),0 3px 8px rgba(0,0,0,.35);transform:translate(-50%,-50%);pointer-events:none}.cp-slider-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0}.cp-slider-icon{width:26px;height:26px;border-radius:8px;background:var(--panel-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}.cp-slider-icon .material-symbols-outlined{font-size:15px}.cp-slider-wrap{position:relative;flex:1;height:16px;border-radius:8px;overflow:hidden;cursor:pointer;box-shadow:0 0 0 1px var(--line-strong) inset;touch-action:none}.cp-slider-wrap canvas{width:100%;height:100%;display:block}.cp-slider-thumb{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--panel);box-shadow:0 0 0 1.5px rgba(0,0,0,.25),0 2px 5px rgba(0,0,0,.3);transform:translate(-8px,-50%);pointer-events:none}.cp-presets-row{display:flex;gap:6px;margin-bottom:6px;flex-shrink:0}.cp-preset{width:100%;height:22px;border-radius:7px;cursor:pointer;border:1.5px solid var(--line-strong);flex:1;padding:0;transition:transform .12s ease}.cp-preset:hover{transform:scale(1.1)}.cp-tabs{display:flex;gap:3px;background:var(--panel-2);border-radius:10px;padding:3px;margin:14px 0 10px;flex-shrink:0}.cp-tab{flex:1;border:none;border-radius:8px;background:0 0;color:var(--ink-soft);font-size:11px;font-weight:700;padding:7px 0;cursor:pointer;transition:.15s;letter-spacing:.02em}.cp-tab.active{background:var(--panel);color:var(--accent);box-shadow:0 1px 3px var(--shadow)}.cp-values-row{display:flex;gap:6px;margin-bottom:16px;flex-shrink:0}.cp-values-row .cp-val{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px}.cp-values-row input{width:100%;padding:7px 2px;text-align:center;font-size:12px;border:1.5px solid var(--line-strong);border-radius:8px;background:var(--panel-2);color:var(--ink);font-family:'JetBrains Mono',Consolas,monospace;font-weight:600}.cp-values-row input:focus{outline:0;border-color:var(--accent);background:var(--panel)}.cp-values-row span{font-size:9px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.04em}.cp-bottom-row{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:16px;border-top:1px solid var(--line);flex-shrink:0}.cp-compare{width:34px;height:34px;border-radius:50%;flex-shrink:0;position:relative;box-shadow:0 0 0 1px var(--line-strong),0 2px 6px var(--shadow);overflow:hidden;cursor:default;background-image:linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);background-size:8px 8px;background-position:0 0,0 4px,4px -4px,-4px 0}.cp-compare-half{position:absolute;inset:0}.cp-compare-old{clip-path:polygon(0 0,100% 0,0 100%)}.cp-compare-new{clip-path:polygon(100% 0,100% 100%,0 100%)}.cp-icon-btn{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1.5px solid var(--line-strong);background:var(--panel-2);color:var(--ink-soft);cursor:pointer;flex-shrink:0;transition:.15s}.cp-icon-btn:hover{background:var(--line-strong);color:var(--ink)}.cp-icon-btn:disabled{opacity:.4;cursor:default}.cp-icon-btn:disabled:hover{background:var(--panel-2);color:var(--ink-soft)}.cp-icon-btn .material-symbols-outlined{font-size:16px}.cp-confirm{flex:1;height:32px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s;box-shadow:0 3px 10px -2px var(--accent-soft)}.cp-confirm:hover{background:var(--accent-strong)}.cp-confirm .material-symbols-outlined{font-size:16px}
+.side-section{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--panel);transition:border-color .15s}
+.side-section-head{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;cursor:pointer;user-select:none;transition:background .15s}
+.side-section-head:hover{background:var(--panel-2)}
+.side-section .ss-lbl{display:flex;align-items:center;gap:9px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;color:var(--ink)}
+.side-section .ss-lbl .material-symbols-outlined{font-size:15px;color:var(--accent);background:var(--accent-soft);width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.side-section .ss-chev{font-size:17px;color:var(--ink-soft);transition:transform .2s;flex-shrink:0}
+.side-section.open .ss-chev{transform:rotate(180deg)}
+.side-section-body{padding:0 14px 16px}
+.side-section:not(.open) .side-section-body{display:none}
+.side-section-body>h2:first-child{display:none}
+.template-item{position:relative;padding-top:14px}
+.template-item .tpl-shape{width:100%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.template-item .tpl-icon{width:40px;height:52px;color:var(--ink-soft);opacity:.7;flex-shrink:0;transition:color .15s,opacity .15s,transform .15s}
+.template-item .tpl-icon.tpl-icon-landscape{width:52px;height:40px;transform:rotate(90deg)}
+.template-item.active .tpl-icon{color:var(--accent);opacity:1}
+.check-row{position:relative}
+.check-row input[type=checkbox]{appearance:none;-webkit-appearance:none;width:32px;height:19px;border-radius:10px;background:var(--line-strong);position:relative;cursor:pointer;flex-shrink:0;transition:background .15s;margin:0}
+.check-row input[type=checkbox]::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+.check-row input[type=checkbox]:checked{background:var(--accent)}
+.check-row input[type=checkbox]:checked::after{left:15px}
+.sym-cat-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sym-cat-tabs button{border:1.5px solid var(--line-strong);border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:600;color:var(--ink-soft);background:var(--panel-2);cursor:pointer;transition:.15s}
+.sym-cat-tabs button:hover{border-color:var(--accent);color:var(--accent)}
+.sym-cat-tabs button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+</style>
+<style>
+:root{
+--glass-panel:rgba(255,255,255,.88);--glass-panel-2:rgba(255,255,255,.94);
+--glass-line:rgba(22,113,232,.12);--glass-line-strong:rgba(22,113,232,.24);--glass-region-line:rgba(22,113,232,.06);
+--glass-bg:rgba(255,255,255,.78);--glass-bg-2:rgba(255,255,255,.85);
+--glass-shadow:0 16px 36px rgba(22,113,232,.18),0 3px 10px rgba(22,113,232,.12);
+--glass-region-shadow:0 4px 24px rgba(22,113,232,.10);
+--glass-ink:#12141c;--glass-ink-soft:rgba(18,20,28,.66);
+--glass-page-bg:radial-gradient(1100px 800px at 10% 0%,#cfe0ff 0%,transparent 60%),radial-gradient(1000px 800px at 90% 10%,#d8ceff 0%,transparent 60%),radial-gradient(1200px 900px at 25% 100%,#cdeaff 0%,transparent 60%),radial-gradient(900px 800px at 95% 95%,#ffe4d6 0%,transparent 60%),#eef1f7;
+}
+html[data-theme=dark]{
+--glass-panel:rgba(255,255,255,.06);--glass-panel-2:rgba(255,255,255,.09);
+--glass-line:rgba(255,255,255,.12);--glass-line-strong:rgba(255,255,255,.22);--glass-region-line:rgba(255,255,255,.06);
+--glass-bg:rgba(30,30,32,.55);--glass-bg-2:rgba(255,255,255,.06);
+--glass-shadow:0 16px 44px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.04) inset;
+--glass-region-shadow:0 6px 18px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.05) inset;
+--glass-ink:#ffffff;--glass-ink-soft:rgba(255,255,255,.68);
+--glass-page-bg:radial-gradient(1400px 1000px at 50% 0%,#1c1c1f 0%,transparent 70%),#0d0d0f;
+}
+body{position:relative;transition:background .25s}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--glass-page-bg)}
+
+/* REGION-level surfaces (whole panels): soft near-invisible border + gentle
+   shadow only. No hard colored rule between big areas of the app. */
+.topbar,.sidebar-container,.sidebar-nav,.sidebar{
+background:var(--glass-bg)!important;backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);
+border-width:1.5px!important;border-color:var(--glass-region-line)!important;box-shadow:var(--glass-region-shadow)
+}
+
+/* CARD-level surfaces (self-contained popovers, chips, list items): crisp
+   accent-tinted outline + accent glow so "this is glass" reads at the
+   object level. Includes items that used to stay flat opaque white
+   (template-item, chart-type-row-btn, series-item, palette-item,
+   dv-stat-card, symbol-btn, fn-item, sheet-tab, etc.) so nothing floats
+   as a mismatched solid card inside a glass panel anymore. */
+.draw-popover,.fabric-ctx-menu,.fabric-ctx-submenu,.cp-panel,.series-style-popover,.dv-import-panel,
+.template-item,.chart-type-row-btn,.series-item,.palette-item,.dv-stat-card,.symbol-btn,.fn-item,
+.sheet-tab,.shape-opt-lg,.full-color-picker-btn,.dv-ribbon-btn{
+background:var(--glass-bg-2)!important;backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+border:1.75px solid var(--glass-line-strong)!important;box-shadow:var(--glass-shadow)
+}
+
+.tool-group,.cp-slider-icon,.dv-stats-panel,.side-section{background:var(--glass-bg-2)!important;backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1.5px solid var(--glass-line)!important}
+
+.topbar,.sidebar-container,.sidebar-nav,.sidebar,.draw-popover,.fabric-ctx-menu,.fabric-ctx-submenu,.cp-panel,.series-style-popover,.dv-import-panel,
+.template-item,.chart-type-row-btn,.series-item,.palette-item,.dv-stat-card,.symbol-btn,.fn-item,.sheet-tab,
+.shape-opt-lg,.full-color-picker-btn,.dv-ribbon-btn,.tool-group,.cp-slider-icon,.dv-stats-panel,.side-section{
+--panel:var(--glass-panel);--panel-2:var(--glass-panel-2);--line:var(--glass-line);--line-strong:var(--glass-line-strong);--ink:var(--glass-ink);--ink-soft:var(--glass-ink-soft)
+}
+.app{position:relative;z-index:1}
+
+/* Brand area is now a GitHub-link (icon + repo name) instead of a logo image */
+.brand-repo-link{text-decoration:none;color:var(--ink);cursor:pointer;border-radius:9px;padding:4px 8px;margin:-4px -8px;transition:background .15s}
+.brand-repo-link:hover{background:var(--panel-2)}
+.brand-gh-icon{width:22px;height:22px;flex-shrink:0;color:var(--ink)}
+.brand-repo-text{font-size:13px;font-weight:600;letter-spacing:.01em;white-space:nowrap}
+
+/* Data view + canvas chrome (rulers) get the same consistent glass card
+   treatment as the rest of the app, instead of sitting there as plain
+   solid --panel-2 chrome that clashes with the glass everywhere else. */
+.data-view-wrap{background:transparent!important}
+.dv-ribbon,.dv-long-pickers,.dv-fxbar,.data-grid-wrap,.ruler,.ruler-corner{
+background:var(--glass-bg-2)!important;backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
+border:1.5px solid var(--glass-line)!important
+}
+.dv-ribbon,.dv-long-pickers,.dv-fxbar,.data-grid-wrap,.ruler,.ruler-corner,.data-view-wrap{
+--panel:var(--glass-panel);--panel-2:var(--glass-panel-2);--line:var(--glass-line);--line-strong:var(--glass-line-strong);--ink:var(--glass-ink);--ink-soft:var(--glass-ink-soft)
+}
+
+/* Native <select> option-list chrome is OS/browser-controlled and cannot
+   be restyled by CSS in any browser — only the closed trigger can be. Make
+   that trigger read clearly against dark glass toolbars/panels instead of
+   flashing solid white on focus. */
+select,.compact-select,.symbol-font-select{
+background:var(--panel-2)!important;color:var(--ink)!important;
+border:1px solid var(--line-strong)!important;border-radius:8px!important;
+}
+select:focus,.compact-select:focus,.symbol-font-select:focus{
+background:var(--panel)!important;border-color:var(--accent)!important;
+}
+
+/* Data view ribbon: turn the flat wall of default-styled buttons into
+   grouped pill clusters (same grammar as the topbar tool-groups), with
+   real spacing instead of everything touching edge-to-edge. */
+.dv-ribbon{gap:16px;padding:10px 16px}
+.dv-ribbon-group{gap:6px;padding:4px;background:var(--panel-2);border-radius:11px}
+.dv-file-btn,.dv-ribbon-btn{
+border-radius:8px!important;border:1px solid transparent!important;
+background:transparent!important;padding:7px 12px!important;
+font-weight:600;transition:.15s;
+}
+.dv-file-btn:hover,.dv-ribbon-btn:hover{background:var(--panel)!important;border-color:var(--line-strong)!important;color:var(--ink)!important}
+.dv-ribbon-btn.active{background:var(--accent-soft)!important;border-color:var(--accent)!important}
+.dv-ribbon-sep{margin:0 2px;opacity:.6}
+.dv-ribbon .toggle-group{border-radius:9px;overflow:hidden}
+.dv-long-pickers{gap:24px;padding:12px 16px}
+.dv-fxbar{padding:8px 16px;gap:10px}
+
+/* Rounded icon set + filled-on-active state, so active items read as a
+   solid shape change, not just a color swap. */
+.material-symbols-outlined{font-family:'Material Symbols Rounded'!important}
+.nav-btn.active .material-symbols-outlined,
+.tool-btn.active .material-symbols-outlined,
+.toggle-group button.active .material-symbols-outlined,
+.chart-type-row-btn.active .material-symbols-outlined,
+.template-item.active .material-symbols-outlined,
+.palette-item.active .material-symbols-outlined,
+.dv-ribbon-btn.active .material-symbols-outlined,
+.cp-tab.active .material-symbols-outlined,
+.full-color-picker-btn.active .material-symbols-outlined{
+font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24
+}
+</style>
+</head>
+<body>
+<div class="topbar glass">
+  <a class="brand brand-repo-link" href="https://github.com/Defani/Ploots-click" target="_blank" title="View on GitHub">
+  <svg viewBox="0 0 16 16" fill="currentColor" class="brand-gh-icon">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+  </svg>
+  <span class="brand-repo-text">Defani/Ploots-click</span>
+</a>
+  
+  <!-- CENTER TOOLBAR (Contextual) -->
+  <div class="topbar-center" id="topbarCenter">
+      <div class="topbar-center-fade left" id="topbarFadeLeft"></div>
+      <div class="topbar-center-fade right" id="topbarFadeRight"></div>
+      
+      <!-- Base Tools (Always visible) -->
+      <div class="format-bar active" id="mainTools">
+        <div class="tool-group">
+        <button class="tool-btn" id="undoBtn" title="Undo (Ctrl+Z)" disabled><span class="material-symbols-outlined">undo</span></button>
+        <button class="tool-btn" id="redoBtn" title="Redo (Ctrl+Y)" disabled><span class="material-symbols-outlined">redo</span></button>
+        </div>
+        <div class="tool-group">
+        <button class="tool-btn" id="toolAddText" title="Add text"><span class="material-symbols-outlined">insert_text</span></button>
+        <button class="tool-btn" id="toolAddShape" title="Add shape"><span class="material-symbols-outlined">shapes</span></button>
+        <button class="tool-btn" id="toolAddImage" title="Add image"><span class="material-symbols-outlined">image</span></button>
+        <input type="file" id="imageFileInput" accept="image/*" style="display:none">
+        <div class="draw-tool-wrap">
+          <button class="tool-btn" id="toolDraw" title="Pen tool (freehand drawing)"><span class="material-symbols-outlined">draw</span></button>
+          <div class="draw-popover" id="drawPopover">
+            <div class="draw-mode-row">
+              <button class="draw-mode-btn active" id="drawModePen" data-mode="pen" title="Pen">
+                <span class="material-symbols-outlined">edit</span>Pen
+              </button>
+              <button class="draw-mode-btn" id="drawModeHighlighter" data-mode="highlighter" title="Highlighter">
+                <span class="material-symbols-outlined">ink_highlighter</span>Highlighter
+              </button>
+              <button class="draw-mode-btn" id="drawModeMarker" data-mode="marker" title="Marker">
+                <span class="material-symbols-outlined">brush</span>Marker
+              </button>
+              <button class="draw-mode-btn" id="drawModeEraser" data-mode="eraser" title="Eraser (draws in canvas background)">
+                <span class="material-symbols-outlined">ink_eraser</span>Eraser
+              </button>
+            </div>
+            <div class="draw-opt-row">
+              <label class="field-label" style="margin-top:0;">Color</label>
+              <button class="tool-btn color-tool-btn" id="drawColorBtn" title="Pen color">
+                <span class="material-symbols-outlined">palette</span>
+                <span class="cp-swatch-bar" id="drawColorSwatch"></span>
+              </button>
+            </div>
+            <div class="draw-opt-row">
+              <label class="field-label" style="margin-top:0;">Thickness</label>
+              <input type="range" id="drawThickness" min="1" max="60" step="1">
+              <span class="draw-opt-val" id="drawThicknessVal"></span>
+            </div>
+            <div class="draw-opt-row">
+              <label class="field-label" style="margin-top:0;">Opacity</label>
+              <input type="range" id="drawOpacity" min="0.05" max="1" step="0.05">
+              <span class="draw-opt-val" id="drawOpacityVal"></span>
+            </div>
+            <button class="btn-primary" id="drawDoneBtn" style="margin-top:10px;">Done drawing</button>
+          </div>
+        </div>
+        </div>
+        <div class="tool-group">
+        <button class="tool-btn" id="toolLock" title="Lock/unlock elements">
+          <span class="material-symbols-outlined" id="toolLockIcon">lock_open</span>
+        </button>
+        </div>
+      </div>
+
+      <!-- Text Tools (Visible when text selected) -->
+      <div class="format-bar" id="textFormatBar">
+        <div class="tool-sep"></div>
+        <select id="fmtFont" class="compact-select" title="Font Family"></select>
+        <input type="number" id="fmtSize" class="compact-input" title="Font Size" min="1" max="400" step="1">
+        <button class="tool-btn" id="fmtBold" title="Bold"><span class="material-symbols-outlined">format_bold</span></button>
+        <button class="tool-btn" id="fmtItalic" title="Italic"><span class="material-symbols-outlined">format_italic</span></button>
+        <button class="tool-btn" id="fmtUnderline" title="Underline"><span class="material-symbols-outlined">format_underlined</span></button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="fmtAlignL" title="Align left"><span class="material-symbols-outlined">format_align_left</span></button>
+        <button class="tool-btn" id="fmtAlignC" title="Align center"><span class="material-symbols-outlined">format_align_center</span></button>
+        <button class="tool-btn" id="fmtAlignR" title="Align right"><span class="material-symbols-outlined">format_align_right</span></button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="fmtSuper" title="Superscript"><span class="material-symbols-outlined">superscript</span></button>
+        <button class="tool-btn" id="fmtSub" title="Subscript"><span class="material-symbols-outlined">subscript</span></button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn color-tool-btn" id="fmtColorBtn" title="Text color">
+          <span class="material-symbols-outlined">format_color_text</span>
+          <span class="cp-swatch-bar" id="fmtColorSwatch"></span>
+        </button>
+      </div>
+
+      <!-- Shape Tools (Visible when shape selected) -->
+      <div class="format-bar" id="shapeFormatBar">
+        <div class="tool-sep"></div>
+        <button class="tool-btn color-tool-btn" id="shapeFillColorBtn" title="Fill color">
+          <span class="material-symbols-outlined">format_color_fill</span>
+          <span class="cp-swatch-bar" id="shapeFillColorSwatch"></span>
+        </button>
+        <button class="tool-btn color-tool-btn" id="shapeStrokeColorBtn" title="Stroke color">
+          <span class="material-symbols-outlined">border_color</span>
+          <span class="cp-swatch-bar" id="shapeStrokeColorSwatch"></span>
+        </button>
+        <div class="tool-sep"></div>
+        <input type="number" id="shapeStrokeOpacity" class="compact-input" min="0" max="1" step="0.05" title="Stroke Opacity (0.0 - 1.0)">
+        <input type="number" id="shapeStrokeWidth" class="compact-input" min="0" max="20" title="Stroke Width">
+        <select id="shapeDashStyle" class="compact-select" title="Dash Style">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+        </select>
+        <select id="shapeJoinStyle" class="compact-select" title="Join Style">
+            <option value="miter">Miter</option>
+            <option value="round">Round</option>
+            <option value="bevel">Bevel</option>
+        </select>
+        <select id="shapeCapStyle" class="compact-select" title="Cap Style">
+            <option value="butt">Butt</option>
+            <option value="round">Round</option>
+            <option value="square">Square</option>
+        </select>
+      </div>
+
+      <!-- Math / LaTeX Tools (Visible when a formula object is selected) -->
+      <div class="format-bar" id="mathFormatBar">
+        <div class="tool-sep"></div>
+        <input type="number" id="fmtMathSize" class="compact-input" title="Formula font size" min="8" max="400" step="1">
+        <button class="tool-btn color-tool-btn" id="fmtMathColorBtn" title="Formula color">
+          <span class="material-symbols-outlined">format_color_text</span>
+          <span class="cp-swatch-bar" id="fmtMathColorSwatch"></span>
+        </button>
+      </div>
+
+      <!-- Image Tools (Visible when an image is selected) -->
+      <div class="format-bar" id="imageFormatBar">
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="imgReplaceBtn" title="Replace image"><span class="material-symbols-outlined">find_replace</span></button>
+        <div class="tool-sep"></div>
+        <input type="number" id="imgOpacity" class="compact-input" min="0" max="1" step="0.05" title="Opacity (0.0 - 1.0)">
+        <button class="tool-btn color-tool-btn" id="imgBorderColorBtn" title="Border color">
+          <span class="material-symbols-outlined">border_color</span>
+          <span class="cp-swatch-bar" id="imgBorderColorSwatch"></span>
+        </button>
+        <input type="number" id="imgBorderWidth" class="compact-input" min="0" max="40" title="Border width">
+        <input type="number" id="imgCornerRadius" class="compact-input" min="0" max="200" title="Corner radius">
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="imgShadowToggle" title="Drop shadow"><span class="material-symbols-outlined">flare</span></button>
+        <button class="tool-btn" id="imgGrayscaleToggle" title="Grayscale"><span class="material-symbols-outlined">contrast</span></button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="imgFlipH" title="Flip horizontal"><span class="material-symbols-outlined">flip</span></button>
+        <button class="tool-btn" id="imgFlipV" title="Flip vertical"><span class="material-symbols-outlined" style="transform:rotate(90deg);display:inline-block;">flip</span></button>
+      </div>
+
+      <!-- Chart Tools (Visible when chart selected) -->
+      <div class="format-bar" id="chartFormatBar">
+        <div class="tool-sep"></div>
+        <button class="tool-btn wide" id="chartGoStyleBtn" title="Open Line, Scatter &amp; Area style" style="display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined">show_chart</span>Style
+        </button>
+        <button class="tool-btn wide" id="chartGoLegendBtn" title="Open Legend settings" style="display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined">format_list_bulleted</span>Legend
+        </button>
+        <button class="tool-btn wide" id="chartGoColorBtn" title="Open color settings" style="display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined">palette</span>Colors
+        </button>
+
+        <div class="tool-sep"></div>
+        <button class="tool-btn wide" id="chartFrameQuick" title="Toggle frame border around chart" style="display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined">crop_free</span>Frame
+        </button>
+        <button class="tool-btn wide" id="chartLabelsQuick" title="Toggle value labels" style="display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined">label</span>Labels
+        </button>
+
+        <div class="tool-sep" id="chartOrientSep" style="display:none;"></div>
+        <div class="toggle-group" id="chartOrientQuick" style="display:none;width:auto;">
+          <button id="chartOrientVertQuick" class="active" title="Vertical orientation"><span class="material-symbols-outlined" style="font-size:16px;">bar_chart</span>Vertical</button>
+          <button id="chartOrientHorizQuick" title="Horizontal orientation"><span class="material-symbols-outlined" style="font-size:16px;transform:rotate(90deg);">bar_chart</span>Horizontal</button>
+        </div>
+
+        <div class="tool-sep" id="chartErrorBarSep" style="display:none;"></div>
+        <button class="tool-btn wide" id="chartErrorBarQuick" style="display:none;align-items:center;gap:6px;" title="Toggle error bars">
+          <span class="material-symbols-outlined">linear_scale</span>Error Bars
+        </button>
+
+        <button class="tool-btn wide" id="chartStackedPercentQuick" style="display:none;align-items:center;gap:6px;" title="Normalize each bar to sum to 100%">
+          <span class="material-symbols-outlined">percent</span>100%
+        </button>
+
+        <div class="tool-sep" id="chartAreaFillSep" style="display:none;"></div>
+        <div class="toggle-group" id="chartAreaFillQuick" style="display:none;width:auto;">
+          <button id="chartAreaFillTransparentQuick" title="Transparent fill"><span class="material-symbols-outlined" style="font-size:16px;">opacity</span>Transparent</button>
+          <button id="chartAreaFillSolidQuick" title="Solid fill"><span class="material-symbols-outlined" style="font-size:16px;">format_color_fill</span>Solid</button>
+        </div>
+        <input type="range" id="chartAreaOpacityQuick" min="0" max="1" step="0.05" style="display:none;width:80px;margin-left:4px;" title="Fill opacity">
+      </div>
+
+  </div>
+
+  <div class="topbar-right">
+    <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <span class="material-symbols-outlined" id="themeToggleIcon">dark_mode</span>
+    </button>
+      </div>
+
+</div>
+
+<div class="app">
+  
+  <div class="sidebar-container">
+    <div class="sidebar-nav">
+      <!-- Data Toggle Button -->
+      <button class="nav-btn" id="navDataToggle" title="Toggle Data View">
+        <span class="material-symbols-outlined">database</span>
+      </button>
+      <div class="tool-sep" style="width:28px; height:1px; margin:2px 0;"></div>
+
+      <!-- Nav Icons -->
+      <button class="nav-btn active" data-panel="panel-canvas" title="Canvas Settings">
+        <span class="material-symbols-outlined">description</span>
+      </button>
+      <button class="nav-btn" data-panel="panel-chart" title="Chart Options">
+        <span class="material-symbols-outlined">bar_chart</span>
+      </button>
+      <button class="nav-btn" data-panel="panel-axis" title="Axis">
+        <span class="nav-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="4"/><polyline points="1,8 4,4 7,8"/><line x1="4" y1="20" x2="21" y2="20"/><polyline points="17,17 21,20 17,23"/></svg></span>
+      </button>
+      <button class="nav-btn" data-panel="panel-legend" title="Legend">
+        <span class="material-symbols-outlined">format_list_bulleted</span>
+      </button>
+      <button class="nav-btn" data-panel="panel-shapes" title="Shapes">
+        <span class="material-symbols-outlined">shapes</span>
+      </button>
+      <button class="nav-btn" data-panel="panel-color" title="Color & Style">
+        <span class="material-symbols-outlined">palette</span>
+      </button>
+      <button class="nav-btn" data-panel="panel-latex" title="LaTeX &amp; Symbols">
+        <span class="material-symbols-outlined">function</span>
+      </button>
+      <!-- Spacer for bottom positioning -->
+      <div style="flex: 1;"></div>
+      
+      <!-- Export -->
+      <button class="nav-btn" data-panel="panel-export" title="Export">
+        <span class="material-symbols-outlined">file_save</span>
+      </button>
+    </div>
+    
+    <div class="sidebar">
+
+      <!-- Panel: Export -->
+      <div id="panel-export" class="sidebar-panel">
+        <h2>Export</h2>
+
+        <!-- Legacy DPI value, kept in sync and hidden: js/chart-builder/12-radial-rings.js
+             reads #dpiSelect.value directly for its own PNG export path. -->
+        <select id="dpiSelect" style="display:none;">
+          <option value="75">75</option>
+          <option value="100">100</option>
+          <option value="300" selected>300</option>
+          <option value="600">600</option>
+        </select>
+
+        <label class="field-label" style="margin-top:0;">Format</label>
+        <div class="toggle-group" id="exportFormatGroup">
+          <button type="button" class="active" data-fmt="png">PNG</button>
+          <button type="button" data-fmt="jpg">JPG</button>
+          <button type="button" data-fmt="svg">SVG</button>
+          <button type="button" data-fmt="pdf"><span class="fmt-btn-icon"><svg viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M5.8 14H5v1h.8c.3 0 .5-.2.5-.5s-.2-.5-.5-.5M11 2H3v16h13V7zM7.2 14.6c0 .8-.6 1.4-1.4 1.4H5v1H4v-4h1.8c.8 0 1.4.6 1.4 1.4zm4.1.5c0 1-.8 1.9-1.9 1.9H8v-4h1.4c1 0 1.9.8 1.9 1.9zM15 14h-2v1h1.5v1H13v1h-1v-4h3zm0-2H4V3h7v4h4zm-5.6 2H9v2h.4c.6 0 1-.4 1-1s-.5-1-1-1" clip-rule="evenodd"/></svg></span>PDF</button>
+        </div>
+
+        <div id="exportPdfModeWrap" style="display:none;">
+          <label class="field-label">PDF mode</label>
+          <div class="toggle-group" id="exportPdfModeGroup">
+            <button type="button" class="active" data-pdfmode="vector">Vector</button>
+            <button type="button" data-pdfmode="flatten">Flatten</button>
+          </div>
+          <p class="cp-hint">Vector keeps text and shapes editable in a PDF editor. Flatten rasterizes everything into a single image, like Canva's "Flatten to PDF".</p>
+        </div>
+
+        <div id="exportDpiWrap">
+          <label class="field-label">Resolution</label>
+          <div class="toggle-group" id="exportDpiGroup">
+            <button type="button" data-dpi="75">75</button>
+            <button type="button" data-dpi="100">100</button>
+            <button type="button" class="active" data-dpi="300">300</button>
+            <button type="button" data-dpi="600">600</button>
+          </div>
+        </div>
+
+        <label class="field-label">File name</label>
+        <div class="input-row">
+          <input type="text" id="exportFilename" value="layout" placeholder="layout" />
+          <span id="exportFilenameExt" style="flex-shrink:0; align-self:center; font-size:12px; color:var(--ink-soft);">.png</span>
+        </div>
+
+        <label class="field-label">Background</label>
+        <div style="display:flex; flex-direction:column; gap:6px;" id="exportBgGroup">
+          <button type="button" class="full-color-picker-btn active" data-bg="canvas" style="height:38px;">
+            <span class="full-color-picker-swatch" id="exportBgSwatchCanvas" style="background:linear-gradient(135deg,#e5e5e5 50%,#0e0f10 50%);"></span>
+            <span>Canvas color</span>
+          </button>
+          <button type="button" class="full-color-picker-btn" data-bg="white" style="height:38px;">
+            <span class="full-color-picker-swatch" style="background:#ffffff;"></span>
+            <span>White</span>
+          </button>
+          <button type="button" class="full-color-picker-btn" data-bg="transparent" style="height:38px;">
+            <span class="full-color-picker-swatch" style="background-image:repeating-conic-gradient(#ccc 0 25%, #fff 0 50%); background-size:8px 8px;"></span>
+            <span>Transparent</span>
+          </button>
+        </div>
+        <p class="cp-hint" id="exportBgNote" style="display:none;">Transparent isn't available for JPG — using white instead.</p>
+
+        <button class="btn-primary" id="exportRunBtn">
+          <span class="material-symbols-outlined" style="font-size:16px;">file_save</span> <span id="exportRunLabel">Export PNG</span>
+        </button>
+      </div>
+
+      <!-- Panel: Canvas Settings -->
+      <div id="panel-canvas" class="sidebar-panel active">
+        <div class="side-section" data-section="canvas-size">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">aspect_ratio</span>Custom Size</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+            <div class="toggle-group" style="margin-top:2px;">
+              <button id="unitPx">px</button>
+              <button id="unitMm" class="active">mm</button>
+              <button id="unitCm">cm</button>
+            </div>
+            <div class="num-pair" style="margin-top:10px;">
+              <div><label class="field-label" style="margin-top:0;">Width</label><input type="number" id="chartWidth" value="297" step="any"></div>
+              <div><label class="field-label" style="margin-top:0;">Height</label><input type="number" id="chartHeight" value="210" step="any"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="canvas-templates">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">grid_view</span>Templates</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+            <div class="template-grid" id="templateGrid" style="margin-top:2px;"></div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="canvas-color">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">format_color_fill</span>Canvas Color</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+            <button type="button" class="full-color-picker-btn" id="canvasBgBtn" style="margin-top:2px;">
+              <span class="material-symbols-outlined">palette</span>
+              <span>Background color</span>
+              <span class="full-color-picker-swatch" id="canvasBgSwatch"></span>
+            </button>
+            <div class="swatch-row" style="margin-top:10px;" id="canvasBgPresets">
+              <button type="button" class="swatch-btn" data-bg="#ffffff" style="background:#ffffff" title="White"></button>
+              <button type="button" class="swatch-btn" data-bg="#f4f5f7" style="background:#f4f5f7" title="Light gray"></button>
+              <button type="button" class="swatch-btn" data-bg="#1a1a1a" style="background:#1a1a1a" title="Black"></button>
+              <button type="button" class="swatch-btn" data-bg="#0e2a1f" style="background:#0e2a1f" title="Forest"></button>
+              <button type="button" class="swatch-btn" data-bg="transparent" style="background-image:linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);background-size:8px 8px;background-position:0 0,0 4px,4px -4px,-4px 0" title="Transparent"></button>
+            </div>
+            <p class="cp-hint">Sets the page background behind your chart and layout objects. "Transparent" is included in PNG exports.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Panel: Chart Settings -->
+      <div id="panel-chart" class="sidebar-panel">
+        <div class="side-section" data-section="chart-type">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">bar_chart</span>Chart Type</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div id="chartTypeGrid" style="margin-top:2px;"></div>
+
+        <h2 id="barSpacingHeading" style="cursor:pointer; transition: color 0.2s; display:flex; justify-content:space-between; align-items:center;">
+            Bar spacing 
+            <span style="font-size: 10px; color: var(--ink-soft);">▼</span>
+        </h2>
+        <div id="barSpacingSection" style="display:none; padding: 10px; background: var(--panel-2); border-radius: 6px;">
+          <label class="field-label" style="margin-top:0;">Gap between categories</label>
+          <input type="number" id="barGap" value="0.22" min="0" max="0.9" step="0.02">
+          <label class="field-label">Gap between bars in a group</label>
+          <input type="number" id="barGroupGap" value="0.12" min="0" max="0.9" step="0.02">
+          <label class="field-label">Bar width (0 = auto)</label>
+          <input type="number" id="barWidth" value="0" min="0" max="1" step="0.02">
+        </div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="orientation">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">swap_horiz</span>Orientation</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="toggle-group" style="margin-top:2px;">
+          <button id="orientVert" class="active">Vertical</button>
+          <button id="orientHoriz">Horizontal</button>
+        </div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="chart-elements">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">tune</span>Display Options</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="check-row" style="margin-top:10px;"><input type="checkbox" id="outlineMarker" checked><label for="outlineMarker">Outline on markers</label></div>
+        <p class="cp-hint" style="margin-top:10px;">Frame border and value labels are toggled from the toolbar above the canvas when a chart is selected. The fields below fine-tune them once turned on.</p>
+        <input type="checkbox" id="outlineFrame" style="display:none">
+        <div class="num-pair" style="margin-top:10px;">
+          <div><label class="field-label" style="margin-top:0;">Frame border</label><input type="number" id="frameBorderWidth" value="1.4" min="0.2" max="10" step="0.2"></div>
+          <div><label class="field-label" style="margin-top:0;">Axis line</label><input type="number" id="axisLineWidth" value="1" min="0.2" max="10" step="0.2"></div>
+        </div>
+        <div class="check-row" style="margin-top:8px;"><input type="checkbox" id="mirrorAxisTicks"><label for="mirrorAxisTicks">Double axis (ticks on frame border too)</label></div>
+        <p class="cp-hint" style="margin-top:4px;">Off by default: with a full frame border, the mirrored side stays a plain line. Turn this on to also show ticks on that side (dual-axis look).</p>
+        <input type="checkbox" id="showValues" style="display:none">
+        <select id="valueFormatSelect" title="Number format for value labels" style="margin-top:6px; width:100%; padding:6px; font-size:12px; border:1px solid var(--line-strong); border-radius:6px; background:var(--panel); color:var(--ink);">
+          <option value="auto" selected>Auto (2 decimals)</option>
+          <option value="int">Integer</option>
+          <option value="dec1">1 decimal</option>
+          <option value="dec2">2 decimals</option>
+          <option value="thousands">Thousands (1,234)</option>
+          <option value="percent">Percent (12.3%)</option>
+          <option value="currency">Currency (Rp)</option>
+        </select>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="error-bars">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">linear_scale</span>Error Bars</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="check-row" style="margin-top:10px;"><input type="checkbox" id="showErrorBars"><label for="showErrorBars">Show error bars</label></div>
+        <div id="errorBarSettings" style="display:none;">
+          <div class="toggle-group">
+            <button id="errModePercent" class="active">%</button>
+            <button id="errModeFixed">Fixed</button>
+          </div>
+          <label class="field-label">Error value</label>
+          <input type="number" id="errorBarValue" value="10" min="0" step="0.5">
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <div style="flex:1;"><label class="field-label" style="margin-top:0;">Cap width (px)</label><input type="number" id="errorBarCapWidth" value="3" min="0" max="20" step="0.5"></div>
+            <div style="flex:1;"><label class="field-label" style="margin-top:0;">Line thickness</label><input type="number" id="errorBarThickness" value="1.2" min="0.2" max="6" step="0.1"></div>
+          </div>
+          <div class="check-row" style="margin-top:8px;"><input type="checkbox" id="errorBarColorMatch"><label for="errorBarColorMatch">Match series color (instead of black)</label></div>
+        </div>
+          </div>
+        </div>
+
+        <div class="side-section" id="lineStyleSection" data-section="line-scatter-style">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">show_chart</span>Line & Scatter Style</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+          <div id="lineShapeWrap" style="margin-top:10px;"><label class="field-label" style="margin-top:0;">Line shape</label>
+            <div class="toggle-group"><button id="lineShapeSpline" class="active">Smooth</button><button id="lineShapeLinear">Straight</button></div>
+          </div>
+          <div class="check-row" id="lineMarkersRow"><input type="checkbox" id="lineShowMarkers" checked><label for="lineShowMarkers">Show markers on line</label></div>
+          <div class="check-row" id="scatterLineRow"><input type="checkbox" id="scatterShowLine"><label for="scatterShowLine">Connect points with line</label></div>
+          <div id="scatterDashWrap"><label class="field-label">Dash style</label><select id="scatterLineDash"><option value="solid">Solid</option><option value="dot">Dot</option><option value="dash">Dash</option></select></div>
+          <label class="field-label">Line width</label><input type="number" id="lineWidthInput" value="2.2" min="0.5" max="10" step="0.2">
+          <div id="areaFillWrap" style="display:none;">
+            <label class="field-label">Area fill</label>
+            <div class="toggle-group"><button id="areaFillTransparent" class="active">Transparent</button><button id="areaFillSolid">Solid</button></div>
+            <label class="field-label">Fill opacity</label>
+            <input type="range" id="areaFillOpacity" min="0" max="1" step="0.05" value="0.5">
+          </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Panel: Axis -->
+      <div id="panel-axis" class="sidebar-panel">
+        <div class="side-section" data-section="axis-range">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">straighten</span>Axis Range</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <label class="field-label" style="margin-top:0;">X-axis range</label>
+        <div class="toggle-group"><button id="xRangeAuto" class="active">Auto</button><button id="xRangeCustom">Custom</button></div>
+        <div class="num-pair" id="xRangeInputs" style="margin-top:8px; display:none;">
+          <div><label class="field-label" style="margin-top:0;">Min</label><input type="number" id="xRangeMin" step="any"></div>
+          <div><label class="field-label" style="margin-top:0;">Max</label><input type="number" id="xRangeMax" step="any"></div>
+        </div>
+        <label class="field-label" style="margin-top:14px;">X-axis tick interval</label>
+        <div class="toggle-group"><button id="xTickAuto" class="active">Auto</button><button id="xTickCustom">Custom</button></div>
+        <div class="num-pair" id="xTickInputs" style="margin-top:8px; display:none;">
+          <div><label class="field-label" style="margin-top:0;">Step</label><input type="number" id="xTickStep" step="any" min="0.0001" placeholder="e.g. 10"></div>
+        </div>
+        <label class="field-label" style="margin-top:14px;">Y-axis range</label>
+        <div class="toggle-group"><button id="yRangeAuto" class="active">Auto</button><button id="yRangeCustom">Custom</button></div>
+        <div class="num-pair" id="yRangeInputs" style="margin-top:8px; display:none;">
+          <div><label class="field-label" style="margin-top:0;">Min</label><input type="number" id="yRangeMin" step="any"></div>
+          <div><label class="field-label" style="margin-top:0;">Max</label><input type="number" id="yRangeMax" step="any"></div>
+        </div>
+        <label class="field-label" style="margin-top:14px;">Y-axis tick interval</label>
+        <div class="toggle-group"><button id="yTickAuto" class="active">Auto</button><button id="yTickCustom">Custom</button></div>
+        <div class="num-pair" id="yTickInputs" style="margin-top:8px; display:none;">
+          <div><label class="field-label" style="margin-top:0;">Step</label><input type="number" id="yTickStep" step="any" min="0.0001" placeholder="e.g. 1000"></div>
+        </div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="tick-marks">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">dashboard</span>Tick Marks</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <label class="field-label" style="margin-top:0;">X-axis</label>
+        <div class="check-row"><input type="checkbox" id="xTicksShow"><label for="xTicksShow">Show major ticks</label></div>
+        <div id="xTicksSettings" style="display:none;">
+          <div class="num-pair" style="margin-top:6px;">
+            <div><label class="field-label" style="margin-top:0;">Position</label>
+              <div class="toggle-group"><button id="xTicksPosOutside" class="active">Outside</button><button id="xTicksPosInside">Inside</button></div>
+            </div>
+            <div><label class="field-label" style="margin-top:0;">Length</label><input type="number" id="xTicksLength" value="6" min="1" max="30" step="1"></div>
+          </div>
+          <div class="check-row" style="margin-top:8px;"><input type="checkbox" id="xMinorTicksShow"><label for="xMinorTicksShow">Show minor ticks</label></div>
+          <div id="xMinorTicksSettings" style="display:none; margin-top:6px;">
+            <div class="toggle-group"><button id="xMinorModeAuto" class="active">Auto</button><button id="xMinorModeDivide">Divide major</button><button id="xMinorModeManual">Manual</button></div>
+            <div id="xMinorDivideInputs" style="display:none; margin-top:8px;"><label class="field-label" style="margin-top:0;">Minor ticks per major interval</label><input type="number" id="xMinorDivideCount" value="5" min="2" max="20" step="1"></div>
+            <div id="xMinorManualInputs" style="display:none; margin-top:8px;"><label class="field-label" style="margin-top:0;">Minor step</label><input type="number" id="xMinorStep" step="any" min="0.0001" placeholder="e.g. 2"></div>
+          </div>
+        </div>
+
+        <label class="field-label" style="margin-top:14px;">Y-axis</label>
+        <div class="check-row"><input type="checkbox" id="yTicksShow"><label for="yTicksShow">Show major ticks</label></div>
+        <div id="yTicksSettings" style="display:none;">
+          <div class="num-pair" style="margin-top:6px;">
+            <div><label class="field-label" style="margin-top:0;">Position</label>
+              <div class="toggle-group"><button id="yTicksPosOutside" class="active">Outside</button><button id="yTicksPosInside">Inside</button></div>
+            </div>
+            <div><label class="field-label" style="margin-top:0;">Length</label><input type="number" id="yTicksLength" value="6" min="1" max="30" step="1"></div>
+          </div>
+          <div class="check-row" style="margin-top:8px;"><input type="checkbox" id="yMinorTicksShow"><label for="yMinorTicksShow">Show minor ticks</label></div>
+          <div id="yMinorTicksSettings" style="display:none; margin-top:6px;">
+            <div class="toggle-group"><button id="yMinorModeAuto" class="active">Auto</button><button id="yMinorModeDivide">Divide major</button><button id="yMinorModeManual">Manual</button></div>
+            <div id="yMinorDivideInputs" style="display:none; margin-top:8px;"><label class="field-label" style="margin-top:0;">Minor ticks per major interval</label><input type="number" id="yMinorDivideCount" value="5" min="2" max="20" step="1"></div>
+            <div id="yMinorManualInputs" style="display:none; margin-top:8px;"><label class="field-label" style="margin-top:0;">Minor step</label><input type="number" id="yMinorStep" step="any" min="0.0001" placeholder="e.g. 200"></div>
+          </div>
+        </div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="grid-lines">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">grid_4x4</span>Grid Lines</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <label class="field-label" style="margin-top:0;">X-axis</label>
+        <div class="check-row"><input type="checkbox" id="xGridShow"><label for="xGridShow">Show major grid lines</label></div>
+        <div class="check-row"><input type="checkbox" id="xMinorGridShow"><label for="xMinorGridShow">Show minor grid lines</label></div>
+        <label class="field-label" style="margin-top:14px;">Y-axis</label>
+        <div class="check-row"><input type="checkbox" id="yGridShow" checked><label for="yGridShow">Show major grid lines</label></div>
+        <div class="check-row"><input type="checkbox" id="yMinorGridShow"><label for="yMinorGridShow">Show minor grid lines</label></div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="axis-labels">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">title</span>Axis Labels</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="check-row" style="margin-top:10px;"><input type="checkbox" id="showXAxisLabel" checked><label for="showXAxisLabel">Show category axis title</label></div>
+        <label class="field-label" style="margin-top:0;">Category axis title</label>
+        <div class="input-row"><input type="text" id="xLabel" value="Plot"><select class="unit-picker" data-target="xLabel"></select></div>
+        <button id="xLabelDetachBtn" type="button" style="width:100%; margin-top:6px; font-size:11px; padding:6px;">Detach as movable object</button>
+        <div class="check-row" style="margin-top:14px;"><input type="checkbox" id="showYAxisLabel" checked><label for="showYAxisLabel">Show value axis title</label></div>
+        <label class="field-label" style="margin-top:0;">Value axis title</label>
+        <div class="input-row"><input type="text" id="yLabel" value="Value"><select class="unit-picker" data-target="yLabel"></select></div>
+        <button id="yLabelDetachBtn" type="button" style="width:100%; margin-top:6px; font-size:11px; padding:6px;">Detach as movable object</button>
+        <label class="field-label">Secondary Y-axis title</label>
+        <div class="input-row"><input type="text" id="y2Label" value="" placeholder="Only used by series set to the secondary axis"><select class="unit-picker" data-target="y2Label"></select></div>
+
+        <label class="field-label" style="margin-top:14px;">Long tick/category labels</label>
+        <div class="check-row"><input type="checkbox" id="wrapAxisLabels"><label for="wrapAxisLabels">Wrap onto 2 lines instead of clipping</label></div>
+        <div class="num-pair" id="wrapAxisLabelsSettings" style="margin-top:8px; display:none;">
+          <div><label class="field-label" style="margin-top:0;">Wrap after (characters)</label><input type="number" id="wrapAxisLabelsMaxLen" value="16" min="4" max="60" step="1"></div>
+        </div>
+
+        <div id="stackedPercentSection" style="display:none; margin-top:14px;">
+          <label class="field-label" style="margin-top:0;">Stacked bar (100%)</label>
+          <div class="check-row"><input type="checkbox" id="stackedPercent"><label for="stackedPercent">Normalize each bar to sum to 100%</label></div>
+        </div>
+        <label class="field-label">Body font</label><select id="fontBodySelect"></select>
+        <label class="field-label">Body font size</label>
+        <input type="number" id="bodyFontSize" value="12" min="7" max="30" step="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Legend -->
+      <div id="panel-legend" class="sidebar-panel">
+        <div class="side-section" data-section="legend-settings">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">format_list_bulleted</span>Legend</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="check-row" style="margin-top:10px;"><input type="checkbox" id="showLegend" checked><label for="showLegend">Show legend</label></div>
+        <label class="field-label">Position</label>
+        <select id="legendPos">
+          <option value="top-right">Top right</option><option value="top-center">Top center</option><option value="top-left">Top left</option>
+          <option value="right-middle">Right middle</option><option value="left-middle">Left middle</option><option value="bottom-center">Bottom center</option>
+          <option value="inside-top-right">Inside, top right corner</option>
+        </select>
+        <div style="margin-top:8px;">
+          <button id="legendResetPos" type="button" style="width:auto; padding:6px 12px;">Reset position</button>
+        </div>
+        <label class="field-label">Legend title</label><input type="text" id="legendTitle" value="" placeholder="e.g. Species">
+        <label class="field-label">Legend size</label>
+        <input type="number" id="legendFontSize" value="12" min="6" max="30" step="1">
+        <label class="field-label">Legend columns</label>
+        <div class="toggle-group">
+          <button id="legendCol1" class="active">1</button><button id="legendCol2">2</button>
+          <button id="legendCol3">3</button><button id="legendCol4">4</button>
+        </div>
+        <div class="check-row"><input type="checkbox" id="legendBorder"><label for="legendBorder">Border box around legend</label></div>
+        <button id="legendDetachBtn" type="button" style="width:100%; margin-top:14px; font-size:11px; padding:6px;">Detach as movable object</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Color & Style -->
+      <div id="panel-color" class="sidebar-panel">
+        <div class="side-section" data-section="visual-style">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">style</span>Visual Style</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="toggle-group" style="margin-top:2px;">
+          <button id="styleColor" class="active">Color</button>
+          <button id="styleColorPattern">Color + Pattern</button>
+          <button id="stylePattern">Pattern</button>
+        </div>
+
+        <div id="patternDensitySection" style="display:none; margin-top:14px;">
+          <label class="field-label" style="margin-top:0;">Pattern gap</label>
+          <input type="number" id="patternSizeInput" value="7" min="3" max="24" step="1">
+          <label class="field-label">Pattern density</label>
+          <input type="number" id="patternSolidityInput" value="0.45" min="0.05" max="0.95" step="0.05">
+        </div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="series">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">format_list_bulleted</span>Series</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="series-list" id="seriesList" style="margin-top:2px;"></div>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="color-palette">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">palette</span>Color Palette <span class="badge" id="paletteCountBadge" style="margin-left:6px;">99</span></span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="symbol-toolbar-row" style="margin-top:2px; margin-bottom:10px;">
+          <input type="text" id="paletteSearch" class="symbol-search" placeholder="Search palettes… (e.g. RdYlGn, Blues, Viridis)" autocomplete="off">
+        </div>
+        <div class="palette-grid" id="paletteGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Shapes -->
+      <div id="panel-shapes" class="sidebar-panel">
+        <h2 style="margin-top:0;">Basic Shapes</h2>
+        <div class="shapes-grid">
+          <button type="button" class="shape-opt-lg" data-shape="square" title="Square">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1.5"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="rect" title="Rectangle">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1.5"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="roundrect" title="Rounded rectangle">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="5"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="circle" title="Circle">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="ellipse" title="Ellipse">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="triangle" title="Triangle">
+            <svg viewBox="0 0 24 24"><polygon points="12,4 21,20 3,20"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="invtriangle" title="Inverted triangle">
+            <svg viewBox="0 0 24 24"><polygon points="3,4 21,4 12,20"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="rttriangle" title="Right triangle">
+            <svg viewBox="0 0 24 24"><polygon points="4,4 4,20 20,20"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="diamond" title="Diamond">
+            <svg viewBox="0 0 24 24"><polygon points="12,3 21,12 12,21 3,12"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="parallelogram" title="Parallelogram">
+            <svg viewBox="0 0 24 24"><polygon points="7,5 21,5 17,19 3,19"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="trapezoid" title="Trapezoid">
+            <svg viewBox="0 0 24 24"><polygon points="8,5 16,5 21,19 3,19"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="pentagon" title="Pentagon">
+            <svg viewBox="0 0 24 24"><polygon points="12,3 21,9.5 17.6,20 6.4,20 3,9.5"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="hexagon" title="Hexagon">
+            <svg viewBox="0 0 24 24"><polygon points="7,3 17,3 22,12 17,21 7,21 2,12"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="octagon" title="Octagon">
+            <svg viewBox="0 0 24 24"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"/></svg>
+          </button>
+        </div>
+
+        <h2>Lines &amp; Arrows</h2>
+        <div class="shapes-grid">
+          <button type="button" class="shape-opt-lg" data-shape="line" title="Line">
+            <svg viewBox="0 0 24 24"><line x1="3" y1="19" x2="21" y2="5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="dashedline" title="Dashed line">
+            <svg viewBox="0 0 24 24"><line x1="3" y1="19" x2="21" y2="5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="4 3" fill="none"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="arrow" title="Arrow right">
+            <svg viewBox="0 0 24 24"><path d="M2 12h16M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="arrowleft" title="Arrow left">
+            <svg viewBox="0 0 24 24"><path d="M22 12H6M11 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="arrowup" title="Arrow up">
+            <svg viewBox="0 0 24 24"><path d="M12 22V6M6 11l6-6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="arrowdown" title="Arrow down">
+            <svg viewBox="0 0 24 24"><path d="M12 2v16M6 13l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="doublearrow" title="Double arrow">
+            <svg viewBox="0 0 24 24"><path d="M2 12h20M6 7l-4 5 4 5M18 7l4 5-4 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="chevron" title="Chevron">
+            <svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+        </div>
+
+        <h2>Stars</h2>
+        <div class="shapes-grid">
+          <button type="button" class="shape-opt-lg" data-shape="star4" title="4-point star">
+            <svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="star" title="5-point star">
+            <svg viewBox="0 0 24 24"><polygon points="12,2.5 14.9,9.6 22.5,10.2 16.7,15.2 18.5,22.5 12,18.5 5.5,22.5 7.3,15.2 1.5,10.2 9.1,9.6"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="star6" title="6-point star">
+            <svg viewBox="0 0 24 24"><polygon points="12,2 14,8.5 20.7,7 16,12 20.7,17 14,15.5 12,22 10,15.5 3.3,17 8,12 3.3,7 10,8.5"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="star8" title="8-point star">
+            <svg viewBox="0 0 24 24"><polygon points="12,2 13.9,7.4 19.1,4.9 16.6,10.1 22,12 16.6,13.9 19.1,19.1 13.9,16.6 12,22 10.1,16.6 4.9,19.1 7.4,13.9 2,12 7.4,10.1 4.9,4.9 10.1,7.4"/></svg>
+          </button>
+        </div>
+
+        <h2>Symbols</h2>
+        <div class="shapes-grid">
+          <button type="button" class="shape-opt-lg" data-shape="cross" title="Cross / plus">
+            <svg viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="heart" title="Heart">
+            <svg viewBox="0 0 24 24"><path d="M12,21.3l-1.4-1.3C5.4,15.6,2,12.5,2,8.7C2,5.6,4.4,3,7.5,3c1.7,0,3.4,0.8,4.5,2.1C13.1,3.8,14.8,3,16.5,3 C19.6,3,22,5.6,22,8.7c0,3.8-3.4,6.9-8.6,11.4L12,21.3z"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="speechbubble" title="Speech bubble">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16v11H10l-4 4v-4H4z"/></svg>
+          </button>
+          <button type="button" class="shape-opt-lg" data-shape="halfcircle" title="Half circle">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel: LaTeX & Symbols -->
+      <div id="panel-latex" class="sidebar-panel">
+        <div class="side-section" data-section="latex-editor">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">functions</span>LaTeX Editor</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <label class="field-label" style="margin-top:10px;">Type LaTeX manually</label>
+        <textarea id="latexInput" class="latex-textarea" spellcheck="false"
+          placeholder="e.g. AGC = a \cdot NDVI^{b}  or  R^{2} = 0.87"></textarea>
+
+        <div class="latex-template-row" id="latexTemplateRow"></div>
+
+        <div class="status" id="latexStatus"></div>
+
+        <div id="latexEditingBadge" class="latex-editing-badge" style="display:none;">
+          <span id="latexEditingLabel">Editing formula on canvas</span>
+          <button id="latexCancelEdit" type="button">Cancel</button>
+        </div>
+
+        <label class="field-label">Recent formulas</label>
+        <div class="latex-recent-row" id="latexRecentRow"></div>
+        <p class="latex-recent-empty" id="latexRecentEmpty" style="display:none;"></p>
+          </div>
+        </div>
+
+        <div class="side-section" data-section="symbol-catalog">
+          <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">category</span>Symbol Catalog <span class="badge" id="symbolCatalogBadge" style="margin-left:6px;"></span></span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
+          <div class="side-section-body">
+        <div class="symbol-toolbar-row" style="margin-top:10px;">
+          <input type="text" id="symbolSearch" class="symbol-search" placeholder="Search symbols…" autocomplete="off">
+          <select id="latexFontSelect" class="symbol-font-select" title="Catalog display font"></select>
+        </div>
+        <div class="sym-cat-tabs" id="symbolCatTabs"></div>
+        <div class="symbol-grid" id="symbolGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Function Plot (advanced plotting via manual LaTeX-style input,
+           kept separate from the LaTeX Editor panel above - that one is for
+           typesetting static formulas onto the page, this one actually
+           evaluates and plots a curve). -->
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- ===================== LAYOUT VIEW ===================== -->
+    <div class="view-pane active" id="paneLayout">
+      <div class="ruler-corner ruler-corner-tl" id="rulerCorner"><span id="rulerUnitLabel">mm</span></div>
+      <div class="ruler-corner ruler-corner-tr" id="rulerCornerTR"></div>
+      <div class="ruler-corner ruler-corner-bl" id="rulerCornerBL"></div>
+      <div class="ruler-corner ruler-corner-br" id="rulerCornerBR"></div>
+      <canvas class="ruler ruler-h ruler-top" id="rulerTop"></canvas>
+      <canvas class="ruler ruler-h ruler-bottom" id="rulerBottom"></canvas>
+      <canvas class="ruler ruler-v ruler-left" id="rulerLeft"></canvas>
+      <canvas class="ruler ruler-v ruler-right" id="rulerRight"></canvas>
+      <div class="canvas-scroll" id="canvasScroll">
+        <div class="canvas-stage-wrapper" id="canvasStageWrapper">
+          <div class="canvas-stage" id="canvasStage">
+            <!-- Chart is positioned here -->
+            <div class="chart-block" id="chartBlock">
+              <div class="chart-block-inner" id="scaleWrap"><div id="plotlyDiv"></div></div>
+            </div>
+            <!-- Fabric sits ON TOP to handle drawing, shapes, text, AND intercepting clicks for Figma-style chart transforms -->
+            <div id="fabricCanvasWrap">
+              <canvas id="fabricCanvas"></canvas>
+            </div>
+            <div class="fabric-ctx-menu" id="fabricCtxMenu">
+              <button class="ctx-item" id="ctxDuplicate"><span class="material-symbols-outlined">control_point_duplicate</span><span class="ctx-item-label">Duplicate</span></button>
+              <div class="ctx-item-wrap" id="ctxArrangeWrap">
+                <button class="ctx-item" id="ctxArrange"><span class="material-symbols-outlined">layers</span><span class="ctx-item-label">Arrange</span><span class="material-symbols-outlined ctx-item-chevron">chevron_right</span></button>
+                <div class="fabric-ctx-submenu" id="ctxArrangeSubmenu">
+                  <button class="ctx-item" id="ctxBringFront"><span class="material-symbols-outlined">vertical_align_top</span><span class="ctx-item-label">Bring to front</span></button>
+                  <button class="ctx-item" id="ctxBringForward"><span class="material-symbols-outlined">flip_to_front</span><span class="ctx-item-label">Bring forward</span></button>
+                  <button class="ctx-item" id="ctxSendBackward"><span class="material-symbols-outlined">flip_to_back</span><span class="ctx-item-label">Send backward</span></button>
+                  <button class="ctx-item" id="ctxSendBack"><span class="material-symbols-outlined">vertical_align_bottom</span><span class="ctx-item-label">Send to back</span></button>
+                  <div class="ctx-sep"></div>
+                  <button class="ctx-item" id="ctxGroup"><span class="material-symbols-outlined">select_all</span><span class="ctx-item-label">Group</span></button>
+                  <button class="ctx-item" id="ctxUngroup"><span class="material-symbols-outlined">deselect</span><span class="ctx-item-label">Ungroup</span></button>
+                  <div class="ctx-sep"></div>
+                  <button class="ctx-item" id="ctxFlipH"><span class="material-symbols-outlined">flip</span><span class="ctx-item-label">Flip horizontal</span></button>
+                  <button class="ctx-item" id="ctxFlipV"><span class="material-symbols-outlined">flip</span><span class="ctx-item-label">Flip vertical</span></button>
+                </div>
+              </div>
+              <button class="ctx-item" id="ctxLock"><span class="material-symbols-outlined">lock</span><span class="ctx-item-label">Lock</span></button>
+              <div class="ctx-sep"></div>
+              <button class="ctx-item ctx-item-danger" id="ctxDelete"><span class="material-symbols-outlined">delete</span><span class="ctx-item-label">Delete</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== DATA VIEW ===================== -->
+    <div class="view-pane" id="paneData">
+      <div class="data-view-wrap">
+        <!-- Excel-style ribbon: feature buttons, not a wall of paste-box text -->
+        <div class="dv-ribbon">
+          <div class="dv-ribbon-group">
+            <button type="button" class="dv-file-btn dv-file-btn-csv" id="csvBtnWrap" title="Import a .csv file"><span class="dv-file-icon dv-file-icon-sheets material-symbols-outlined">grid_on</span>CSV</button>
+            <button type="button" class="dv-file-btn dv-file-btn-tsv" id="tsvBtnWrap" title="Import a .tsv file"><span class="dv-file-icon dv-file-icon-sheets material-symbols-outlined">table_rows</span>TSV</button>
+            <button type="button" class="dv-file-btn dv-file-btn-xlsx" id="xlsxBtnWrap" title="Import an Excel file"><span class="dv-file-icon dv-file-icon-excel material-symbols-outlined">table_chart</span>XLSX</button>
+            <button type="button" class="dv-file-btn dv-file-btn-json" id="jsonBtnWrap" title="Import a JSON file"><span class="dv-file-icon dv-file-icon-json material-symbols-outlined">data_object</span>JSON</button>
+            <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
+            <input type="file" id="tsvFile" accept=".tsv,.txt" style="display:none">
+            <input type="file" id="xlsxFile" accept=".xlsx,.xls" style="display:none">
+            <input type="file" id="jsonFile" accept=".json" style="display:none">
+
+            <div class="dv-ribbon-sep"></div>
+
+            <div class="dv-import-wrap">
+              <button class="dv-ribbon-btn" id="dvImportToggle" type="button" title="Paste data or load a sample">
+                <span class="material-symbols-outlined">content_paste</span>Paste
+              </button>
+              <div class="dv-import-panel" id="dvImportPanel">
+                <label class="field-label" style="margin-top:0;">Paste data</label>
+                <textarea id="dataInput" spellcheck="false" placeholder="Paste tab/comma-separated data or JSON…"></textarea>
+                <div class="import-btn-row" style="margin-top:12px;">
+                  <button id="loadSampleBtn" title="Loads a sample dataset shaped for whichever chart type is currently selected in Chart Type (sidebar)">Load sample</button>
+                </div>
+                <button class="btn-primary" id="parseBtn">Parse data</button>
+                <div class="status" id="parseStatus"></div>
+              </div>
+            </div>
+
+            <div class="dv-ribbon-sep"></div>
+
+            <button class="dv-ribbon-btn" id="transposeBtn" type="button" title="Transpose rows/columns">
+              <span class="material-symbols-outlined">sync_alt</span>Transpose
+            </button>
+            <div class="toggle-group" title="Table shape">
+              <button id="shapeWide" class="active">Wide</button>
+              <button id="shapeLong">Long</button>
+            </div>
+
+            <div class="dv-ribbon-sep"></div>
+
+            <button class="dv-ribbon-btn" id="addColBtn" type="button"><span class="material-symbols-outlined">view_column</span>Column</button>
+            <button class="dv-ribbon-btn" id="addRowBtn" type="button"><span class="material-symbols-outlined">table_rows</span>Row</button>
+
+            <div class="dv-ribbon-sep"></div>
+
+            <button class="dv-ribbon-btn" id="dvStatsToggle" type="button" title="Show/hide column statistics (jStat)">
+              <span class="material-symbols-outlined">query_stats</span>Statistics
+            </button>
+            <select id="dvPinnedStatSelect" class="compact-select" title="Statistic shown in the pinned row at the bottom of the grid">
+              <option value="count">Count</option>
+              <option value="sum">Sum</option>
+              <option value="mean" selected>Mean</option>
+              <option value="median">Median</option>
+              <option value="mode">Mode</option>
+              <option value="min">Min</option>
+              <option value="max">Max</option>
+              <option value="range">Range</option>
+              <option value="variance">Variance</option>
+              <option value="stdev">Std Dev</option>
+              <option value="q1">Q1</option>
+              <option value="q3">Q3</option>
+            </select>
+          </div>
+          <div class="dv-ribbon-group">
+            <button class="btn-primary dv-apply-btn" id="applyDataBtn">Apply to chart &rarr;</button>
+          </div>
+        </div>
+
+        <div class="dv-fxbar">
+          <span class="dv-fxbar-fx">fx</span>
+          <span class="dv-fxbar-addr" id="dvFxAddr"></span>
+          <input type="text" id="dvFxInput" placeholder="Click a cell, then type a value or formula like =SUM(A1:A5)" disabled>
+        </div>
+
+        <div class="dv-long-pickers" id="longPickerBar" style="display:none;"></div>
+
+        <div class="invalid-cell-notice" id="invalidCellNotice" style="display:none;">
+          <span class="material-symbols-outlined">error</span>
+          <span class="notice-text"></span>
+        </div>
+        <div class="data-grid-wrap"><div id="dataGrid"></div></div>
+        <div class="dv-status-bar" id="dvStatusBar" style="display:none;"></div>
+
+        <div class="dv-stats-panel" id="dvStatsPanel" style="display:none;">
+          <div class="dv-stats-header">
+            <span class="material-symbols-outlined">query_stats</span>
+            <h3>Column statistics</h3>
+            <span class="dv-stats-sub">via jStat</span>
+          </div>
+          <div class="dv-stats-body" id="dvStatsBody"></div>
+        </div>
+
+        <div class="sheet-tabs-bar" id="sheetTabsBar" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== COLOR PICKER SIDEBAR ===================== -->
+<div class="cp-backdrop" id="cpBackdrop"></div>
+<div class="cp-panel" id="cpPanel">
+  <div class="cp-header">
+    <span class="cp-title"><span class="material-symbols-outlined">palette</span><span id="cpTitle">Color</span></span>
+    <button class="cp-close" id="cpClose" title="Close"><span class="material-symbols-outlined">close</span></button>
+  </div>
+
+  <div class="cp-hexrow">
+    <div class="cp-hex-field">
+      <span class="material-symbols-outlined">tag</span>
+      <input type="text" id="cpHexTop" class="cp-hex-top" spellcheck="false" maxlength="9">
+    </div>
+    <button class="cp-add-swatch" id="cpAddSwatch" title="Save to swatches"><span class="material-symbols-outlined">bookmark_add</span></button>
+  </div>
+
+  <div class="cp-wheel-wrap" id="cpWheelWrap">
+    <canvas id="cpWheelCanvas" width="220" height="220"></canvas>
+    <div class="cp-wheel-thumb" id="cpWheelThumb"></div>
+  </div>
+
+  <div class="cp-slider-row">
+    <div class="cp-slider-icon"><span class="material-symbols-outlined">light_mode</span></div>
+    <div class="cp-slider-wrap" id="cpValWrap">
+      <canvas id="cpValCanvas" width="228" height="16"></canvas>
+      <div class="cp-slider-thumb" id="cpValThumb"></div>
+    </div>
+  </div>
+
+  <div class="cp-slider-row" id="cpAlphaRow">
+    <div class="cp-slider-icon"><span class="material-symbols-outlined">opacity</span></div>
+    <div class="cp-slider-wrap" id="cpAlphaWrap">
+      <canvas id="cpAlphaCanvas" width="228" height="16"></canvas>
+      <div class="cp-slider-thumb" id="cpAlphaThumb"></div>
+    </div>
+  </div>
+
+  <div class="cp-section-label">Quick picks</div>
+  <div class="cp-presets-row" id="cpPresetsRow"></div>
+
+  <div class="cp-section-label">Recently used <span class="cnt" id="cpRecentCount"></span></div>
+  <div class="cp-swatches-row" id="cpRecentRow"></div>
+
+  <div class="cp-section-label">Swatches</div>
+  <div class="cp-swatches-row" id="cpSwatchesRow"></div>
+
+  <div class="cp-tabs" id="cpTabs">
+    <button class="cp-tab active" data-tab="hex">HEX</button>
+    <button class="cp-tab" data-tab="rgb">RGB</button>
+    <button class="cp-tab" data-tab="hsv">HSV</button>
+    <button class="cp-tab" data-tab="hsl">HSL</button>
+  </div>
+  <div class="cp-values-row" id="cpValuesRow"></div>
+
+  <div class="cp-bottom-row">
+    <div class="cp-compare" id="cpCompare" title="Old vs new color">
+      <div class="cp-compare-half cp-compare-old" id="cpCompareOld"></div>
+      <div class="cp-compare-half cp-compare-new" id="cpCompareNew"></div>
+    </div>
+    <button class="cp-icon-btn" id="cpEyedrop" title="Pick from screen"><span class="material-symbols-outlined">colorize</span></button>
+    <button class="cp-icon-btn" id="cpClear" title="Clear (transparent)"><span class="material-symbols-outlined">close</span></button>
+    <button class="cp-confirm" id="cpConfirm" title="Apply"><span class="material-symbols-outlined">check</span>Apply</button>
+  </div>
+</div>
+
+<script src="vendor/plotly-cartesian.min.js"></script>
+
+<!-- Chart Builder (split into js/chart-builder/ for readability - loaded in order, one global scope) -->
+<script src="js/chart-builder/01-config.js"></script>
+<script src="js/chart-builder/02-state.js"></script>
+<script src="js/chart-builder/03-ui-lists.js"></script>
+<script src="js/chart-builder/04-data.js"></script>
+<script src="js/chart-builder/05-style-helpers.js"></script>
+<script src="js/chart-builder/06-canvas-units.js"></script>
+<script src="js/chart-builder/07-render.js"></script>
+<script src="js/chart-builder/08-helpers-export.js"></script>
+<script src="js/chart-builder/09-event-wiring.js"></script>
+<script src="js/chart-builder/10-view-switcher-init.js"></script>
+<script src="js/chart-builder/11-choropleth.js"></script>
+<script src="js/chart-builder/12-radial-rings.js"></script>
+<script src="js/chart-builder/13-lollipop.js"></script>
+<script src="js/chart-builder/14-bubble.js"></script>
+<script src="js/chart-builder/15-sunburst.js"></script>
+
+<script src="js/palettes.js"></script>
+<script src="js/data_formulas.js"></script>
+<script src="js/data_view.js"></script>
+<script src="js/data_stats.js"></script>
+<script src="js/color_picker.js"></script>
+<script src="js/canvas_background.js"></script>
+
+<!-- Layout Editor (split into js/layout-editor/ for readability - loaded in order, one global scope) -->
+<script src="js/layout-editor/01-canvas-core.js"></script>
+<script src="js/layout-editor/02-toolbar-text.js"></script>
+<script src="js/layout-editor/03-shapes.js"></script>
+<script src="js/layout-editor/04-images.js"></script>
+<script src="js/layout-editor/05-object-actions.js"></script>
+<script src="js/layout-editor/06-context-menu.js"></script>
+<script src="js/layout-editor/07-selection.js"></script>
+<script src="js/layout-editor/08-format-bars.js"></script>
+<script src="js/layout-editor/09-panels-helpers.js"></script>
+<script src="js/layout-editor/10-export-overlay.js"></script>
+<script src="js/layout-editor/11-sidebar-nav.js"></script>
+<script src="js/layout-editor/12-theme-init.js"></script>
+<script src="js/layout-editor/13-axis-title-detach.js"></script>
+<script src="js/layout-editor/14-legend-hover.js"></script>
+<script src="js/layout-editor/15-legend-detach.js"></script>
+<script src="js/layout-editor/16-draw-tool.js"></script>
+<script src="js/layout-editor/17-textbox-resize.js"></script>
+<script src="js/layout-editor/18-chart-quickbar.js"></script>
+
+<script src="js/ui_sections.js"></script>
+<script src="js/latex_symbols.js"></script>
+<script src="js/canvas_ruler.js"></script>
+<script src="js/undo_redo.js"></script>
+<script>
+// Registers the offline/repeat-visit cache. Uses a relative path and scope
+// so it works when hosted at a GitHub Pages project subpath (e.g.
+// defani.github.io/Ploots-click/) and not just at a domain root.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function (err) {
+      console.warn("Ploots: service worker registration failed", err);
+    });
+  });
+}
+</script>
+</body>
+</html>
