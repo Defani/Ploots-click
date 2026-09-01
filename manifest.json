@@ -1,0 +1,13 @@
+{
+  "name": "Ploots Click",
+  "short_name": "Ploots",
+  "description": "Simple, publication-ready chart maker — 100% client-side, no backend.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#18a0fb",
+  "icons": [
+    { "src": "assets/logo_light.png", "sizes": "1920x1080", "type": "image/png", "purpose": "any" }
+  ]
+}
