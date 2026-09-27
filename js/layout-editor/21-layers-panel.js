@@ -44,7 +44,11 @@ function wireLayersPanel() {
   fabricCanvas.on("selection:created", onLayersSelectionChange);
   fabricCanvas.on("selection:updated", onLayersSelectionChange);
   fabricCanvas.on("selection:cleared", onLayersSelectionChange);
+  // Keep text layer names/thumbnails in step with typing.
+  fabricCanvas.on("text:changed", scheduleLayersRefresh);
+  fabricCanvas.on("text:editing:exited", scheduleLayersRefresh);
 
+  wireLayerMenu();
   refreshLayersPanel();
 }
 
@@ -106,8 +110,143 @@ function assignLabelsRecursive(obj, counts) {
   }
 }
 
+function isTextLayer(obj) {
+  return obj.type === "textbox" || obj.type === "i-text" || obj.type === "text";
+}
+
+// Text layers are named after their content (like Canva) unless renamed.
 function layerDisplayName(obj) {
-  return (obj.layerName && obj.layerName.trim()) ? obj.layerName : (obj.__layerAutoLabel || "Object");
+  if (obj.layerName && obj.layerName.trim()) return obj.layerName;
+  if (isTextLayer(obj)) {
+    var first = String(obj.text || "").split("\n")[0].replace(/^•\s*/, "").trim();
+    if (first) return first.length > 48 ? first.slice(0, 48) + "…" : first;
+  }
+  return obj.__layerAutoLabel || "Object";
+}
+
+function layerSubLabel(obj) {
+  var info = baseTypeInfo(obj);
+  if (isTextLayer(obj)) {
+    var font = String(obj.fontFamily || "").split(",")[0].replace(/['"]/g, "");
+    return info.label + (font ? " · " + font : "") + " · " + Math.round(obj.fontSize || 0);
+  }
+  if (obj.type === "group" && !obj.isMathObject && obj._objects) return info.label + " · " + obj._objects.length + " items";
+  return info.label;
+}
+
+// Small rendered preview of the object, like the thumbnails in Canva's
+// layers list. Text gets an "Aa" swatch in its own font/color instead,
+// since a scaled-down sentence is unreadable.
+function buildLayerThumb(obj) {
+  var box = document.createElement("span");
+  box.className = "layer-thumb";
+  if (isTextLayer(obj)) {
+    var g = document.createElement("span");
+    g.className = "layer-thumb-glyph";
+    g.textContent = "Aa";
+    g.style.fontFamily = obj.fontFamily || "";
+    g.style.fontWeight = obj.fontWeight || "";
+    g.style.fontStyle = obj.fontStyle || "";
+    if (typeof obj.fill === "string" && obj.fill !== "transparent") g.style.color = obj.fill;
+    else if (obj.stroke) { g.style.color = "transparent"; g.style.webkitTextStroke = "1px " + obj.stroke; }
+    box.appendChild(g);
+    return box;
+  }
+  var url = null;
+  try {
+    var br = obj.getBoundingRect(true, true);
+    var m = Math.min(4, 88 / Math.max(br.width, 1), 68 / Math.max(br.height, 1));
+    if (obj.visible !== false) url = obj.toDataURL({ format: "png", multiplier: m });
+  } catch (err) { url = null; }
+  if (url) {
+    var img = document.createElement("img");
+    img.alt = "";
+    img.src = url;
+    box.appendChild(img);
+  } else {
+    var ic = document.createElement("span");
+    ic.className = "material-symbols-outlined";
+    ic.textContent = baseTypeInfo(obj).icon;
+    box.appendChild(ic);
+  }
+  return box;
+}
+
+function makeLayerTool(icon, title, on, handler) {
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "layer-tool" + (on ? " on" : "");
+  btn.title = title;
+  btn.setAttribute("aria-label", title);
+  btn.innerHTML = '<span class="material-symbols-outlined">' + icon + "</span>";
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    handler(btn, e);
+  });
+  return btn;
+}
+
+function setLayerLocked(obj, locked) {
+  obj.set({
+    lockMovementX: locked,
+    lockMovementY: locked,
+    lockScalingX: locked,
+    lockScalingY: locked,
+    lockRotation: locked,
+    hasControls: !locked,
+    selectable: !locked
+  });
+  fabricCanvas.requestRenderAll();
+  refreshLayersPanel();
+  if (typeof historyNotifyChange === "function") historyNotifyChange();
+}
+
+// ---- Per-layer "⋯" menu ----------------------------------------------------
+var layerMenuTarget = null;
+
+function openLayerMenu(obj, anchor) {
+  var menu = document.getElementById("layerMenu");
+  if (!menu) return;
+  if (menu.classList.contains("open") && layerMenuTarget === obj) { closeLayerMenu(); return; }
+  layerMenuTarget = obj;
+  menu.classList.add("open");
+  var r = anchor.getBoundingClientRect();
+  var mw = menu.offsetWidth, mh = menu.offsetHeight;
+  menu.style.left = Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) + "px";
+  menu.style.top = (r.bottom + 4 + mh > window.innerHeight ? r.top - mh - 4 : r.bottom + 4) + "px";
+}
+
+function closeLayerMenu() {
+  var menu = document.getElementById("layerMenu");
+  if (menu) menu.classList.remove("open");
+  layerMenuTarget = null;
+}
+
+function wireLayerMenu() {
+  var menu = document.getElementById("layerMenu");
+  if (!menu) return;
+  menu.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-act]");
+    var obj = layerMenuTarget;
+    closeLayerMenu();
+    if (!btn || !obj) return;
+    var act = btn.getAttribute("data-act");
+    if (act === "rename") {
+      var row = document.querySelector('.layer-row[data-layer-id="' + obj.__layerId + '"]');
+      if (row) startLayerRename(obj, row);
+    } else if (act === "duplicate") duplicateLayerObject(obj);
+    else if (act === "up") moveLayerObject(obj, "up");
+    else if (act === "down") moveLayerObject(obj, "down");
+    else if (act === "delete") deleteLayerObject(obj);
+  });
+  document.addEventListener("mousedown", function (e) {
+    if (!e.target.closest("#layerMenu, .layer-tool-more")) closeLayerMenu();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeLayerMenu();
+  });
+  var body = document.querySelector(".layers-body");
+  body && body.addEventListener("scroll", closeLayerMenu);
 }
 
 function refreshLayersPanel() {
@@ -117,7 +256,11 @@ function refreshLayersPanel() {
   if (!list) return;
 
   var objs = fabricCanvas.getObjects().filter(function (o) { return o !== chartProxyObj; });
-  if (empty) empty.style.display = objs.length ? "none" : "block";
+  if (empty) empty.style.display = objs.length ? "none" : "";
+  var count = document.getElementById("layersCount");
+  if (count) count.textContent = objs.length ? objs.length : "";
+  // Don't rebuild under an in-progress rename; it would drop the input.
+  if (list.querySelector(".layer-name-input")) return;
 
   var typeCounts = {};
   objs.forEach(function (o) { assignLabelsRecursive(o, typeCounts); });
@@ -130,6 +273,7 @@ function refreshLayersPanel() {
   if (chartProxyObj) {
     var sep = document.createElement("li");
     sep.className = "layers-sep";
+    sep.textContent = "Chart";
     list.appendChild(sep);
     list.appendChild(buildChartRow());
   }
@@ -138,20 +282,10 @@ function refreshLayersPanel() {
   highlightActiveLayerRows();
 }
 
-function makeActionBtn(icon, title, handler, danger) {
-  var btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "layer-action-btn" + (danger ? " layer-action-danger" : "");
-  btn.title = title;
-  btn.innerHTML = '<span class="material-symbols-outlined">' + icon + "</span>";
-  btn.addEventListener("click", handler);
-  return btn;
-}
-
 function buildLayerRow(obj, depth, rootObj) {
   var li = document.createElement("li");
-  li.className = "layer-row";
-  li.style.paddingLeft = (6 + depth * 16) + "px";
+  li.className = "layer-row" + (depth ? " layer-child" : "");
+  li.style.paddingLeft = (4 + depth * 18) + "px";
   ensureLayerId(obj);
   li.dataset.layerId = obj.__layerId;
   if (obj.visible === false) li.classList.add("layer-hidden");
@@ -166,10 +300,6 @@ function buildLayerRow(obj, depth, rootObj) {
     li.appendChild(handle);
     li.draggable = true;
     wireLayerDrag(li, obj);
-  } else {
-    var spacer = document.createElement("span");
-    spacer.style.cssText = "width:15px;flex-shrink:0;";
-    li.appendChild(spacer);
   }
 
   if (canExpand) {
@@ -184,50 +314,46 @@ function buildLayerRow(obj, depth, rootObj) {
       refreshLayersPanel();
     });
     li.appendChild(exp);
-  } else {
-    var spacer2 = document.createElement("span");
-    spacer2.style.cssText = "width:16px;flex-shrink:0;";
-    li.appendChild(spacer2);
   }
 
-  var icon = document.createElement("span");
-  icon.className = "layer-icon material-symbols-outlined";
-  icon.textContent = baseTypeInfo(obj).icon;
-  li.appendChild(icon);
+  li.appendChild(buildLayerThumb(obj));
 
+  var text = document.createElement("span");
+  text.className = "layer-text";
   var name = document.createElement("span");
   name.className = "layer-name";
   name.textContent = layerDisplayName(obj);
-  name.title = name.textContent;
+  name.title = name.textContent + " — double-click to rename";
   name.addEventListener("dblclick", function (e) {
     e.stopPropagation();
     startLayerRename(obj, li);
   });
-  li.appendChild(name);
+  text.appendChild(name);
+  var sub = document.createElement("span");
+  sub.className = "layer-sub";
+  sub.textContent = layerSubLabel(obj);
+  text.appendChild(sub);
+  li.appendChild(text);
 
-  var visBtn = document.createElement("button");
-  visBtn.type = "button";
-  visBtn.className = "layer-vis-btn";
-  visBtn.title = obj.visible === false ? "Show layer" : "Hide layer";
-  visBtn.innerHTML = '<span class="material-symbols-outlined">' + (obj.visible === false ? "visibility_off" : "visibility") + "</span>";
-  visBtn.addEventListener("click", function (e) {
-    e.stopPropagation();
+  var tools = document.createElement("span");
+  tools.className = "layer-tools";
+  var hidden = obj.visible === false;
+  tools.appendChild(makeLayerTool(hidden ? "visibility_off" : "visibility", hidden ? "Show layer" : "Hide layer", hidden, function () {
     toggleLayerVisibility(obj);
-  });
-  li.appendChild(visBtn);
-
+  }));
   if (isTop) {
-    var actions = document.createElement("div");
-    actions.className = "layer-actions";
-    actions.appendChild(makeActionBtn("arrow_upward", "Move up", function (e) { e.stopPropagation(); moveLayerObject(obj, "up"); }));
-    actions.appendChild(makeActionBtn("arrow_downward", "Move down", function (e) { e.stopPropagation(); moveLayerObject(obj, "down"); }));
-    actions.appendChild(makeActionBtn("content_copy", "Duplicate", function (e) { e.stopPropagation(); duplicateLayerObject(obj); }));
-    actions.appendChild(makeActionBtn("delete", "Delete", function (e) { e.stopPropagation(); deleteLayerObject(obj); }, true));
-    li.appendChild(actions);
+    var locked = !!obj.lockMovementX;
+    tools.appendChild(makeLayerTool(locked ? "lock" : "lock_open", locked ? "Unlock layer" : "Lock layer", locked, function () {
+      setLayerLocked(obj, !locked);
+    }));
+    var more = makeLayerTool("more_horiz", "More options", false, function (btn) { openLayerMenu(obj, btn); });
+    more.classList.add("layer-tool-more");
+    tools.appendChild(more);
   }
+  li.appendChild(tools);
 
   li.addEventListener("click", function (e) {
-    if (e.target.closest(".layer-vis-btn, .layer-expand-btn, .layer-action-btn, .layer-name-input")) return;
+    if (e.target.closest(".layer-tool, .layer-expand-btn, .layer-name-input")) return;
     if (!fabricCanvas) return;
     if (isTop) {
       if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -261,16 +387,18 @@ function buildChartRow() {
   li.className = "layer-row layer-chart-row";
   li.id = "layersChartRow";
 
-  var icon = document.createElement("span");
-  icon.className = "layer-icon material-symbols-outlined";
-  icon.textContent = "bar_chart";
-  li.appendChild(icon);
+  li.style.paddingLeft = "8px";
+  var thumb = document.createElement("span");
+  thumb.className = "layer-thumb";
+  thumb.innerHTML = '<span class="material-symbols-outlined">bar_chart</span>';
+  li.appendChild(thumb);
 
-  var name = document.createElement("span");
-  name.className = "layer-name";
-  name.textContent = "Chart";
-  name.title = "The chart itself — click to select and resize it";
-  li.appendChild(name);
+  var text = document.createElement("span");
+  text.className = "layer-text";
+  text.title = "The chart itself — click to select and resize it";
+  text.innerHTML = '<span class="layer-name">Chart</span>' +
+    '<span class="layer-sub"><span class="material-symbols-outlined">push_pin</span>Always at the back</span>';
+  li.appendChild(text);
 
   li.addEventListener("click", function () {
     if (!fabricCanvas || !chartProxyObj) return;
@@ -296,7 +424,11 @@ function startLayerRename(obj, row) {
   input.focus();
   input.select();
 
+  // Enter/Escape remove the input, which fires blur -> commit a second time.
+  var done = false;
   function commit() {
+    if (done) return;
+    done = true;
     var val = input.value.trim();
     obj.layerName = val || null;
     input.remove();
@@ -306,7 +438,7 @@ function startLayerRename(obj, row) {
 
   input.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); commit(); }
-    else if (e.key === "Escape") { e.preventDefault(); input.remove(); nameEl.style.display = ""; }
+    else if (e.key === "Escape") { e.preventDefault(); done = true; input.remove(); nameEl.style.display = ""; }
   });
   input.addEventListener("blur", commit);
   input.addEventListener("click", function (e) { e.stopPropagation(); });
