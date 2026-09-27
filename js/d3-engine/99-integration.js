@@ -66,9 +66,11 @@
 
   /* ---------------------------------------------------------- export */
 
+  // Radial rings and sunburst build their own <svg> (registered as D3
+  // renderers in 05-special.js), so accept any chart svg.
   function d3SvgEl() {
     var el = gd();
-    return el ? el.querySelector("svg.ploots-d3") : null;
+    return el ? (el.querySelector("svg.ploots-d3") || el.querySelector("svg")) : null;
   }
 
   function serialise(svgEl) {

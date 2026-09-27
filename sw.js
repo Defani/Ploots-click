@@ -32,6 +32,7 @@ const PRECACHE_URLS = [
   "./js/d3-engine/02-cartesian.js",
   "./js/d3-engine/03-stats.js",
   "./js/d3-engine/04-flow.js",
+  "./js/d3-engine/05-special.js",
   "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",

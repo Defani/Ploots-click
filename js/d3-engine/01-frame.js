@@ -98,7 +98,8 @@
     var sc;
     if (ax.kind === "band") {
       sc = d3.scaleBand().domain(d3.range(ax.n)).range(range)
-        .paddingInner(ax.paddingInner || 0).paddingOuter(ax.paddingOuter || 0);
+        .paddingInner(ax.paddingInner || 0).paddingOuter(ax.paddingOuter || 0)
+        .align(ax.align != null ? ax.align : 0.5); // align 0/1 puts all outer padding at one end
       ax.majors = d3.range(ax.n);
       ax.minors = [];
       ax.pos = function (i) { return sc(i) + sc.bandwidth() / 2; };

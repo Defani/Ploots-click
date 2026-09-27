@@ -1,6 +1,6 @@
 # Migrasi engine: Plotly.js → D3.js
 
-Status: **tahap 2 selesai** — 15 dari 25 tipe chart sudah dirender D3.
+Status: **tahap 3 selesai** — 23 dari 25 tipe chart sudah dirender D3 (tinggal 2 tipe peta).
 
 ## Kenapa bertahap
 
@@ -17,9 +17,10 @@ aplikasi tetap bisa dipakai penuh di setiap tahap. Setelah semua tipe pindah,
 | line, area, scatter | **D3** |
 | pie, donut, histogram, box, violin, heatmap | **D3** (tahap 2) |
 | waterfall, funnel, treemap | **D3** (tahap 2) |
-| lollipop, bubble, dumbbell, scatter-matrix, sankey | Plotly (tahap 3) |
+| lollipop, bubble, dumbbell, scatter-matrix, sankey | **D3** (tahap 3) |
 | choropleth, bubble-map | Plotly geo (tahap 4) |
-| radial-rings, sunburst, ridge-plot | SVG manual (tahap 3, dipindah ke frame D3) |
+| ridge-plot | **D3** (tahap 3, sekarang memakai frame) |
+| radial-rings, sunburst | SVG sendiri, didaftarkan sebagai renderer D3 (tahap 3) |
 
 ## Struktur
 
@@ -30,6 +31,7 @@ js/d3-engine/01-frame.js         skala, sumbu, grid, frame, legend, perhitungan 
 js/d3-engine/02-cartesian.js     renderer bar / line / area / scatter
 js/d3-engine/03-stats.js         renderer pie / donut / histogram / box / violin / heatmap
 js/d3-engine/04-flow.js          renderer waterfall / funnel / treemap
+js/d3-engine/05-special.js       renderer lollipop / dumbbell / bubble / scatter-matrix / sankey / ridge-plot
 js/d3-engine/99-integration.js   render(), canvas kosong, export, klik sumbu
 ```
 
@@ -101,3 +103,16 @@ Perubahan perilaku dibanding Plotly:
 Diuji di Chromium: 15 tipe D3 dengan data sampel, mode warna / warna+pola /
 pola (grayscale), outline, value labels, posisi legend, log + frame, klik sumbu
 membuka Format Axis, detach/reattach legend, dan export (SVG → PNG) semua tipe.
+
+## Tahap 3 — catatan
+
+- **Sankey** memakai layout sendiri (kolom = jalur terpanjang dari sumber,
+  tinggi = throughput, 8 putaran relaksasi) karena modul d3-sankey tidak
+  termasuk dalam bundel D3.
+- **Ridge plot** sekarang memakai frame, jadi Format Axis, grid, tick, font,
+  dan format angka berlaku di sumbu nilainya (SVG lama mengabaikan semuanya).
+  Baris teratas diberi ruang agar puncak ridge tidak terpotong.
+- **Scatter matrix** menuliskan nama variabel di panel diagonal (dulu kosong).
+- **Radial rings** dan **sunburst** tetap memakai SVG buatannya sendiri, tapi
+  sekarang lewat jalur render/export yang sama dengan tipe D3 lain.
+- Frame: band axis menerima `align` (letak padding luar).
