@@ -120,11 +120,11 @@
 
     ["x", "y"].forEach(function (axKey) {
       var ax = axKey === "x" ? xAxis : yAxis;
-      if ("custom" === state[axKey + "AxisRangeMode"] && isFinite(state[axKey + "AxisMin"]) && isFinite(state[axKey + "AxisMax"])) {
+      if ("custom" === state[axKey + "AxisRangeMode"] && Number.isFinite(state[axKey + "AxisMin"]) && Number.isFinite(state[axKey + "AxisMax"])) {
         ax.range = [state[axKey + "AxisMin"], state[axKey + "AxisMax"]];
         ax.autorange = false;
       }
-      if ("custom" === state[axKey + "AxisTickMode"] && isFinite(state[axKey + "AxisTickStep"]) && state[axKey + "AxisTickStep"] > 0) {
+      if ("custom" === state[axKey + "AxisTickMode"] && Number.isFinite(state[axKey + "AxisTickStep"]) && state[axKey + "AxisTickStep"] > 0) {
         ax.dtick = state[axKey + "AxisTickStep"];
       }
       if (state[axKey + "AxisTicksShow"]) {
@@ -148,7 +148,7 @@
           gridwidth: 0.6
         };
         var minorMode = state[axKey + "AxisMinorTicksMode"];
-        if ("manual" === minorMode && isFinite(state[axKey + "AxisMinorTicksStep"]) && state[axKey + "AxisMinorTicksStep"] > 0) {
+        if ("manual" === minorMode && Number.isFinite(state[axKey + "AxisMinorTicksStep"]) && state[axKey + "AxisMinorTicksStep"] > 0) {
           minor.dtick = state[axKey + "AxisMinorTicksStep"];
         } else if ("divide" === minorMode && isFinite(ax.dtick) && ax.dtick > 0) {
           var minorDiv = Math.max(2, Math.round(state[axKey + "AxisMinorTicksDivide"] || 5));
@@ -200,7 +200,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === BUBBLE_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderBubble();
         return;
       }

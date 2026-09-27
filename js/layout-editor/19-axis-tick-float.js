@@ -5,12 +5,34 @@
 // controls, if a user really wants asymmetric axes, live in the Format Axis
 // panel above it — this quick block is just the common "adjust both at
 // once" shortcut).
+// One shared line thickness for the X and Y axes: axis line AND tick marks.
+// Every thickness control (Display > Axis line, Format Axis > Line width,
+// Quick Adjust > Line thickness) goes through setAxisLineThickness(), which
+// stores the value once in state.axisLineWidth and clears the per-axis
+// overrides, so X and Y can never drift apart. Default: 1 px.
+var AXIS_LINE_DEFAULT = 1;
+function setAxisLineThickness(v, sourceEl) {
+  v = parseFloat(v);
+  if (!Number.isFinite(v) || v <= 0) v = AXIS_LINE_DEFAULT;
+  state.axisLineWidth = v;
+  state.xAxisLineWidth = null;
+  state.yAxisLineWidth = null;
+  state.xAxisTickWidth = null;
+  state.yAxisTickWidth = null;
+  var d = document.getElementById('axisLineWidth');
+  if (d && d !== sourceEl) d.value = v;
+  var f = document.getElementById('afpLineWidth');
+  if (f && f !== sourceEl) f.value = v;
+  syncAxisTickFloat();
+  if (typeof render === 'function') render();
+}
+window.setAxisLineThickness = setAxisLineThickness;
+
 function syncAxisTickFloat() {
   if (typeof state === 'undefined') return;
-  var w = isFinite(state.xAxisTickWidth) ? state.xAxisTickWidth
-    : (isFinite(state.yAxisTickWidth) ? state.yAxisTickWidth : (state.axisLineWidth || 1.2));
-  var len = isFinite(state.xAxisTicksLength) ? state.xAxisTicksLength
-    : (isFinite(state.yAxisTicksLength) ? state.yAxisTicksLength : 6);
+  var w = Number.isFinite(state.axisLineWidth) && state.axisLineWidth > 0 ? state.axisLineWidth : AXIS_LINE_DEFAULT;
+  var len = Number.isFinite(state.xAxisTicksLength) ? state.xAxisTicksLength
+    : (Number.isFinite(state.yAxisTicksLength) ? state.yAxisTicksLength : 6);
   var ws = document.getElementById('tickWidthFloat');
   var wv = document.getElementById('tickWidthFloatVal');
   var ls = document.getElementById('tickLengthFloat');
@@ -26,12 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var ws = document.getElementById('tickWidthFloat');
   var ls = document.getElementById('tickLengthFloat');
   if (ws) ws.addEventListener('input', function () {
-    var v = parseFloat(this.value);
-    isFinite(v) || (v = 1.6);
-    state.xAxisTickWidth = v;
-    state.yAxisTickWidth = v;
-    syncAxisTickFloat();
-    if (typeof render === 'function') render();
+    setAxisLineThickness(this.value, this);
   });
   if (ls) ls.addEventListener('input', function () {
     var v = parseFloat(this.value);

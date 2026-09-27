@@ -110,6 +110,9 @@ function exportPngFile() {
   }
 
   function isRawSvgChartType() {
+    // D3-rendered chart types draw a plain <svg> into #plotlyDiv, same as
+    // the hand-written SVG types, so they share the serialise-the-SVG path.
+    if (window.PlootsD3 && window.PlootsD3.handles(state.chartType)) return true;
     return state.chartType === "radial-rings" || state.chartType === "sunburst" || state.chartType === "ridge-plot";
   }
 

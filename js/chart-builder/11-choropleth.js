@@ -1,18 +1,12 @@
 /* ==========================================================================
    Choropleth Map — adds a "Choropleth Map" chart type to the chart-builder.
 
-   vendor/plotly-cartesian.min.js does NOT ship the choropleth/scattergeo
-   trace modules (Plotly's "cartesian" partial bundle intentionally excludes
-   them). So the "geo" partial bundle is lazy-loaded on demand, on its own
-   Tier-3 entry in js/lazy-loader.js (PlootsLazy.ensurePlotlyGeo) — the exact
-   same on-demand pattern already used for AG Grid / XLSX. This file
-   does not change when or how those load.
-
-   Once fetched, the geo bundle's UMD wrapper overwrites window.Plotly (every
-   plotly.js bundle does `window.Plotly = Plotly` on load) — so the original
-   cartesian instance is cached up front and swapped back in (no network
-   refetch, just a reference swap) whenever the user leaves the map chart
-   type, so every other chart type keeps working exactly as before.
+   The choropleth trace ships inside vendor/plotly-ploots.min.js (custom
+   Plotly 3.7.0 build = cartesian traces + waterfall/funnel/treemap/sankey/
+   splom + choropleth/scattergeo), so there is ONE Plotly instance for every
+   chart type — no second bundle, no window.Plotly swap. Country outlines
+   (topojson) are served locally from vendor/topojson/ via the topojsonURL
+   config below, so maps also work offline and without cdn.plot.ly.
 
    v2 additions (this file):
      - Custom GeoJSON support (trace.geojson + featureidkey) so the map is
@@ -35,8 +29,8 @@
 (function () {
   "use strict";
 
-  var cartesianPlotly = window.Plotly; // cached at boot, before any swap
-  var geoActive = false;
+  // Local copy of Plotly's Natural Earth topojson (vendor/topojson/*_110m.json).
+  var PLOOTS_TOPOJSON_URL = new URL("vendor/topojson/", document.baseURI).href;
 
   // ---- state defaults (added once; harmless if this file loads twice) ----
   function ensureChoroplethState() {
@@ -58,19 +52,6 @@
   }
   ensureChoroplethState();
 
-  function ensureChoroplethPlotly() {
-    return PlootsLazy.ensurePlotlyGeo().then(function () {
-      geoActive = true;
-    });
-  }
-
-  function restoreCartesianPlotly() {
-    if (geoActive) {
-      window.Plotly = cartesianPlotly;
-      geoActive = false;
-    }
-  }
-
   function looksIso3(codes) {
     return codes.length > 0 && codes.every(function (c) {
       return /^[A-Za-z]{3}$/.test((c == null ? "" : String(c)).trim());
@@ -81,8 +62,10 @@
     var el = document.getElementById("plotlyDiv");
     if (!el) return;
     var w = state.chartBox.w, h = state.chartBox.h;
+    try { if (el._fullLayout) Plotly.purge(el); } catch (e) {}
     el.innerHTML = "";
     var wrap = document.createElement("div");
+    wrap.className = "ploots-map-placeholder";
     var bg = (typeof chartBgColor === "function" ? chartBgColor() : "#ffffff");
     wrap.style.cssText = "display:flex;align-items:center;justify-content:center;width:" + w + "px;height:" + h + "px;font-family:" + state.fontBody + ";color:#5c5c58;font-size:13px;background:" + bg + ";text-align:center;padding:20px;box-sizing:border-box;";
     wrap.textContent = msg;
@@ -147,14 +130,6 @@
     var seriesName = state.seriesNames.filter(function (n) { return state.seriesMeta[n].visible; })[0];
     if (!seriesName) { renderBlankCanvas(); return; }
 
-    if (!geoActive) {
-      showMapPlaceholder("Loading map…");
-      ensureChoroplethPlotly().then(function () {
-        if ("choropleth" === state.chartType) render();
-      });
-      return;
-    }
-
     var custom = "custom" === state.choroplethGeoMode;
     if (custom && !state.choroplethGeoJsonObj) {
       showMapPlaceholder("Tempel atau unggah GeoJSON kustom di panel \"Peta (Choropleth)\" pada sidebar untuk merender peta ini (misalnya batas provinsi/kabupaten).");
@@ -184,7 +159,7 @@
     if (!colorscale) {
       var base = isGrayscaleMode() ? "Greys" : plotlyColorscaleFromPalette(colors);
       colorscale = state.choroplethReverseScale && Array.isArray(base) ? reverseColorscale(base) : base;
-      if ("custom" === state.choroplethZMode && isFinite(state.choroplethZMin) && isFinite(state.choroplethZMax)) {
+      if ("custom" === state.choroplethZMode && Number.isFinite(state.choroplethZMin) && Number.isFinite(state.choroplethZMax)) {
         zmin = state.choroplethZMin;
         zmax = state.choroplethZMax;
       }
@@ -246,11 +221,14 @@
       showlegend: false
     };
 
+    var ph = document.querySelector("#plotlyDiv > .ploots-map-placeholder");
+    if (ph) ph.remove();
     Plotly.newPlot("plotlyDiv", [trace], layout, {
       responsive: false,
       displaylogo: false,
       displayModeBar: true,
-      modeBarButtonsToRemove: ["lasso2d", "select2d"]
+      modeBarButtonsToRemove: ["lasso2d", "select2d"],
+      topojsonURL: PLOOTS_TOPOJSON_URL
     }).then(function () {
       try { Plotly.Plots.resize("plotlyDiv"); } catch (e) {}
       state.chartRenderedW = w;
@@ -539,13 +517,10 @@
     injectPanel();
   }
 
-  // Leaving the map type: swap the cached cartesian Plotly instance back in
-  // immediately (no refetch) before the normal render pipeline runs again,
-  // and keep the sidebar section's visibility in sync with the active type.
+  // Keep the sidebar section's visibility in sync with the active type.
   var originalSelectChartType = window.selectChartType;
   if (typeof originalSelectChartType === "function") {
     window.selectChartType = function (v) {
-      if ("choropleth" !== v && "choropleth" === state.chartType) restoreCartesianPlotly();
       originalSelectChartType(v);
       updateChoroplethSectionVisibility();
     };

@@ -45,7 +45,7 @@
     if (opacitySlider) {
       if (opacityWrap) opacityWrap.style.visibility = (t === 'area') ? 'visible' : 'hidden';
       opacitySlider.disabled = state.areaFillMode === 'solid';
-      var ov2 = isFinite(state.areaFillOpacity) ? state.areaFillOpacity : 0.5;
+      var ov2 = Number.isFinite(state.areaFillOpacity) ? state.areaFillOpacity : 0.5;
       opacitySlider.value = ov2;
       updateOpacityReadout(ov2);
     }

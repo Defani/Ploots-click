@@ -79,7 +79,7 @@ Live app: **[defani.github.io/Ploots-click](https://defani.github.io/Ploots-clic
 ### Charts
 - **18 chart types**: single bar, grouped bar, stacked bar, lollipop, line, area, scatter, pie, donut, histogram, box plot, violin plot, heatmap, waterfall, funnel, treemap, choropleth map, radial rings (multi-track)
 - **Lollipop**: thin stem (baseline → value) with a marker head, single or grouped side-by-side per category, both orientations — a real Plotly trace pair under the hood, so it exports exactly like every other chart type
-- **Choropleth map**: one value per country (ISO-3 code or country name), colored by the active palette as a continuous scale; the map-only Plotly bundle is lazy-loaded on first use so it doesn't add to the initial page weight
+- **Choropleth map**: one value per country (ISO-3 code or country name), colored by the active palette as a continuous scale; the choropleth trace is part of the bundled custom Plotly build and base maps are served locally from `vendor/topojson/`, so maps work offline
 - **Radial rings (multi-track)**: circular category plot in the style of multi-genome COG/functional-category figures — categories become angular sectors (width ∝ average share), each series becomes a concentric track (bar length ∝ that series' share of the category), with outside labels and a leader line per sector. Drawn as plain SVG rather than a Plotly trace, so it has its own SVG/PNG export path instead of Plotly's
 - **Data input**: paste tab- or comma-separated data, or import a file directly — **CSV/TSV/TXT** (parsed with Papa Parse, so quoted fields, embedded commas, and escaped quotes are all handled correctly), **Excel** (`.xlsx`/`.xls`, including multi-sheet workbooks, via SheetJS), or **JSON** (array-of-objects or 2D array), as well as pasted CSV/TSV or JSON text
 - **Dedicated Data tab**: work on a table separate from the applied chart data — transpose rows/columns, switch between **wide** (assign each column a role: X, Y, Text, Number, or Skip) and **long/tidy** shape (pick the X, Series, and Value columns), with numeric columns auto-detected, before applying the result to the chart
@@ -203,7 +203,7 @@ flowchart TD
 │   │   ├── 08-helpers-export.js   #   string/color helpers, PNG/SVG export
 │   │   ├── 09-event-wiring.js     #   wires sidebar controls (style, axes, legend, ranges, export)
 │   │   ├── 10-view-switcher-init.js # Layout/Data/Function view switcher, boots the chart on load
-│   │   ├── 11-choropleth.js       #   Choropleth Map chart type; lazy-loads the Plotly geo bundle on first use
+│   │   ├── 11-choropleth.js       #   Choropleth Map chart type (geo traces ship in vendor/plotly-ploots.min.js)
 │   │   ├── 12-radial-rings.js     #   Radial Rings chart type; hand-drawn SVG + its own SVG/PNG export path
 │   │   └── 13-lollipop.js         #   Lollipop chart type; stem + marker-head Plotly traces, grouped like bar-group
 │   ├── layout-editor/             # Fabric.js full-page canvas, split into 16 numbered files
@@ -233,7 +233,8 @@ flowchart TD
 │   ├── data_view.js               # Data tab: wide/long shape, transpose, column-role assignment
 │   └── data_stats.js              # Data View column statistics (powered by jStat)
 ├── vendor/
-│   └── plotly-cartesian.min.js    # Bundled Plotly.js (bar, box, heatmap, histogram, pie, scatter, violin, etc.)
+│   ├── plotly-ploots.min.js       # Custom Plotly.js 3.7.0 build: cartesian traces + waterfall, funnel, treemap, sankey, splom, choropleth, scattergeo
+│   └── topojson/                  # Local Natural Earth base maps (*_110m.json) for the map chart types
 ├── assets/
 │   ├── logo_light.png             # Light-topbar logo mark
 │   ├── logo_dark.png              # Dark-topbar logo mark
@@ -525,7 +526,7 @@ The only keyboard shortcut in the app: with a layout object selected (and the ca
 
 | Library | Version | Loaded from |
 |---|---|---|
-| Plotly.js | bundled (v3.7.0, cartesian build) | local file (`vendor/plotly-cartesian.min.js`), not CDN |
+| Plotly.js | bundled (v3.7.0, custom build: cartesian + waterfall/funnel/treemap/sankey/splom/choropleth/scattergeo) | local file (`vendor/plotly-ploots.min.js`), not CDN |
 | Fabric.js | 5.3.0 | cdnjs |
 | MathJax | 3.2.2 (`es5/tex-svg.js`) | cdnjs |
 | KaTeX | 0.16.11 | cdnjs |
@@ -592,7 +593,7 @@ This project only exists because of the following open-source libraries and free
 ## License
 
 Released under the [MIT License](./LICENSE). Bundled third-party code
-(`vendor/plotly-cartesian.min.js`) keeps its own MIT notice — see
+(`vendor/plotly-ploots.min.js`) keeps its own MIT notice — see
 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
 
 [⬆️ Back to Table of Contents](#table-of-contents)

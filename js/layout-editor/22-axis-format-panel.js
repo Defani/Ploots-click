@@ -37,7 +37,7 @@ function applyAxisLegendStyle(layout, traces) {
     if (state[prefix + 'AxisTickLabelsShow'] === false) axis.showticklabels = false;
 
     if (state[prefix + 'AxisLineColor']) axis.linecolor = state[prefix + 'AxisLineColor'];
-    if (isFinite(state[prefix + 'AxisLineWidth']) && state[prefix + 'AxisLineWidth'] > 0) {
+    if (Number.isFinite(state[prefix + 'AxisLineWidth']) && state[prefix + 'AxisLineWidth'] > 0) {
       axis.linewidth = state[prefix + 'AxisLineWidth'];
     }
   });
@@ -65,11 +65,11 @@ function axisFormatBuildHtml(prefix) {
   var ticksShow = state[P + 'AxisTicksShow'] !== false;
   var minorShow = state[P + 'AxisMinorTicksShow'] !== false;
   var ticksPos = state[P + 'AxisTicksPosition'] || 'outside';
-  var ticksLen = isFinite(state[P + 'AxisTicksLength']) ? state[P + 'AxisTicksLength'] : 6;
+  var ticksLen = Number.isFinite(state[P + 'AxisTicksLength']) ? state[P + 'AxisTicksLength'] : 6;
   var labelsShow = state[P + 'AxisTickLabelsShow'] !== false;
   var numFmt = state[P + 'AxisNumberFormat'] || 'auto';
   var lineColor = state[P + 'AxisLineColor'] || '#1a1a1a';
-  var lineWidth = isFinite(state[P + 'AxisLineWidth']) ? state[P + 'AxisLineWidth'] : (state.axisLineWidth || 1.6);
+  var lineWidth = Number.isFinite(state[P + 'AxisLineWidth']) ? state[P + 'AxisLineWidth'] : (state.axisLineWidth || 1);
 
   var axisOptionsBody =
     '<label class="field-label" style="margin-top:0;">Range</label>' +
@@ -116,7 +116,7 @@ function axisFormatBuildHtml(prefix) {
   var fillLineBody =
     '<label class="field-label" style="margin-top:0;">Line color</label>' +
     '<input type="color" id="afpLineColor" value="' + lineColor + '" style="width:100%; height:34px; padding:2px; border:1px solid var(--line-strong); border-radius:0; cursor:pointer;">' +
-    '<label class="field-label">Line width</label>' +
+    '<label class="field-label">Line width (X + Y)</label>' +
     '<input type="number" id="afpLineWidth" value="' + lineWidth + '" min="0.2" max="10" step="0.2">' +
     '<p class="afp-note">Dashed axis lines aren\'t supported by the chart engine, only the color and thickness here.</p>';
 
@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (t.id === 'afpLineColor') {
       state[P + 'AxisLineColor'] = t.value;
     } else if (t.id === 'afpLineWidth') {
+      if (typeof setAxisLineThickness === 'function') { setAxisLineThickness(t.value, t); return; }
       state[P + 'AxisLineWidth'] = parseFloat(t.value) || null;
     } else {
       return;
@@ -243,6 +244,10 @@ function axisFormatGetAxisStrips() {
   var gd = document.getElementById('plotlyDiv');
   var pane = document.getElementById('paneLayout');
   if (!gd || !gd._fullLayout || !pane || !pane.classList.contains('active')) return null;
+  // Only a live cartesian Plotly plot has clickable axes. Raw-SVG charts
+  // (sunburst, radial rings, ridge) and map placeholders replace the div's
+  // content, so a leftover _fullLayout must not create phantom axis strips.
+  if (!gd.querySelector('.cartesianlayer .xy')) return null;
   var fl = gd._fullLayout;
   var xa = fl.xaxis, ya = fl.yaxis;
   if (!xa || !ya || !xa._length || !ya._length) return null;

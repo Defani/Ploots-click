@@ -56,7 +56,8 @@
 
       var stemPos = [], stemVal = [];
       pos.forEach(function (p, ci) {
-        var v = vals[ci] || 0;
+        var v = vals[ci];
+        if (typeof v !== "number" || !isFinite(v)) return; // missing value: no stem
         stemPos.push(p, p, null);
         stemVal.push(0, v, null);
       });
@@ -108,11 +109,11 @@
     };
 
     var rangeKey = c ? "y" : "x";
-    if ("custom" === state[rangeKey + "AxisRangeMode"] && isFinite(state[rangeKey + "AxisMin"]) && isFinite(state[rangeKey + "AxisMax"])) {
+    if ("custom" === state[rangeKey + "AxisRangeMode"] && Number.isFinite(state[rangeKey + "AxisMin"]) && Number.isFinite(state[rangeKey + "AxisMax"])) {
       valAxis.range = [state[rangeKey + "AxisMin"], state[rangeKey + "AxisMax"]];
       valAxis.autorange = false;
     }
-    if ("custom" === state[rangeKey + "AxisTickMode"] && isFinite(state[rangeKey + "AxisTickStep"]) && state[rangeKey + "AxisTickStep"] > 0) {
+    if ("custom" === state[rangeKey + "AxisTickMode"] && Number.isFinite(state[rangeKey + "AxisTickStep"]) && state[rangeKey + "AxisTickStep"] > 0) {
       valAxis.dtick = state[rangeKey + "AxisTickStep"];
     }
     if (state[rangeKey + "AxisTicksShow"]) {
@@ -136,7 +137,7 @@
         gridwidth: 0.6
       };
       var minorMode = state[rangeKey + "AxisMinorTicksMode"];
-      if ("manual" === minorMode && isFinite(state[rangeKey + "AxisMinorTicksStep"]) && state[rangeKey + "AxisMinorTicksStep"] > 0) {
+      if ("manual" === minorMode && Number.isFinite(state[rangeKey + "AxisMinorTicksStep"]) && state[rangeKey + "AxisMinorTicksStep"] > 0) {
         minor.dtick = state[rangeKey + "AxisMinorTicksStep"];
       } else if ("divide" === minorMode && isFinite(valAxis.dtick) && valAxis.dtick > 0) {
         var minorDiv = Math.max(2, Math.round(state[rangeKey + "AxisMinorTicksDivide"] || 5));
@@ -189,7 +190,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === LOLLIPOP_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderLollipop();
         return;
       }
