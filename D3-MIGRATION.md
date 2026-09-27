@@ -1,6 +1,6 @@
 # Migrasi engine: Plotly.js → D3.js
 
-Status: **tahap 1 selesai** — 6 dari 25 tipe chart sudah dirender D3.
+Status: **tahap 2 selesai** — 15 dari 25 tipe chart sudah dirender D3.
 
 ## Kenapa bertahap
 
@@ -15,7 +15,8 @@ aplikasi tetap bisa dipakai penuh di setiap tahap. Setelah semua tipe pindah,
 |---|---|
 | bar-single, bar-group, bar-stack | **D3** |
 | line, area, scatter | **D3** |
-| pie, donut, histogram, box, violin, heatmap, waterfall, funnel, treemap | Plotly (tahap 2) |
+| pie, donut, histogram, box, violin, heatmap | **D3** (tahap 2) |
+| waterfall, funnel, treemap | **D3** (tahap 2) |
 | lollipop, bubble, dumbbell, scatter-matrix, sankey | Plotly (tahap 3) |
 | choropleth, bubble-map | Plotly geo (tahap 4) |
 | radial-rings, sunburst, ridge-plot | SVG manual (tahap 3, dipindah ke frame D3) |
@@ -27,6 +28,8 @@ vendor/d3-7.9.0.min.js          D3 lokal (offline, tidak lewat CDN)
 js/d3-engine/00-core.js          ukur teks, rich text, format angka, marker, pola hatch
 js/d3-engine/01-frame.js         skala, sumbu, grid, frame, legend, perhitungan margin
 js/d3-engine/02-cartesian.js     renderer bar / line / area / scatter
+js/d3-engine/03-stats.js         renderer pie / donut / histogram / box / violin / heatmap
+js/d3-engine/04-flow.js          renderer waterfall / funnel / treemap
 js/d3-engine/99-integration.js   render(), canvas kosong, export, klik sumbu
 ```
 
@@ -74,3 +77,27 @@ otomatis memakainya.
 - Integrasi: pindah bolak-balik D3 ↔ Plotly ↔ SVG manual (tidak ada SVG sisa), 25 tipe
   dirender tanpa error, detach/reattach legend dan judul sumbu, klik sumbu membuka
   Format Axis, export SVG & PNG, undo.
+
+## Tahap 2 — catatan
+
+Frame mendapat tiga tambahan kecil: sumbu `hidden` (funnel tidak punya sumbu
+nilai yang bermakna), `def.reserve` untuk ruang yang digambar renderer sendiri
+(colorbar heatmap), dan `PD.legendFor / legendReserve / drawLegendIn` supaya
+chart tanpa sumbu (pie, donut) memakai legend yang sama — termasuk drag dan
+detach.
+
+Perubahan perilaku dibanding Plotly:
+
+- **Heatmap** selalu terang (rendah) → gelap (tinggi). Palet kualitatif dulu
+  direntangkan apa adanya sehingga nilai bertetangga dapat warna yang tidak
+  berhubungan; sekarang dibuat ramp dari warna pertama palet. Grayscale juga
+  terang → gelap (Greys Plotly hitam → putih). Label nilai jadi putih di sel gelap.
+- **Histogram**: bin dipakai bersama oleh semua seri yang ditumpuk, jadi batang
+  sejajar (Plotly mem-bin tiap seri sendiri).
+- **Pie/donut**: slice yang terlalu sempit untuk label di dalam mendapat label
+  di luar dengan garis penunjuk; label di atas hatch memakai halo tebal.
+- **Funnel**: sumbu nilai tidak digambar (lebar tahap dipusatkan di 0).
+
+Diuji di Chromium: 15 tipe D3 dengan data sampel, mode warna / warna+pola /
+pola (grayscale), outline, value labels, posisi legend, log + frame, klik sumbu
+membuka Format Axis, detach/reattach legend, dan export (SVG → PNG) semua tipe.

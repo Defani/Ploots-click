@@ -163,6 +163,11 @@
   // category axes.
   function measureAxis(ax, font, size) {
     var cfg = ax.cfg, st = S();
+    if (ax.hidden) {
+      ax.rotate = 0; ax.labelOffset = 0; ax.titleOffset = 0; ax.extent = 0;
+      ax.labelSizes = []; ax.maxLabelW = 0;
+      return 0;
+    }
     var tickOut = cfg.ticksShow && cfg.ticksPos === "outside" ? cfg.ticklen : 0;
     var labels = cfg.labelsShow ? ax.majors.map(function (v) { return ax.fmt(v); }) : [];
     var sizes = labels.map(function (t) { return PD.richSize(t, size, font); });
@@ -300,6 +305,7 @@
   /* -------------------------------------------------------- axis drawing */
 
   function drawGrid(layer, ax, plot, minor) {
+    if (ax.hidden) return;
     var vals = minor ? ax.minors : ax.majors;
     var on = minor ? ax.cfg.minorGrid : ax.cfg.grid;
     if (!on || !vals.length) return;
@@ -432,7 +438,9 @@
         var over = axes.x.maxLabelW * Math.SQRT1_2 - (firstP - 4);
         ext.l = Math.max(ext.l, over);
       }
-      var need = { t: ext.t + 6, r: ext.r + 6, b: ext.b + 6, l: ext.l + 6 };
+      // def.reserve: extra room a renderer draws into itself (heatmap colorbar).
+      var rsv = def.reserve || {};
+      var need = { t: ext.t + 6 + (rsv.t || 0), r: ext.r + 6 + (rsv.r || 0), b: ext.b + 6 + (rsv.b || 0), l: ext.l + 6 + (rsv.l || 0) };
       if (L && !st.legendCustomPos) {
         var key = st.legendPos || "top-right";
         if (/^top/.test(key)) need.t = ext.t + 8 + L.h + 6;
@@ -482,11 +490,11 @@
       svg.append("rect").attr("class", "frame").attr("x", plot.l).attr("y", plot.t).attr("width", plot.w).attr("height", plot.h)
         .attr("fill", "none").attr("stroke", ink.shape).attr("stroke-width", st.frameBorderWidth || 1.4);
     }
-    Object.keys(axes).forEach(function (n) { drawAxis(svg, axes[n], axes[n].side, plot, font, size, frame); });
+    Object.keys(axes).forEach(function (n) { if (!axes[n].hidden) drawAxis(svg, axes[n], axes[n].side, plot, font, size, frame); });
     if (frame && st.mirrorAxisTicks) {
       var mg = svg.append("g").attr("class", "axis-mirror");
-      if (!axes.y2 && axes.y.cfg.ticksShow) drawTicks(mg, axes.y, "right", plot, axes.y.cfg.ticklen, axes.y.cfg.tickW, ink.shape, axes.y.majors);
-      if (!axes.x2 && axes.x.cfg.ticksShow) drawTicks(mg, axes.x, "top", plot, axes.x.cfg.ticklen, axes.x.cfg.tickW, ink.shape, axes.x.majors);
+      if (!axes.y2 && !axes.y.hidden && axes.y.cfg.ticksShow) drawTicks(mg, axes.y, "right", plot, axes.y.cfg.ticklen, axes.y.cfg.tickW, ink.shape, axes.y.majors);
+      if (!axes.x2 && !axes.x.hidden && axes.x.cfg.ticksShow) drawTicks(mg, axes.x, "top", plot, axes.x.cfg.ticklen, axes.x.cfg.tickW, ink.shape, axes.x.majors);
     }
 
     if (L) drawLegend(svg, L, legendPosition(L, plot, ext), font, fs, plot, def.onLegendMoved);
@@ -497,4 +505,23 @@
   };
 
   PD.axisSettings = axisSettings;
+
+  /* Legend for charts without cartesian axes (pie, donut). `area` is the
+     region the chart occupies ({l,t,w,h}); returns the layout so the caller
+     can shrink its drawing area first via PD.legendReserve(). */
+  PD.legendFor = function (items, font, fs) { return legendLayout(items, font, fs); };
+  PD.legendReserve = function (L) {
+    var st = S(), out = { t: 0, r: 0, b: 0, l: 0 };
+    if (!L || st.legendCustomPos) return out;
+    var key = st.legendPos || "top-right";
+    if (/^top/.test(key)) out.t = L.h + 8;
+    else if (key === "bottom-center") out.b = L.h + 8;
+    else if (key === "right-middle" || key === "inside-top-right") out.r = L.w + 16;
+    else if (key === "left-middle") out.l = L.w + 16;
+    return out;
+  };
+  PD.drawLegendIn = function (svg, L, area, font, fs, onMoved) {
+    if (!L) return null;
+    return drawLegend(svg, L, legendPosition(L, area, { t: 0, r: 0, b: 0, l: 0 }), font, fs, area, onMoved);
+  };
 })();

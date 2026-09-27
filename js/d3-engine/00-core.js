@@ -112,7 +112,7 @@
     if (opts.halo) {
       // Background-coloured outline behind the glyphs keeps value labels
       // readable over hatch patterns, grid lines and neighbouring marks.
-      t.attr("stroke", opts.halo).attr("stroke-width", Math.max(2, size * 0.25))
+      t.attr("stroke", opts.halo).attr("stroke-width", opts.haloW || Math.max(2, size * 0.25))
         .attr("stroke-linejoin", "round").attr("paint-order", "stroke");
     }
     if (opts.cls) t.attr("class", opts.cls);
