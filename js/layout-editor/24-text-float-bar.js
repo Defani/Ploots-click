@@ -598,8 +598,10 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { closePops(); return; }
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      var pane = $('paneLayout');
+      if (!pane || !pane.classList.contains('active')) return; // e.g. typing in Data View
       var o = activeText();
-      if (!o || (e.target !== o.hiddenTextarea && e.target.closest('input,textarea,select'))) return;
+      if (!o || (e.target !== o.hiddenTextarea && e.target.closest && e.target.closest('input,textarea,select'))) return;
       var map = { b: 'fmtBold', i: 'fmtItalic', u: 'fmtUnderline' };
       var id = map[e.key.toLowerCase()];
       if (!id) return;

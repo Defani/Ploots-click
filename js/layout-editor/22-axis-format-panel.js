@@ -21,13 +21,54 @@ var AXIS_FORMAT_PRESETS = {
   currency: { tickformat: ',d', tickprefix: 'Rp ' }
 };
 
+// true / false for an axis whose trace data is all-numeric / not, or null
+// when no trace carries data on that axis (e.g. a histogram's count axis).
+function axisDataIsNumeric(traces, prefix) {
+  var seen = 0;
+  for (var i = 0; i < (traces || []).length; i++) {
+    var arr = traces[i] && traces[i][prefix];
+    if (!arr || !arr.length) continue;
+    for (var j = 0; j < arr.length; j++) {
+      var v = arr[j];
+      if (v == null || v === '') continue;
+      seen++;
+      var n = typeof v === 'number' ? v : (typeof v === 'string' && v.trim() !== '' ? +v : NaN);
+      if (!isFinite(n)) return false;
+    }
+  }
+  return seen ? true : null;
+}
+
+// Plotly reads a log axis's range and dtick in log10 units, so a custom
+// range of 10–100 used to render as 10^10–10^100. Convert what we can and
+// let Plotly pick ticks where a linear step has no log equivalent.
+function convertAxisToLog(axis) {
+  axis.type = 'log';
+  if (Array.isArray(axis.range) && axis.autorange === false) {
+    var lo = +axis.range[0], hi = +axis.range[1];
+    if (lo > 0 && hi > 0) axis.range = [Math.log10(lo), Math.log10(hi)];
+    else { delete axis.range; axis.autorange = true; }
+  }
+  if (typeof axis.dtick === 'number') {
+    delete axis.dtick;
+    delete axis.tick0;
+    if (axis.tickmode === 'linear') delete axis.tickmode;
+  }
+  if (axis.minor) { delete axis.minor.dtick; delete axis.minor.tick0; }
+  delete axis.rangemode; // "tozero" has no meaning on a log axis
+}
+
 function applyAxisLegendStyle(layout, traces) {
   ['x', 'y'].forEach(function (prefix) {
     var axisKey = prefix + 'axis';
     var axis = layout[axisKey];
     if (!axis) return;
 
-    if (state[prefix + 'AxisLogScale']) axis.type = 'log';
+    // Log only makes sense on numeric axes; on a category axis it wipes out
+    // every label, so leave those alone.
+    if (state[prefix + 'AxisLogScale'] && axis.type !== 'category' && axisDataIsNumeric(traces, prefix) !== false) {
+      convertAxisToLog(axis);
+    }
 
     var fmt = AXIS_FORMAT_PRESETS[state[prefix + 'AxisNumberFormat']] || AXIS_FORMAT_PRESETS.auto;
     if (fmt.tickformat) axis.tickformat = fmt.tickformat;

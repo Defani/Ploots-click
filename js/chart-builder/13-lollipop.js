@@ -171,6 +171,9 @@
     }
     [layout.xaxis, layout.yaxis].forEach(function (ax) { ax.automargin = true; });
 
+    // Format Axis settings (log, number format, labels, line) — 07-render.js
+    // applies these for the standard charts; this renderer builds its own layout.
+    if (typeof applyAxisLegendStyle === "function") applyAxisLegendStyle(layout, traces);
     Plotly.newPlot("plotlyDiv", traces, layout, {
       responsive: false,
       displaylogo: false,

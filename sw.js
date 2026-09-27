@@ -19,7 +19,7 @@
    one, so users never get stuck on outdated JS.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v2";
+const CACHE_NAME = "ploots-click-v3";
 
 const PRECACHE_URLS = [
   "./",
@@ -64,6 +64,7 @@ const PRECACHE_URLS = [
   "./js/layout-editor/25-design-panel.js",
   "./js/layout-editor/26-selection-hud.js",
   "./js/layout-editor/27-object-float-bar.js",
+  "./js/layout-editor/28-axis-controls-sync.js",
   "./js/ui_sections.js",
   "./js/latex_symbols.js",
   "./js/canvas_ruler.js",
