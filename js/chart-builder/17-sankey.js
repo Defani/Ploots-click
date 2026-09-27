@@ -3,7 +3,8 @@
    Sekunder -> Perkebunan -> ...).
 
    Unlike sunburst/radial-rings/ridge-plot, this one IS a real Plotly graph:
-   Plotly ships a native "sankey" trace, so this just calls Plotly.newPlot()
+   the custom vendor/plotly-ploots.min.js build includes the native "sankey"
+   trace (the stock cartesian bundle did NOT — it rendered an empty plot), so this just calls Plotly.newPlot()
    like every chart type already in 07-render.js's switch. That also means
    the existing exportSvgFile/exportPngFile and the multi-format export
    panel (js/chart-builder/08-helpers-export.js) already work unmodified —
@@ -65,7 +66,7 @@
       var f = parseFlow(catPath);
       if (!f) return;
       var v = values[i];
-      if (!isFinite(v) || v <= 0) return;
+      if (typeof v !== "number" || !isFinite(v) || v <= 0) return;
       source.push(idx(f.source));
       target.push(idx(f.target));
       value.push(v);
@@ -136,7 +137,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === SANKEY_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         var visible = state.seriesNames.filter(function (n) { return state.seriesMeta[n].visible; });
         if (!visible.length) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderSankey();

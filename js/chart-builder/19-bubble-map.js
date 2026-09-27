@@ -5,19 +5,10 @@
    data like sample plots, hotspot points, or survey stations rather than
    province/country aggregates.
 
-   Same "geo" partial-bundle situation as choropleth: vendor/plotly-
-   cartesian.min.js has no scattergeo trace, so it's lazy-loaded via
-   PlootsLazy.ensurePlotlyGeo() (js/lazy-loader.js) — the SAME Tier-3 entry
-   choropleth uses. That loader is idempotent (window.__plotlyGeoLoaded
-   guard), so calling it again here does not re-fetch anything.
-
-   This file keeps its OWN cartesianPlotly cache / geoActive flag rather
-   than reaching into 11-choropleth.js's closure (that module doesn't
-   expose them). Both files cache window.Plotly at boot time — before
-   either has ever swapped it — so they always agree on what "restore" means,
-   and the wrapped selectChartType below only fires its restore when LEAVING
-   this specific chart type, so switching choropleth <-> bubble-map <-> any
-   cartesian chart type is safe no matter which module loaded first.
+   scattergeo ships inside vendor/plotly-ploots.min.js together with every
+   other trace type, so this renders with the one global Plotly instance
+   (no lazy bundle, no window.Plotly swap). Topojson is served locally from
+   vendor/topojson/ — see 11-choropleth.js.
 
    Data model: each category row is a point, encoded as
    "Label|lat,lon" (e.g. "Titik Api A|-2.50,113.90"); the "Label|" part is
@@ -29,8 +20,7 @@
   "use strict";
 
   var BUBBLE_MAP_TYPE = "bubble-map";
-  var cartesianPlotly = window.Plotly; // cached at boot, before any swap
-  var geoActive = false;
+  var PLOOTS_TOPOJSON_URL = new URL("vendor/topojson/", document.baseURI).href;
 
   if (typeof CHART_TYPE_DEFS !== "undefined") {
     CHART_TYPE_DEFS.push({ category: "Map", value: BUBBLE_MAP_TYPE, label: "Bubble Map", icon: "mdi:map-marker-radius" });
@@ -41,25 +31,15 @@
   if (typeof buildChartTypeGrid === "function") buildChartTypeGrid();
   if (typeof syncChartTypeGridActive === "function") syncChartTypeGridActive();
 
-  function ensureBubbleMapPlotly() {
-    return PlootsLazy.ensurePlotlyGeo().then(function () {
-      geoActive = true;
-    });
-  }
-  function restoreCartesianPlotly() {
-    if (geoActive) {
-      window.Plotly = cartesianPlotly;
-      geoActive = false;
-    }
-  }
-
   function showMapPlaceholder(msg) {
     var el = document.getElementById("plotlyDiv");
     if (!el) return;
     var w = state.chartBox.w, h = state.chartBox.h;
     var bg = typeof chartBgColor === "function" ? chartBgColor() : "#ffffff";
+    try { if (el._fullLayout) Plotly.purge(el); } catch (e) {}
     el.innerHTML = "";
     var wrap = document.createElement("div");
+    wrap.className = "ploots-map-placeholder";
     wrap.style.cssText = "display:flex;align-items:center;justify-content:center;width:" + w + "px;height:" + h + "px;font-family:" + state.fontBody + ";color:#5c5c58;font-size:13px;background:" + bg + ";text-align:center;padding:20px;box-sizing:border-box;";
     wrap.textContent = msg;
     el.appendChild(wrap);
@@ -84,7 +64,7 @@
     state.categories.forEach(function (catText, i) {
       var p = parsePoint(catText);
       var v = values[i];
-      if (!p || !isFinite(v)) return;
+      if (!p || typeof v !== "number" || !isFinite(v)) return;
       lats.push(p.lat);
       lons.push(p.lon);
       labels.push(p.label);
@@ -99,14 +79,6 @@
     var points = buildPoints();
     if (!points) {
       if (typeof renderBlankCanvas === "function") renderBlankCanvas();
-      return;
-    }
-
-    if (!geoActive) {
-      showMapPlaceholder("Loading map\u2026");
-      ensureBubbleMapPlotly().then(function () {
-        if (state.chartType === BUBBLE_MAP_TYPE) render();
-      });
       return;
     }
 
@@ -170,11 +142,14 @@
       showlegend: false
     };
 
+    var ph = document.querySelector("#plotlyDiv > .ploots-map-placeholder");
+    if (ph) ph.remove();
     Plotly.newPlot("plotlyDiv", [trace], layout, {
       responsive: false,
       displaylogo: false,
       displayModeBar: true,
-      modeBarButtonsToRemove: ["lasso2d", "select2d"]
+      modeBarButtonsToRemove: ["lasso2d", "select2d"],
+      topojsonURL: PLOOTS_TOPOJSON_URL
     }).then(function () {
       try { Plotly.Plots.resize("plotlyDiv"); } catch (e) {}
       state.chartRenderedW = w;
@@ -188,7 +163,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === BUBBLE_MAP_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderBubbleMap();
         return;
       }
@@ -196,11 +171,4 @@
     };
   }
 
-  var originalSelectChartType = window.selectChartType;
-  if (typeof originalSelectChartType === "function") {
-    window.selectChartType = function (v) {
-      if (BUBBLE_MAP_TYPE !== v && BUBBLE_MAP_TYPE === state.chartType) restoreCartesianPlotly();
-      originalSelectChartType(v);
-    };
-  }
 })();

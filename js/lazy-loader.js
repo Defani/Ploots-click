@@ -39,13 +39,6 @@
     mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js",
     xlsx: "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
     aggrid: "https://cdnjs.cloudflare.com/ajax/libs/ag-grid/35.3.0/ag-grid-community.min.js",
-    // Plotly's cartesian bundle (vendor/plotly-cartesian.min.js) does not
-    // include the choropleth/scattergeo trace modules — those only ship in
-    // the "geo" partial bundle. Same major.minor.patch as the vendored
-    // cartesian build (3.7.0) so trace/layout behavior stays in sync.
-    // Loaded strictly on demand the first time the Choropleth Map chart
-    // type is selected — see js/chart-builder/11-choropleth.js.
-    plotlygeo: "https://cdn.plot.ly/plotly-geo-3.7.0.min.js",
     // marked isn't referenced anywhere in the current js/*.js (it was dead
     // weight in the old <head> tags — nothing ever called marked(...)).
     // Left registered so a future splash/about screen can call
@@ -114,13 +107,12 @@
           ? Promise.resolve() : loadScript(CDN.svg2pdf);
       });
     },
-    // Note: unlike the other ensureX() helpers, `typeof Plotly` is always
-    // "object" here (the cartesian bundle loads at boot), so this tracks
-    // its own loaded flag instead of feature-testing the global.
+    // Choropleth/scattergeo now ship inside vendor/plotly-ploots.min.js (a
+    // custom Plotly 3.7.0 build), so there is no second Plotly bundle to
+    // fetch and no global window.Plotly swap. Kept as an always-resolved
+    // promise so existing call sites keep working unchanged.
     ensurePlotlyGeo: function () {
-      return window.__plotlyGeoLoaded ? Promise.resolve() : loadScript(CDN.plotlygeo).then(function () {
-        window.__plotlyGeoLoaded = true;
-      });
+      return Promise.resolve(window.Plotly);
     },
     ensureD3: function () {
       return (typeof d3 !== "undefined" && d3.hierarchy) ? Promise.resolve() : loadScript(CDN.d3);

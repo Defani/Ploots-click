@@ -35,7 +35,7 @@
     return visible.map(function (name) {
       return {
         label: state.seriesMeta[name].label || name,
-        values: (state.seriesData[name] || []).map(function (v) { return isFinite(v) ? v : null; })
+        values: (state.seriesData[name] || []).map(function (v) { return typeof v === "number" && isFinite(v) ? v : null; })
       };
     });
   }
@@ -104,7 +104,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === SPLOM_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderScatterMatrix();
         return;
       }

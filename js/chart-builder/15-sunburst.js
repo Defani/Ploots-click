@@ -33,6 +33,13 @@
 (function () {
   "use strict";
 
+  // Bersihkan state internal Plotly (gd._fullLayout, listener) sebelum div
+  // ditimpa SVG mentah — kalau tidak, 22-axis-format-panel.js masih membaca
+  // layout chart sebelumnya dan mencegat klik di area sumbu yang sudah tidak ada.
+  function purgePlotlyDiv(el) {
+    try { if (el && el._fullLayout && typeof Plotly !== "undefined") Plotly.purge(el); } catch (e) {}
+  }
+
   var SUNBURST_TYPE = "sunburst";
 
   if (typeof CHART_TYPE_DEFS !== "undefined") {
@@ -82,7 +89,7 @@
         node = existing;
         if (depth === parts.length - 1) {
           var v = values[i];
-          node.value = (node.value || 0) + (isFinite(v) ? v : 0);
+          node.value = (node.value || 0) + (typeof v === "number" && isFinite(v) ? v : 0);
         }
       });
     });
@@ -108,6 +115,7 @@
     if (!el) return;
     var w = state.chartBox.w, h = state.chartBox.h;
     var bg = typeof chartBgColor === "function" ? chartBgColor() : "#ffffff";
+    purgePlotlyDiv(el);
     el.innerHTML = "";
     var wrap = document.createElement("div");
     wrap.style.cssText = "display:flex;align-items:center;justify-content:center;width:" + w + "px;height:" + h + "px;font-family:" + state.fontBody + ";color:#8a8a8a;font-size:13px;background:" + bg + ";text-align:center;padding:20px;box-sizing:border-box;";
@@ -210,6 +218,7 @@
     svg.push('</g>');
     svg.push('</svg>');
 
+    purgePlotlyDiv(el);
     el.innerHTML = svg.join("");
     state.chartRenderedW = w;
     state.chartRenderedH = h;
@@ -235,7 +244,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === SUNBURST_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         var visible = state.seriesNames.filter(function (n) { return state.seriesMeta[n].visible; });
         if (!visible.length) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderSunburst();

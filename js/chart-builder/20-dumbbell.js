@@ -56,7 +56,8 @@
     var connLine = [], connVal = [];
     pos.forEach(function (p, ci) {
       x.forEach(function (sn) {
-        var v = state.seriesData[sn][ci] || 0;
+        var v = state.seriesData[sn][ci];
+        if (typeof v !== "number" || !isFinite(v)) return; // missing value: skip, don't pull line to 0
         connLine.push(p);
         connVal.push(v);
       });
@@ -112,11 +113,11 @@
     };
 
     var rangeKey = c ? "y" : "x";
-    if ("custom" === state[rangeKey + "AxisRangeMode"] && isFinite(state[rangeKey + "AxisMin"]) && isFinite(state[rangeKey + "AxisMax"])) {
+    if ("custom" === state[rangeKey + "AxisRangeMode"] && Number.isFinite(state[rangeKey + "AxisMin"]) && Number.isFinite(state[rangeKey + "AxisMax"])) {
       valAxis.range = [state[rangeKey + "AxisMin"], state[rangeKey + "AxisMax"]];
       valAxis.autorange = false;
     }
-    if ("custom" === state[rangeKey + "AxisTickMode"] && isFinite(state[rangeKey + "AxisTickStep"]) && state[rangeKey + "AxisTickStep"] > 0) {
+    if ("custom" === state[rangeKey + "AxisTickMode"] && Number.isFinite(state[rangeKey + "AxisTickStep"]) && state[rangeKey + "AxisTickStep"] > 0) {
       valAxis.dtick = state[rangeKey + "AxisTickStep"];
     }
     if (state[rangeKey + "AxisTicksShow"]) {
@@ -186,7 +187,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === DUMBBELL_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderDumbbell();
         return;
       }

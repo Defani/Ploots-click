@@ -526,7 +526,6 @@ function getDvGridTheme() {
             accentColor: "var(--accent)",
             backgroundColor: "var(--panel)",
             foregroundColor: "var(--ink)",
-            borderColor: "var(--line)",
             headerBackgroundColor: "var(--panel-2)",
             headerTextColor: "var(--ink)",
             oddRowBackgroundColor: "var(--panel-2)",

@@ -21,6 +21,13 @@
 (function () {
   "use strict";
 
+  // Bersihkan state internal Plotly (gd._fullLayout, listener) sebelum div
+  // ditimpa SVG mentah — kalau tidak, 22-axis-format-panel.js masih membaca
+  // layout chart sebelumnya dan mencegat klik di area sumbu yang sudah tidak ada.
+  function purgePlotlyDiv(el) {
+    try { if (el && el._fullLayout && typeof Plotly !== "undefined") Plotly.purge(el); } catch (e) {}
+  }
+
   var RADIAL_TYPE = "radial-rings";
 
   if (typeof CHART_TYPE_DEFS !== "undefined") {
@@ -180,6 +187,7 @@
     }
 
     svg.push("</svg>");
+    purgePlotlyDiv(el);
     el.innerHTML = svg.join("");
     state.chartRenderedW = w;
     state.chartRenderedH = h;
@@ -191,7 +199,7 @@
   if (typeof originalRender === "function") {
     window.render = function () {
       if (state.chartType === RADIAL_TYPE) {
-        if (state.categories.length === 0) return;
+        if (state.categories.length === 0) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         var visible = state.seriesNames.filter(function (n) { return state.seriesMeta[n].visible; });
         if (!visible.length) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
         renderRadialRings();

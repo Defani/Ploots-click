@@ -1,31 +1,36 @@
 /* ==========================================================================
    Ploots Click — service worker.
 
-   Precaches the app shell (HTML/CSS-in-HTML/local JS/local images) on
-   install, so a repeat visit needs zero network round trips for anything
-   that ships with the app. The heavy CDN libraries (Fabric, AG Grid,
-   MathJax, etc.) are lazy-loaded (see js/lazy-loader.js) and deliberately
-   NOT precached here — most users never touch every panel in one session,
-   and force-downloading all of them on first visit would defeat the whole
-   point of lazy loading. Instead, the fetch handler below cache-firsts them
-   the moment each one actually loads, so it's instant on every visit after
-   the first time that specific feature is used.
+   Strategy
+   --------
+   - App shell (same-origin: index.html, js/*, vendor/*, assets/*):
+     NETWORK-FIRST, falling back to the cache when offline. The previous
+     cache-first version served a stale index.html/JS forever unless
+     CACHE_NAME was bumped by hand (and it never was: 18 scripts added after
+     v1 were missing from the precache list). Network-first means a normal
+     reload always picks up a new release; the cache only matters offline.
+   - Version-pinned CDN libraries (cdnjs, jsdelivr): CACHE-FIRST, safe
+     because a new version is a new URL.
+   - Only real 2xx responses are cached. CDN scripts are re-fetched in CORS
+     mode so the status is readable — the old worker also cached opaque
+     (status 0) responses, which can hide a 5xx/error page permanently.
 
-   Every CDN URL below is pinned to an exact version (cdnjs convention), so
-   cache-first is safe: a version bump means a new URL, never a stale hit.
-
-   Bump CACHE_NAME on any release that changes file contents — a new name
-   makes `install` populate a fresh cache and `activate` deletes the old
-   one, so users never get stuck on outdated JS.
+   Bump CACHE_NAME when the precache list changes; old caches are deleted
+   on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v3";
+const CACHE_NAME = "ploots-click-v4";
 
 const PRECACHE_URLS = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./vendor/plotly-cartesian.min.js",
+  "./vendor/plotly-ploots.min.js",
+  "./vendor/d3-7.9.0.min.js",
+  "./js/d3-engine/00-core.js",
+  "./js/d3-engine/01-frame.js",
+  "./js/d3-engine/02-cartesian.js",
+  "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",
   "./js/chart-builder/02-state.js",
@@ -38,11 +43,22 @@ const PRECACHE_URLS = [
   "./js/chart-builder/09-event-wiring.js",
   "./js/chart-builder/10-view-switcher-init.js",
   "./js/chart-builder/11-choropleth.js",
+  "./js/chart-builder/12-radial-rings.js",
+  "./js/chart-builder/13-lollipop.js",
+  "./js/chart-builder/14-bubble.js",
+  "./js/chart-builder/15-sunburst.js",
+  "./js/chart-builder/16-ridge-plot.js",
+  "./js/chart-builder/17-sankey.js",
+  "./js/chart-builder/18-scatter-matrix.js",
+  "./js/chart-builder/19-bubble-map.js",
+  "./js/chart-builder/20-dumbbell.js",
   "./js/palettes.js",
   "./js/data_formulas.js",
   "./js/data_view.js",
+  "./js/dv_shelves.js",
   "./js/data_stats.js",
   "./js/color_picker.js",
+  "./js/canvas_background.js",
   "./js/layout-editor/01-canvas-core.js",
   "./js/layout-editor/02-toolbar-text.js",
   "./js/layout-editor/03-shapes.js",
@@ -60,12 +76,19 @@ const PRECACHE_URLS = [
   "./js/layout-editor/15-legend-detach.js",
   "./js/layout-editor/16-draw-tool.js",
   "./js/layout-editor/17-textbox-resize.js",
+  "./js/layout-editor/18-chart-quickbar.js",
+  "./js/layout-editor/19-axis-tick-float.js",
+  "./js/layout-editor/20-canvas-zoom.js",
+  "./js/layout-editor/21-layers-panel.js",
+  "./js/layout-editor/22-axis-format-panel.js",
+  "./js/layout-editor/23-canvas-pan-scrollbars.js",
   "./js/layout-editor/24-text-float-bar.js",
   "./js/layout-editor/25-design-panel.js",
   "./js/layout-editor/26-selection-hud.js",
   "./js/layout-editor/27-object-float-bar.js",
   "./js/layout-editor/28-axis-controls-sync.js",
   "./js/ui_sections.js",
+  "./js/help_search.js",
   "./js/latex_symbols.js",
   "./js/canvas_ruler.js",
   "./js/undo_redo.js",
@@ -73,17 +96,19 @@ const PRECACHE_URLS = [
   "./assets/logo_dark.png",
   "./assets/logo_light.avif",
   "./assets/logo_dark.avif",
+  "./assets/logo_dark-removebg-preview.png",
   "./assets/palettes.png"
 ];
+
+const CDN_HOSTS = ["cdnjs.cloudflare.com", "cdn.jsdelivr.net"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      // Activate this version immediately rather than waiting for every
-      // open tab to close — a static chart tool has no server-side state
-      // that a mid-session swap could corrupt.
+      // addAll is atomic — one missing file would abort the whole install —
+      // so each URL is cached independently and failures are just skipped.
+      .then((cache) => Promise.all(PRECACHE_URLS.map((u) => cache.add(u).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
@@ -97,34 +122,55 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Hosts whose responses are safe to cache-first indefinitely: same-origin
-// (the app itself) and cdnjs (every URL we load from it is version-pinned).
-function isCacheableRequest(url) {
-  return url.origin === self.location.origin || url.hostname === "cdnjs.cloudflare.com";
+function putInCache(req, res) {
+  if (res && res.ok) {
+    const copy = res.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+  }
+  return res;
+}
+
+// Same-origin: try the network, update the cache, fall back to cache offline.
+function networkFirst(req) {
+  return fetch(req)
+    .then((res) => putInCache(req, res))
+    .catch(() =>
+      caches.match(req, { ignoreSearch: true }).then((cached) => {
+        if (cached) return cached;
+        if (req.mode === "navigate") return caches.match("./index.html");
+        return Response.error();
+      })
+    );
+}
+
+// Pinned CDN files: cache-first. Fetch in CORS mode (cdnjs/jsdelivr send
+// Access-Control-Allow-Origin: *) so the status is visible and errors are
+// never cached; fall back to the original no-cors request if CORS fails.
+function cacheFirstCdn(req) {
+  return caches.match(req.url).then((cached) => {
+    if (cached) return cached;
+    const corsReq = new Request(req.url, { mode: "cors", credentials: "omit" });
+    return fetch(corsReq)
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req.url, copy)).catch(() => {});
+        }
+        return res;
+      })
+      .catch(() => fetch(req));
+  });
 }
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
-
   const url = new URL(req.url);
-  if (!isCacheableRequest(url)) return; // let the browser handle fonts, etc. normally
 
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req)
-        .then((res) => {
-          // Cache successful responses AND cross-origin "opaque" ones (the
-          // <script src> fetches to cdnjs are no-cors, so their status is
-          // always 0 from here — that's expected, not an error).
-          if (res && (res.status === 200 || res.type === "opaque")) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => cached); // offline and never cached: let it fail naturally
-    })
-  );
+  if (url.origin === self.location.origin) {
+    event.respondWith(networkFirst(req));
+  } else if (CDN_HOSTS.indexOf(url.hostname) !== -1) {
+    event.respondWith(cacheFirstCdn(req));
+  }
+  // Anything else (Google Fonts, Iconify API, …) is left to the browser.
 });
