@@ -1,6 +1,6 @@
 # Migrasi engine: Plotly.js → D3.js
 
-Status: **tahap 3 selesai** — 23 dari 25 tipe chart sudah dirender D3 (tinggal 2 tipe peta).
+Status: **selesai** — ke-25 tipe chart dirender D3 dan Plotly.js sudah dihapus dari aplikasi (±2 MB lebih ringan).
 
 ## Kenapa bertahap
 
@@ -18,7 +18,7 @@ aplikasi tetap bisa dipakai penuh di setiap tahap. Setelah semua tipe pindah,
 | pie, donut, histogram, box, violin, heatmap | **D3** (tahap 2) |
 | waterfall, funnel, treemap | **D3** (tahap 2) |
 | lollipop, bubble, dumbbell, scatter-matrix, sankey | **D3** (tahap 3) |
-| choropleth, bubble-map | Plotly geo (tahap 4) |
+| choropleth, bubble-map | **D3** (tahap 4, d3-geo) |
 | ridge-plot | **D3** (tahap 3, sekarang memakai frame) |
 | radial-rings, sunburst | SVG sendiri, didaftarkan sebagai renderer D3 (tahap 3) |
 
@@ -32,6 +32,8 @@ js/d3-engine/02-cartesian.js     renderer bar / line / area / scatter
 js/d3-engine/03-stats.js         renderer pie / donut / histogram / box / violin / heatmap
 js/d3-engine/04-flow.js          renderer waterfall / funnel / treemap
 js/d3-engine/05-special.js       renderer lollipop / dumbbell / bubble / scatter-matrix / sankey / ridge-plot
+js/d3-engine/06-geo.js           renderer choropleth / bubble-map (d3-geo + dekoder topojson)
+js/d3-engine/geo-country-regex.js  tabel nama negara -> ISO-3 (dari paket country-regex)
 js/d3-engine/99-integration.js   render(), canvas kosong, export, klik sumbu
 ```
 
@@ -116,3 +118,23 @@ membuka Format Axis, detach/reattach legend, dan export (SVG → PNG) semua tipe
 - **Radial rings** dan **sunburst** tetap memakai SVG buatannya sendiri, tapi
   sekarang lewat jalur render/export yang sama dengan tipe D3 lain.
 - Frame: band axis menerima `align` (letak padding luar).
+
+## Tahap 4 — peta, dan Plotly dihapus
+
+- **Choropleth** dan **bubble map** digambar dengan d3-geo. Peta dasar tetap
+  file Natural Earth 110m di `vendor/topojson/` (dimuat sekali lalu di-cache);
+  dekoder topojson kecil ada di `06-geo.js`. Pencocokan lokasi sama dengan
+  Plotly: kode ISO-3, atau nama negara lewat tabel country-regex.
+- Semua pengaturan panel "Peta (Choropleth)" dipertahankan: cakupan (dengan
+  bingkai lon/lat yang sama dengan Plotly), 6 proyeksi, GeoJSON kustom +
+  featureidkey + fit bounds, warna kontinu / berkelas (interval sama /
+  kuantil), rentang z manual, skala terbalik, warna wilayah tanpa data.
+- Perubahan: warna memakai ramp terang → gelap yang sama dengan heatmap;
+  colorbar berkelas memakai blok setinggi sama; polygon GeoJSON kustom dengan
+  urutan RFC 7946 otomatis dibalik (sebelumnya bisa menutupi seluruh bola
+  dunia); proyeksi orthographic diputar ke pusat data.
+- `vendor/plotly-ploots.min.js` dihapus. `render()` dan `renderBlankCanvas()`
+  lama di `07-render.js` menjadi no-op tanpa Plotly; kode Plotly di file
+  chart-builder lain tidak lagi terjangkau (dibersihkan terpisah).
+- Hilang dibanding Plotly: tooltip hover dan zoom/pan modebar (sebelumnya pun
+  tertutup overlay Fabric).

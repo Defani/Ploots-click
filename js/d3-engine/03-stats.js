@@ -300,6 +300,7 @@
     var dark = d3.hcl(h.h, Math.max(h.c, 30), Math.max(15, Math.min(h.l, 60) - 30));
     return ["#f7f7f4", d3.hcl(h.h, h.c, Math.max(h.l, 55)).formatHex(), dark.formatHex()];
   }
+  PD.heatStops = heatStops; // shared with the map renderers (06-geo.js)
 
   function renderHeatmap(gd) {
     var C = base(), st = C.st, vis = C.vis;

@@ -2267,7 +2267,7 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
   <div class="hs-list" id="hsList"></div>
 </div>
 
-<script src="vendor/plotly-ploots.min.js"></script>
+
 <script src="vendor/d3-7.9.0.min.js"></script>
 
 <!-- Chart Builder (split into js/chart-builder/ for readability - loaded in order, one global scope) -->
@@ -2339,6 +2339,8 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 <script src="js/d3-engine/03-stats.js"></script>
 <script src="js/d3-engine/04-flow.js"></script>
 <script src="js/d3-engine/05-special.js"></script>
+<script src="js/d3-engine/geo-country-regex.js"></script>
+<script src="js/d3-engine/06-geo.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
