@@ -126,6 +126,10 @@ function toggleActiveObjectLock() {
   });
   fabricCanvas.requestRenderAll();
   updateCtxMenuState(obj);
+  // Lock changes fire no Fabric events; resync the panels and record undo.
+  if (typeof refreshLayersPanel === "function") refreshLayersPanel();
+  if (typeof syncDesignPanel === "function") syncDesignPanel();
+  if (typeof historyNotifyChange === "function") historyNotifyChange();
 }
 
 function updateCtxMenuState(obj) {

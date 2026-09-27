@@ -344,7 +344,9 @@ function buildLayerRow(obj, depth, rootObj) {
   if (isTop) {
     var locked = !!obj.lockMovementX;
     tools.appendChild(makeLayerTool(locked ? "lock" : "lock_open", locked ? "Unlock layer" : "Lock layer", locked, function () {
-      setLayerLocked(obj, !locked);
+      // Read the live state: the lock may have changed elsewhere (mini bar,
+      // context menu) since this row was built.
+      setLayerLocked(obj, !obj.lockMovementX);
     }));
     var more = makeLayerTool("more_horiz", "More options", false, function (btn) { openLayerMenu(obj, btn); });
     more.classList.add("layer-tool-more");

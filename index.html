@@ -567,6 +567,315 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 .tfb-mini-btn.active{color:var(--accent)}
 .tfb-mini-btn .material-symbols-outlined{font-size:18px}
 </style>
+<style>
+/* ==========================================================================
+   Data View redesign. Last in <head> on purpose: overrides the older square,
+   ribbon-style rules above without having to untangle them one by one.
+   ========================================================================== */
+.data-view-wrap{--dv-ser:#9a6bd6;background:var(--bg)}
+
+/* ---- Toolbar ---- */
+.data-view-wrap .dv-top-toolbar.dv-bottom-row{min-height:54px;padding:9px 14px;gap:12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:nowrap}
+.data-view-wrap .dv-top-toolbar .dv-bottom-group{gap:2px;flex-wrap:nowrap;min-width:0}
+.data-view-wrap .dv-top-toolbar .dv-ribbon-btn{height:34px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:8px;background:0 0;color:var(--ink);font-size:12.5px;font-weight:500;white-space:nowrap}
+.data-view-wrap .dv-top-toolbar .dv-ribbon-btn .material-symbols-outlined{font-size:18px;color:var(--ink-soft)}
+.data-view-wrap .dv-top-toolbar .dv-ribbon-btn:hover:not(:disabled){background:var(--panel-2);border-color:transparent}
+.data-view-wrap .dv-top-toolbar .dv-ribbon-btn.active{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.data-view-wrap .dv-top-toolbar .dv-ribbon-btn.active .material-symbols-outlined{color:var(--accent)}
+.data-view-wrap .dv-top-toolbar .dv-import-btn{border-color:var(--line-strong);font-weight:600;padding-right:6px}
+.data-view-wrap .dv-top-toolbar .dv-import-btn .material-symbols-outlined:first-child{color:var(--accent)}
+.data-view-wrap .dv-caret{font-size:17px!important;margin-left:-2px}
+.dv-tb-sep{width:1px;height:22px;background:var(--line-strong);margin:0 8px;flex-shrink:0}
+.data-view-wrap .dv-top-toolbar .dv-seg{display:inline-flex;gap:2px;width:auto;padding:3px;border:0;border-radius:9px;background:var(--panel-2);overflow:visible}
+.data-view-wrap .dv-top-toolbar .dv-seg button{flex:none;height:28px;padding:0 10px;display:inline-flex;align-items:center;gap:5px;border:0;border-radius:6px;background:0 0;color:var(--ink-soft);font-size:12px;font-weight:500}
+.data-view-wrap .dv-top-toolbar .dv-seg button:hover{color:var(--ink)}
+.data-view-wrap .dv-top-toolbar .dv-seg button.active{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px var(--shadow)}
+.data-view-wrap .dv-top-toolbar .dv-seg .material-symbols-outlined{font-size:16px}
+.data-view-wrap .dv-tb-right{margin-left:auto;gap:8px!important;flex-shrink:0}
+.data-view-wrap .dv-top-toolbar .dv-apply-btn{height:34px;display:inline-flex;align-items:center;gap:6px;padding:0 14px 0 16px;border-radius:8px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.data-view-wrap .dv-apply-btn .material-symbols-outlined{font-size:18px}
+/* The tool group scrolls sideways rather than running under Revert/Apply.
+   (The Import menu is absolutely positioned, so it is exempt from clipping
+   only while open; see .dv-upload-open below.) */
+.data-view-wrap .dv-top-toolbar>.dv-bottom-group:first-child{flex:1;overflow-x:auto;scrollbar-width:none}
+.data-view-wrap .dv-top-toolbar>.dv-bottom-group:first-child::-webkit-scrollbar{display:none}
+.data-view-wrap .dv-top-toolbar>.dv-bottom-group:first-child:has(.dv-upload-menu.open){overflow:visible}
+/* Narrow windows: keep the icons, drop the labels (tooltips still name them). */
+@media (max-width:1180px){
+  .data-view-wrap .dv-top-toolbar .dv-ribbon-btn:not(.dv-import-btn),.data-view-wrap .dv-top-toolbar .dv-seg button{font-size:0;gap:0}
+  .dv-tb-sep{margin:0 4px}
+}
+@media (max-width:760px){
+  .data-view-wrap .dv-top-toolbar .dv-apply-btn{font-size:0;gap:0;padding:0 10px}
+  .data-view-wrap .dv-main-split{flex-direction:column}
+  .data-view-wrap .dv-datapane{width:auto;max-height:38vh;border-right:0;border-bottom:1px solid var(--line)}
+  .data-view-wrap .dv-top-row{flex-direction:column;align-items:stretch}
+  .data-view-wrap .dv-search{width:100%}
+}
+
+/* ---- Import menu ---- */
+.data-view-wrap .dv-upload-menu{top:calc(100% + 8px);width:320px;padding:14px;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px var(--shadow),0 2px 6px var(--shadow)}
+.data-view-wrap .dv-upload-formats .dv-file-btn{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);font-weight:600}
+.data-view-wrap .dv-upload-formats .dv-file-btn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.data-view-wrap .dv-upload-menu textarea{border-radius:8px}
+.data-view-wrap .dv-upload-menu #loadSampleBtn,.data-view-wrap .dv-upload-menu #parseBtn{border-radius:8px}
+
+/* ---- Mapping pane (shelves) ---- */
+.data-view-wrap .dv-datapane{width:252px;background:var(--panel);border-right:1px solid var(--line)}
+.data-view-wrap .dv-datapane-head{padding:16px 16px 2px;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink)}
+.data-view-wrap .dv-datapane-head .material-symbols-outlined{font-size:18px;color:var(--accent)}
+.data-view-wrap .dv-datapane-hint{padding:2px 16px 14px;font-size:11.5px}
+.data-view-wrap .dv-datapane .dv-shelves{padding:0 12px 16px}
+.data-view-wrap .dv-datapane .dv-shelf-row{gap:14px}
+.data-view-wrap .dv-shelf-zone{gap:6px}
+.data-view-wrap .dv-shelf-zone-label,.data-view-wrap .dv-shelf-tray-label{display:flex;align-items:center;gap:7px;padding-left:2px;font-size:11.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink)}
+.data-view-wrap .dv-shelf-zone-label::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
+.data-view-wrap .dv-shelf-zone[data-role=X] .dv-shelf-zone-label::before{background:var(--dv-dim)}
+.data-view-wrap .dv-shelf-zone[data-role=Y] .dv-shelf-zone-label::before{background:var(--dv-meas)}
+.data-view-wrap .dv-shelf-zone[data-role=S] .dv-shelf-zone-label::before{background:var(--dv-ser)}
+.data-view-wrap .dv-datapane .dv-shelf-zone-box{flex-direction:column;align-items:stretch;gap:4px;min-height:44px;padding:5px;border:1.5px dashed var(--line-strong);border-radius:10px;background:var(--panel-2)}
+.data-view-wrap .dv-shelf-zone.drag-over .dv-shelf-zone-box{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.data-view-wrap .dv-shelf-zone-placeholder{margin:auto;padding:6px 4px;font-style:normal;font-size:11.5px;text-align:center}
+.data-view-wrap .dv-shelf-pill{height:32px;padding:0 4px 0 5px;gap:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 2px var(--shadow);font-size:12px;font-weight:500;color:var(--ink)}
+.data-view-wrap .dv-shelf-pill:hover{border-color:var(--line-strong)}
+.data-view-wrap .dv-shelf-pill:active{cursor:grabbing}
+.data-view-wrap .dv-shelf-pill-badge{width:22px;min-width:22px;height:22px;padding:0;border-radius:6px;font-size:15px!important;font-weight:400;color:#fff}
+.data-view-wrap .dv-shelf-pill-badge.is-dim{background:var(--dv-dim);border-radius:6px}
+.data-view-wrap .dv-shelf-pill-badge.is-measure{background:var(--dv-meas);border-radius:6px}
+.data-view-wrap .dv-shelf-pill-label{flex:1;max-width:none}
+.data-view-wrap .dv-shelf-pill-remove{width:22px;height:22px;margin-left:auto;border-radius:6px}
+.data-view-wrap .dv-shelf-pill-remove:hover{background:var(--panel-2);color:var(--danger)}
+.data-view-wrap .dv-shelf-pill-remove .material-symbols-outlined{font-size:15px}
+.data-view-wrap .dv-datapane .dv-shelf-tray{margin-top:6px;padding-top:14px;border-top:1px solid var(--line)}
+.data-view-wrap .dv-shelf-tray-empty{font-style:normal;font-size:11.5px;padding-left:2px}
+
+/* ---- Grid header line ---- */
+.data-view-wrap .dv-top-row{align-items:center;padding:14px 16px 10px;gap:12px}
+.dv-title{display:flex;align-items:baseline;gap:10px;font-size:15px;font-weight:600;color:var(--ink)}
+.dv-summary{font-size:12px;font-weight:500;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.data-view-wrap .dv-hint{max-width:none;margin-top:3px;font-style:normal;font-size:11.5px}
+.data-view-wrap .dv-sort-select{height:34px;padding:0 30px 0 12px;border-radius:8px}
+.data-view-wrap .dv-search{width:220px;height:34px;padding:0 12px 0 34px;border-radius:8px;box-sizing:border-box}
+
+/* ---- Grid card ---- */
+.data-view-wrap .data-grid-wrap{margin:0 16px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 1px 3px var(--shadow);overflow:hidden}
+.data-view-wrap #dataGrid{flex:1;min-width:0}
+.data-view-wrap .data-grid-wrap.dv-fit{flex:0 1 auto;overflow:auto}
+.data-view-wrap .ag-header-cell{padding-left:10px;padding-right:6px}
+.data-view-wrap .dv-header{display:flex;flex-direction:column;justify-content:center;gap:3px;width:100%;height:100%;padding:0!important;margin:0!important;background:0 0!important}
+.data-view-wrap .dv-header::after{display:none}
+.data-view-wrap .dv-header-top{display:flex;align-items:center;gap:4px;min-width:0}
+.dv-type{width:18px;flex-shrink:0;font-size:16px!important;color:var(--ink-soft)}
+.dv-header.role-X .dv-type{color:var(--dv-dim)}
+.dv-header.role-Y .dv-type{color:var(--dv-meas)}
+.dv-header.role-S .dv-type{color:var(--dv-ser)}
+.data-view-wrap .dv-header .hname{flex:1;min-width:0;margin-left:-2px;padding:2px 4px;border-radius:5px;font-size:12.5px;font-weight:600}
+.data-view-wrap .dv-header .hname:hover{background:var(--line)}
+.data-view-wrap .dv-header .hname:focus{background:var(--accent-soft);padding:2px 4px;border-radius:5px}
+.data-view-wrap .dv-header .dv-sort-btn,.data-view-wrap .dv-header .col-del-btn{width:24px;height:24px;flex-shrink:0;padding:0;border:0;border-radius:6px;background:0 0;color:var(--ink-soft);display:none;align-items:center;justify-content:center;cursor:pointer;opacity:1}
+/* Actions take room only on hover, so names get the full width at rest. */
+.data-view-wrap .dv-header:hover .dv-sort-btn,.data-view-wrap .dv-header:hover .col-del-btn,.data-view-wrap .dv-header .dv-sort-btn.active{display:flex}
+.data-view-wrap .dv-header .dv-sort-btn:hover{background:var(--line-strong);color:var(--ink)}
+.data-view-wrap .dv-header .dv-sort-btn.active{background:var(--accent-soft);color:var(--accent)}
+.data-view-wrap .dv-header .col-del-btn:hover{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.data-view-wrap .dv-header .dv-sort-btn .material-symbols-outlined,.data-view-wrap .dv-header .col-del-btn .material-symbols-outlined{font-size:16px}
+.dv-header-meta{display:flex;align-items:center;gap:6px;min-width:0;padding-left:22px}
+.data-view-wrap .dv-header .col-letter-badge,.data-view-wrap .dv-header.role-X .col-letter-badge,.data-view-wrap .dv-header.role-Y .col-letter-badge{min-width:0;height:auto;padding:0;background:0 0;color:var(--ink-soft);font-size:10.5px;font-weight:600}
+.dv-role-chip{padding:0 7px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:17px;white-space:nowrap}
+.dv-role-chip.role-X{color:var(--dv-dim);background:color-mix(in srgb,var(--dv-dim) 15%,transparent)}
+.dv-role-chip.role-Y{color:var(--dv-meas);background:color-mix(in srgb,var(--dv-meas) 15%,transparent)}
+.dv-role-chip.role-S{color:var(--dv-ser);background:color-mix(in srgb,var(--dv-ser) 15%,transparent)}
+.dv-role-none{font-size:10.5px;color:var(--ink-soft);opacity:.75;white-space:nowrap}
+.data-view-wrap .ag-cell.dv-cell-num{text-align:right;font-variant-numeric:tabular-nums}
+.data-view-wrap .row-idx-cell{font-weight:500;font-size:11.5px}
+.data-view-wrap .row-del-btn{width:18px;height:18px;border-radius:4px}
+.data-view-wrap .row-del-btn:hover{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.data-view-wrap .ag-floating-bottom .ag-cell{font-weight:600;background:var(--panel-2)}
+
+/* ---- Empty state ---- */
+.dv-empty{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;background:linear-gradient(to bottom,color-mix(in srgb,var(--panel) 40%,transparent),var(--panel) 55%)}
+.dv-empty[hidden]{display:none}
+/* Blank starter grid: a compact floating card instead of a full overlay,
+   so the cells stay clickable. */
+.dv-empty.dv-empty--hint{inset:auto auto 48px 50%;transform:translateX(-50%);display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ico title" "ico text" "act act";column-gap:14px;row-gap:2px;align-items:center;width:max-content;max-width:calc(100% - 32px);padding:14px 16px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px var(--shadow),0 2px 6px var(--shadow)}
+.dv-empty.dv-empty--hint .dv-empty-ico{grid-area:ico;width:44px;height:44px;border-radius:12px;font-size:24px!important}
+.dv-empty.dv-empty--hint h3{grid-area:title;margin:0;font-size:14px}
+.dv-empty.dv-empty--hint p{grid-area:text;max-width:340px;font-size:12px}
+.dv-empty.dv-empty--hint .dv-empty-actions{grid-area:act;justify-content:flex-start;margin-top:10px}
+.dv-empty.dv-empty--hint .dv-empty-actions button{height:34px;padding:0 12px}
+.dv-empty-ico{width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:18px;background:var(--accent-soft);color:var(--accent);font-size:38px!important}
+.dv-empty h3{margin:6px 0 0;font-size:17px;font-weight:600;color:var(--ink)}
+.dv-empty p{max-width:400px;margin:0;font-size:12.5px;line-height:1.55;color:var(--ink-soft)}
+.dv-empty-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px}
+.dv-empty-actions button{width:auto!important;height:38px;margin:0!important;padding:0 16px;display:inline-flex;align-items:center;gap:7px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer}
+.dv-empty-actions .dv-ribbon-btn{border:1px solid var(--line-strong);background:var(--panel);color:var(--ink)}
+.dv-empty-actions .dv-ribbon-btn:hover{background:var(--panel-2)}
+.dv-empty-actions .material-symbols-outlined{font-size:18px}
+
+/* ---- Formula bar, notices, status, statistics ---- */
+.data-view-wrap .dv-fxbar{margin:0 16px 10px;padding:6px 8px;gap:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.data-view-wrap .dv-fxbar-fx{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:var(--accent-soft);font-size:12px}
+.data-view-wrap .dv-fxbar-addr{min-width:40px;height:28px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:var(--panel-2);font-family:'JetBrains Mono',Consolas,monospace}
+.data-view-wrap .dv-fxbar-addr:empty{display:none}
+.data-view-wrap .dv-fxbar input{height:30px;padding:0 10px;border-radius:7px}
+.data-view-wrap .invalid-cell-notice{margin:0 16px 10px;padding:8px 12px;border-radius:10px;border-color:color-mix(in srgb,var(--danger) 35%,transparent);background:color-mix(in srgb,var(--danger) 10%,var(--panel))}
+.data-view-wrap .dv-status-bar{margin:0 16px 12px;padding:7px 14px;gap:20px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.data-view-wrap .dv-stats-panel{margin:0 16px 16px;border:1px solid var(--line);border-radius:12px;box-shadow:none;overflow:hidden}
+.data-view-wrap .dv-stats-header{padding:12px 16px}
+.data-view-wrap .dv-stats-header .compact-select{height:30px;border:1px solid var(--line-strong);border-radius:7px}
+.data-view-wrap .dv-stats-body{gap:10px;padding:12px 16px 16px}
+.data-view-wrap .dv-stat-card{width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.data-view-wrap .dv-stat-row{padding:2px 0}
+.data-view-wrap .dv-stat-v{font-variant-numeric:tabular-nums}
+.data-view-wrap .sheet-tab{border-radius:8px 8px 0 0}
+
+/* ==========================================================================
+   Canvas scrolling + zoom pill (20-canvas-zoom.js, 23-canvas-pan-scrollbars.js)
+   ========================================================================== */
+/* Centering with align/justify-content pushes an oversized stage past the
+   top/left edge where it can't be scrolled to. margin:auto centers the stage
+   when it fits and pins it to the start when it doesn't; flex-shrink:0 stops
+   the wrapper from being squeezed to the viewport width. */
+.canvas-scroll{align-items:flex-start;justify-content:flex-start;padding:40px;box-sizing:border-box}
+.canvas-stage-wrapper{flex-shrink:0;margin:auto}
+.canvas-hscroll{right:266px}
+.canvas-zoom-bar{right:278px;bottom:28px;width:auto;height:38px;padding:0 4px;gap:2px;border:1px solid var(--line);border-radius:11px;background:var(--panel);box-shadow:0 6px 20px var(--shadow),0 1px 3px var(--shadow);z-index:30}
+.canvas-zoom-bar .cz-btn{width:30px;height:30px;border-radius:8px;color:var(--ink-soft)}
+.canvas-zoom-bar .cz-btn:hover{background:var(--panel-2);color:var(--ink)}
+.canvas-zoom-bar .cz-btn .material-symbols-outlined{font-size:18px}
+#czZoomSlider{--cz-fill:50%;width:110px;height:20px;margin:0 4px}
+#czZoomSlider::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--cz-fill),var(--line-strong) var(--cz-fill))}
+#czZoomSlider::-moz-range-track{height:4px;border-radius:2px;background:var(--line-strong)}
+#czZoomSlider::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent)}
+#czZoomSlider::-webkit-slider-thumb{width:14px;height:14px;margin-top:-5px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--accent),0 1px 3px rgba(0,0,0,.3)}
+#czZoomSlider::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--accent),0 1px 3px rgba(0,0,0,.3)}
+#czZoomSlider:hover::-webkit-slider-thumb,#czZoomSlider:focus-visible::-webkit-slider-thumb{width:14px;box-shadow:0 0 0 1.5px var(--accent),0 0 0 5px var(--accent-soft)}
+.canvas-zoom-bar .cz-pct{min-width:52px;height:30px;padding:0 6px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.canvas-zoom-bar .cz-pct:hover,.canvas-zoom-bar .cz-pct[aria-expanded=true]{background:var(--panel-2);color:var(--ink)}
+.cz-menu{position:absolute;right:0;bottom:calc(100% + 8px);display:none;flex-direction:column;min-width:210px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px var(--shadow),0 2px 6px var(--shadow)}
+.cz-menu.open{display:flex}
+.cz-menu button{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 10px;border:0;border-radius:6px;background:0 0;color:var(--ink);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.cz-menu button:hover{background:var(--panel-2)}
+.cz-menu button.active{color:var(--accent);font-weight:600}
+.cz-menu kbd{font-family:inherit;font-size:11px;color:var(--ink-soft)}
+.cz-menu-sep{height:1px;margin:4px 6px;background:var(--line)}
+.cz-menu-hint{padding:6px 10px 4px;font-size:11px;line-height:1.4;color:var(--ink-soft)}
+
+/* ==========================================================================
+   Left sidebar redesign (rail + panels). Scoped to .sidebar-container so the
+   older global control styles elsewhere are untouched.
+   ========================================================================== */
+/* ---- Rail ---- */
+.sidebar-container .sidebar-nav{width:72px;padding:10px 0 12px;gap:2px}
+.sidebar-container .nav-btn{width:62px;height:56px;flex-direction:column;gap:3px;border-radius:10px;color:var(--ink-soft)}
+.sidebar-container .nav-btn .material-symbols-outlined{font-size:22px;width:40px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:background .15s}
+.sidebar-container .nav-lbl{font-size:10.5px;font-weight:500;line-height:1;letter-spacing:.1px}
+.sidebar-container .nav-btn:hover{background:0 0;color:var(--ink)}
+.sidebar-container .nav-btn:hover .material-symbols-outlined{background:var(--panel-2)}
+.sidebar-container .nav-btn.active{background:0 0;color:var(--accent)}
+.sidebar-container .nav-btn.active .material-symbols-outlined{background:var(--accent-soft);color:var(--accent);font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24}
+.sidebar-container .nav-btn.active .nav-lbl{font-weight:600}
+.sidebar-container .nav-sep{width:32px;height:1px;margin:4px 0;background:var(--line)}
+
+/* ---- Panel shell ---- */
+.sidebar-container .sidebar{width:300px;padding:0 0 24px}
+.sidebar-container .sidebar.closed{width:0}
+.sidebar-container .sidebar-panel{padding:0 16px}
+.sidebar-container .sp-head{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;height:52px;margin:0 -16px 4px;padding:0 10px 0 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.sidebar-container .sp-title{flex:1;font-size:15px;font-weight:600;color:var(--ink)}
+.sidebar-container .sp-close{width:30px;height:30px;padding:0;border:0;border-radius:7px;background:0 0;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sidebar-container .sp-close:hover{background:var(--panel-2);color:var(--ink)}
+.sidebar-container .sp-close .material-symbols-outlined{font-size:20px}
+.sidebar-container .sidebar-panel>h2.sp-legacy-title{display:none}
+.sidebar-container .sidebar-panel h2{margin:20px 0 10px;padding:0;border:0;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink)}
+.sidebar-container .sidebar-panel h2 .material-symbols-outlined{font-size:16px;color:var(--ink-soft)}
+
+/* ---- Sections: Figma-style rows separated by hairlines, no boxes ---- */
+.sidebar-container .side-section{margin:0 -16px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:0 0;overflow:visible}
+.sidebar-container .side-section-head{padding:13px 12px 13px 16px}
+.sidebar-container .side-section-head:hover{background:0 0}
+.sidebar-container .side-section-head:hover .ss-lbl{color:var(--accent)}
+.sidebar-container .side-section .ss-lbl{gap:10px;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);transition:color .12s}
+.sidebar-container .side-section .ss-lbl .material-symbols-outlined{width:auto;height:auto;background:0 0;border-radius:0;color:var(--ink-soft);font-size:18px}
+.sidebar-container .side-section.open .ss-lbl .material-symbols-outlined{color:var(--accent)}
+.sidebar-container .side-section .ss-chev{font-size:20px}
+.sidebar-container .side-section-body{padding:0 16px 18px}
+
+/* ---- Controls ---- */
+.sidebar-container label.field-label,.sidebar-container .field-label{margin:14px 0 6px;font-size:11.5px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-soft)}
+.sidebar-container input[type=number],.sidebar-container input[type=text],.sidebar-container select{height:34px;padding:0 10px;border:1px solid transparent;border-radius:8px;background:var(--panel-2);font-size:12.5px;box-sizing:border-box;transition:border-color .15s,background .15s,box-shadow .15s}
+.sidebar-container input[type=number]:hover,.sidebar-container input[type=text]:hover,.sidebar-container select:hover{border-color:var(--line-strong)}
+.sidebar-container input[type=number]:focus,.sidebar-container input[type=text]:focus,.sidebar-container select:focus{outline:0;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}
+.sidebar-container textarea{border:1px solid transparent;border-radius:8px;background:var(--panel-2)}
+.sidebar-container textarea:focus{outline:0;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}
+.sidebar-container .compact-select,.sidebar-container .compact-input{border-radius:7px}
+.sidebar-container input[type=color]{border-radius:8px!important;border:1px solid var(--line)!important;background:var(--panel-2)}
+.sidebar-container .toggle-group{gap:2px;padding:3px;border:0;border-radius:9px;background:var(--panel-2);overflow:visible}
+.sidebar-container .toggle-group button{min-width:0;height:28px;padding:0 8px;border-radius:6px;color:var(--ink-soft);font-size:12px;font-weight:500}
+.sidebar-container .toggle-group button+button{border-left:0}
+.sidebar-container .toggle-group button:hover{background:0 0;color:var(--ink)}
+.sidebar-container .toggle-group button.active{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
+.sidebar-container .toggle-group button.active .material-symbols-outlined{color:var(--accent)}
+.sidebar-container .check-row{margin:12px 0;font-size:12.5px}
+.sidebar-container .check-row input[type=checkbox]{width:34px;height:20px;border-radius:999px;transition:background .15s}
+.sidebar-container .check-row input[type=checkbox]::after{top:2px;left:2px;width:16px;height:16px;border-radius:50%;transition:left .15s}
+.sidebar-container .check-row input[type=checkbox]:checked::after{left:16px}
+.sidebar-container input[type=range]{height:18px}
+.sidebar-container input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line-strong)}
+.sidebar-container input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line-strong)}
+.sidebar-container input[type=range]::-webkit-slider-thumb{width:14px;height:14px;margin-top:-5px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--accent),0 1px 3px rgba(0,0,0,.3)}
+.sidebar-container input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--accent),0 1px 3px rgba(0,0,0,.3)}
+.sidebar-container input[type=range]:hover::-webkit-slider-thumb,.sidebar-container input[type=range]:focus::-webkit-slider-thumb{width:14px;box-shadow:0 0 0 1.5px var(--accent),0 0 0 5px var(--accent-soft)}
+.sidebar-container .btn-primary{height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px}
+.sidebar-container .full-color-picker-btn{height:40px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);box-shadow:none;font-size:12.5px}
+.sidebar-container .full-color-picker-btn:hover{border-color:var(--line-strong)}
+.sidebar-container .full-color-picker-btn.active{border-color:var(--accent);background:var(--accent-soft)}
+.sidebar-container .full-color-picker-swatch{border-radius:6px}
+.sidebar-container .swatch-row{gap:6px;flex-wrap:wrap}
+.sidebar-container .swatch-btn{width:26px;height:26px;border-radius:7px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);border:0}
+.sidebar-container .swatch-btn:hover{transform:scale(1.08)}
+.sidebar-container .swatch-btn.active{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
+.sidebar-container .template-grid{gap:8px}
+.sidebar-container .template-item{border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.sidebar-container .template-item:hover{border-color:var(--line-strong);background:var(--panel)}
+.sidebar-container .template-item.active{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent)}
+.sidebar-container .palette-grid{border-radius:10px;padding:4px}
+.sidebar-container .palette-item{border-radius:7px}
+.sidebar-container .num-pair{gap:10px}
+.sidebar-container .cp-hint{font-size:11.5px}
+
+/* Chart types as a 2-column tile grid instead of a long boxed list. */
+.sidebar-container .chart-type-cat{margin-bottom:16px}
+.sidebar-container .chart-type-cat-label{margin:0 0 8px 2px;font-size:11.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-soft)}
+.sidebar-container .chart-type-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sidebar-container .chart-type-row-btn,.sidebar-container .chart-type-list .chart-type-row-btn+.chart-type-row-btn{position:relative;flex-direction:column;justify-content:center;gap:6px;min-height:64px;padding:10px 6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);color:var(--ink);text-align:center}
+.sidebar-container .chart-type-list .chart-type-row-btn:first-child,.sidebar-container .chart-type-list .chart-type-row-btn:last-child,.sidebar-container .chart-type-list .chart-type-row-btn:only-child{border-radius:10px}
+.sidebar-container .chart-type-row-btn:hover{border-color:var(--line-strong);background:var(--panel)}
+.sidebar-container .chart-type-row-btn.active{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent);color:var(--accent)}
+.sidebar-container .chart-type-row-btn .chart-type-lead{display:flex;flex-direction:column;align-items:center;gap:6px}
+.sidebar-container .chart-type-row-btn .chart-type-icon{font-size:22px;color:var(--ink-soft)}
+.sidebar-container .chart-type-row-btn .chart-type-icon svg{width:22px;height:22px}
+.sidebar-container .chart-type-row-btn iconify-icon.chart-type-icon{transform:scale(1.35);margin:3px 0}
+.sidebar-container .chart-type-row-btn.active .chart-type-icon{color:var(--accent)}
+.sidebar-container .chart-type-row-btn .chart-type-label{font-size:11.5px;line-height:1.25}
+.sidebar-container .chart-type-row-btn .chart-type-check{position:absolute;top:5px;right:5px;font-size:15px}
+
+/* Plain secondary buttons (Reset position, Detach, ...) */
+/* Segmented toggles and the LaTeX template/badge buttons are classless too
+   but have their own styles, so leave them out. */
+.sidebar-container .sidebar-panel button:not([class]):not(.toggle-group>button):not(.latex-template-row>button):not(.latex-editing-badge>button){height:34px;padding:0 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit;font-size:12.5px;font-weight:500;cursor:pointer}
+.sidebar-container .sidebar-panel button:not([class]):not(.toggle-group>button):not(.latex-template-row>button):not(.latex-editing-badge>button):hover{background:var(--panel-2)}
+
+/* Shape tiles */
+.sidebar-container .shapes-grid{gap:6px}
+.sidebar-container .shape-opt-lg{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);color:var(--ink)}
+.sidebar-container .shape-opt-lg:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+
+/* Axis panel "Quick adjust" block */
+.sidebar-container hr.atf-sep{margin:0 -16px;border:0;border-top:1px solid var(--line)}
+.sidebar-container .atf-title{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink)}
+.sidebar-container .atf-title .material-symbols-outlined{font-size:18px;color:var(--ink-soft)}
+</style>
 </head>
 <body>
 <div class="topbar glass">
@@ -664,38 +973,38 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
     <div class="sidebar-nav">
       <!-- Data Toggle Button -->
       <button class="nav-btn" id="navDataToggle" title="Toggle Data View">
-        <span class="material-symbols-outlined">database</span>
+        <span class="material-symbols-outlined">database</span><span class="nav-lbl">Data</span>
       </button>
-      <div class="tool-sep" style="width:28px; height:1px; margin:2px 0;"></div>
+      <div class="nav-sep"></div>
 
       <!-- Nav Icons -->
       <button class="nav-btn active" data-panel="panel-canvas" title="Canvas Settings">
-        <span class="material-symbols-outlined">description</span>
+        <span class="material-symbols-outlined">description</span><span class="nav-lbl">Canvas</span>
       </button>
       <button class="nav-btn" data-panel="panel-chart" title="Chart Options">
-        <span class="material-symbols-outlined">bar_chart</span>
+        <span class="material-symbols-outlined">bar_chart</span><span class="nav-lbl">Chart</span>
       </button>
       <button class="nav-btn" data-panel="panel-axis" title="Format Axis">
-        <span class="material-symbols-outlined">straighten</span>
+        <span class="material-symbols-outlined">straighten</span><span class="nav-lbl">Axis</span>
       </button>
       <button class="nav-btn" data-panel="panel-legend" title="Legend">
-        <span class="material-symbols-outlined">format_list_bulleted</span>
+        <span class="material-symbols-outlined">format_list_bulleted</span><span class="nav-lbl">Legend</span>
       </button>
       <button class="nav-btn" data-panel="panel-shapes" title="Shapes">
-        <span class="material-symbols-outlined">shapes</span>
+        <span class="material-symbols-outlined">shapes</span><span class="nav-lbl">Shapes</span>
       </button>
       <button class="nav-btn" data-panel="panel-color" title="Color & Style">
-        <span class="material-symbols-outlined">palette</span>
+        <span class="material-symbols-outlined">palette</span><span class="nav-lbl">Style</span>
       </button>
       <button class="nav-btn" data-panel="panel-latex" title="LaTeX &amp; Symbols">
-        <span class="material-symbols-outlined">function</span>
+        <span class="material-symbols-outlined">function</span><span class="nav-lbl">LaTeX</span>
       </button>
       <!-- Spacer for bottom positioning -->
       <div style="flex: 1;"></div>
       
       <!-- Export -->
       <button class="nav-btn" data-panel="panel-export" title="Export">
-        <span class="material-symbols-outlined">file_save</span>
+        <span class="material-symbols-outlined">file_save</span><span class="nav-lbl">Export</span>
       </button>
     </div>
     
@@ -1265,11 +1574,21 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
       <div class="ruler-corner ruler-corner-tl" id="rulerCorner"><span id="rulerUnitLabel">mm</span></div>
       <canvas class="ruler ruler-h ruler-top" id="rulerTop" title="Drag to pan left/right"></canvas>
       <canvas class="ruler ruler-v ruler-left" id="rulerLeft" title="Drag to pan up/down"></canvas>
-      <div class="canvas-zoom-bar" id="canvasZoomBar">
-        <button class="cz-btn" id="czZoomOut" title="Zoom out" aria-label="Zoom out"><span class="material-symbols-outlined">remove</span></button>
-        <input type="range" id="czZoomSlider" min="10" max="300" step="5" value="100">
-        <button class="cz-btn" id="czZoomIn" title="Zoom in" aria-label="Zoom in"><span class="material-symbols-outlined">add</span></button>
-        <button class="cz-pct" id="czZoomPct" title="Reset to fit">100%</button>
+      <div class="canvas-zoom-bar" id="canvasZoomBar" role="group" aria-label="Zoom">
+        <button type="button" class="cz-btn" id="czZoomOut" title="Zoom out (Ctrl+-)" aria-label="Zoom out"><span class="material-symbols-outlined">remove</span></button>
+        <input type="range" id="czZoomSlider" min="10" max="300" step="1" value="100" aria-label="Zoom level">
+        <button type="button" class="cz-btn" id="czZoomIn" title="Zoom in (Ctrl++)" aria-label="Zoom in"><span class="material-symbols-outlined">add</span></button>
+        <button type="button" class="cz-pct" id="czZoomPct" title="Zoom options" aria-haspopup="menu" aria-expanded="false">100%</button>
+        <div class="cz-menu" id="czMenu" role="menu">
+          <button type="button" role="menuitem" data-zoom="in">Zoom in<kbd>Ctrl +</kbd></button>
+          <button type="button" role="menuitem" data-zoom="out">Zoom out<kbd>Ctrl &minus;</kbd></button>
+          <button type="button" role="menuitem" id="czFit" data-zoom="fit">Zoom to fit<kbd>Shift 1</kbd></button>
+          <div class="cz-menu-sep"></div>
+          <button type="button" role="menuitem" data-zoom="50">50%</button>
+          <button type="button" role="menuitem" data-zoom="100">100%<kbd>Ctrl 0</kbd></button>
+          <button type="button" role="menuitem" data-zoom="200">200%</button>
+          <div class="cz-menu-hint">Scroll to pan &middot; Ctrl + scroll or pinch to zoom</div>
+        </div>
       </div>
 
       <!-- Layers panel: right-hand floating panel listing every canvas
@@ -1716,15 +2035,13 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
     <div class="view-pane" id="paneData">
       <div class="data-view-wrap">
 
-        <!-- Top action bar: the 5 core menus (Upload data / Transpose /
-             Sort [top] / Expression / Statistics) plus grid-editing utilities
-             (Add column, Add row, Revert changes) and the primary CTA.
-             Lives at the top, Tableau/Sheets-toolbar style. -->
+        <!-- Top toolbar, grouped left to right by workflow: get data in,
+             reshape it, inspect it; then revert / apply on the right. -->
         <div class="dv-bottom-row dv-top-toolbar">
           <div class="dv-bottom-group">
             <div class="dv-upload-wrap">
-              <button class="dv-ribbon-btn" id="dvUploadToggle" type="button" title="Upload or paste data">
-                <span class="material-symbols-outlined">upload_file</span>Upload data
+              <button class="dv-ribbon-btn dv-import-btn" id="dvUploadToggle" type="button" title="Upload a file or paste data" aria-haspopup="true">
+                <span class="material-symbols-outlined">upload_file</span>Import<span class="material-symbols-outlined dv-caret">expand_more</span>
               </button>
               <div class="dv-upload-menu" id="dvUploadMenu">
                 <div class="dv-upload-formats">
@@ -1748,27 +2065,31 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
               </div>
             </div>
 
-            <button class="dv-ribbon-btn" id="transposeBtn" type="button" title="Transpose rows/columns">
+            <span class="dv-tb-sep"></span>
+            <button class="dv-ribbon-btn" id="addColBtn" type="button" title="Add a column at the end"><span class="material-symbols-outlined">add_column_right</span>Column</button>
+            <button class="dv-ribbon-btn" id="addRowBtn" type="button" title="Add a row at the bottom"><span class="material-symbols-outlined">add_row_below</span>Row</button>
+            <button class="dv-ribbon-btn" id="transposeBtn" type="button" title="Swap rows and columns">
               <span class="material-symbols-outlined">sync_alt</span>Transpose
             </button>
-            <div class="toggle-group" title="Table shape">
-              <button id="shapeWide" class="active">Wide</button>
-              <button id="shapeLong">Long</button>
+
+            <span class="dv-tb-sep"></span>
+            <div class="toggle-group dv-seg" role="group" aria-label="Table shape" title="Wide: one column per series. Long: one row per value, with a series column.">
+              <button id="shapeWide" class="active" type="button"><span class="material-symbols-outlined">view_week</span>Wide</button>
+              <button id="shapeLong" type="button"><span class="material-symbols-outlined">view_agenda</span>Long</button>
             </div>
 
+            <span class="dv-tb-sep"></span>
             <button class="dv-ribbon-btn" id="fxToggleBtn" type="button" title="Show/hide the formula bar">
-              <span class="material-symbols-outlined">functions</span>Expression
+              <span class="material-symbols-outlined">function</span>Formula
             </button>
-
             <button class="dv-ribbon-btn" id="dvStatsToggle" type="button" title="Show/hide column statistics">
               <span class="material-symbols-outlined">query_stats</span>Statistics
             </button>
-
-            <button class="dv-ribbon-btn" id="addColBtn" type="button" title="Add column"><span class="material-symbols-outlined">view_column</span></button>
-            <button class="dv-ribbon-btn" id="addRowBtn" type="button" title="Add row"><span class="material-symbols-outlined">table_rows</span></button>
-            <button class="dv-ribbon-btn dv-revert-btn" id="revertChangesBtn" type="button" title="Revert to the last imported data" disabled><span class="material-symbols-outlined">restart_alt</span>Revert changes</button>
           </div>
-          <button class="btn-primary dv-apply-btn" id="applyDataBtn">Apply to chart &rarr;</button>
+          <div class="dv-bottom-group dv-tb-right">
+            <button class="dv-ribbon-btn dv-revert-btn" id="revertChangesBtn" type="button" title="Revert to the last imported data" disabled><span class="material-symbols-outlined">restart_alt</span>Revert</button>
+            <button class="btn-primary dv-apply-btn" id="applyDataBtn" type="button">Apply to chart<span class="material-symbols-outlined">arrow_forward</span></button>
+          </div>
         </div>
 
         <!-- Tableau-style split: a left "Data pane" holding the Columns/Rows
@@ -1778,9 +2099,9 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 
           <div class="dv-datapane">
             <div class="dv-datapane-head">
-              <span class="material-symbols-outlined">view_column</span>Data pane
+              <span class="material-symbols-outlined">dataset</span>Chart mapping
             </div>
-            <div class="dv-datapane-hint">Drag a field into a shelf to set what drives the chart's rows and columns.</div>
+            <div class="dv-datapane-hint">Drag fields onto the axes to decide what the chart plots.</div>
             <!-- Row/Column shelves — Tableau-style: drag a field pill here to
                  set what drives the chart's rows vs. columns (see dv_shelves.js). -->
             <div class="dv-shelves" id="dvShelves"></div>
@@ -1791,7 +2112,10 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
             <!-- Top row: global sort + search — mirrors a plain spreadsheet's
                  chrome instead of a chart-tool ribbon. -->
             <div class="dv-top-row">
-              <div class="dv-hint">Click a column header to edit column properties</div>
+              <div class="dv-title-block">
+                <div class="dv-title">Data <span class="dv-summary" id="dvSummary"></span></div>
+                <div class="dv-hint">Click a column name to rename it · click a cell to edit · paste from Excel or Sheets</div>
+              </div>
               <div class="dv-top-controls">
                 <div class="dv-sort-select-wrap">
                   <select id="dvSortSelect" class="dv-sort-select" title="Sort the table by a column">
@@ -1819,7 +2143,20 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
               <span class="material-symbols-outlined">error</span>
               <span class="notice-text"></span>
             </div>
-            <div class="data-grid-wrap"><div id="dataGrid"></div></div>
+            <div class="data-grid-wrap">
+              <div id="dataGrid"></div>
+              <!-- Shown over the placeholder grid until data is loaded -->
+              <div class="dv-empty" id="dvEmptyState" hidden>
+                <span class="material-symbols-outlined dv-empty-ico">table_view</span>
+                <h3>Start with your data</h3>
+                <p>Import a CSV, TSV, Excel or JSON file, paste cells copied from a spreadsheet, or try a sample dataset.</p>
+                <div class="dv-empty-actions">
+                  <button type="button" class="btn-primary" id="dvEmptyImport"><span class="material-symbols-outlined">upload_file</span>Import file</button>
+                  <button type="button" class="dv-ribbon-btn" id="dvEmptyPaste"><span class="material-symbols-outlined">content_paste</span>Paste data</button>
+                  <button type="button" class="dv-ribbon-btn" id="dvEmptySample"><span class="material-symbols-outlined">science</span>Load sample</button>
+                </div>
+              </div>
+            </div>
             <div class="dv-status-bar" id="dvStatusBar" style="display:none;"></div>
 
             <div class="dv-stats-panel" id="dvStatsPanel" style="display:none;">
@@ -1990,6 +2327,7 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 <script src="js/layout-editor/25-design-panel.js"></script>
 <script src="js/layout-editor/26-selection-hud.js"></script>
 <script src="js/layout-editor/27-object-float-bar.js"></script>
+<script src="js/layout-editor/28-axis-controls-sync.js"></script>
 
 <script src="js/ui_sections.js"></script>
 <script src="js/help_search.js"></script>

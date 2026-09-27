@@ -435,6 +435,7 @@ function dvFxBarCommit() {
     if (typeof dvUpdatePinnedStatRow === "function") dvUpdatePinnedStatRow();
     if (typeof historyNotifyChange === "function") historyNotifyChange();
     dvUpdateStatusBar();
+    dvSyncChrome();
     if (dvGridApi) dvGridApi.refreshCells({ force: true });
 }
 (function wireFxBar() {
@@ -531,14 +532,17 @@ function getDvGridTheme() {
             oddRowBackgroundColor: "var(--panel-2)",
             rowHoverColor: "var(--accent-soft)",
             fontFamily: "inherit",
-            fontSize: 12,
-            // Square corners + a visibly gridlined table (Tableau/Excel
-            // crosstab feel) instead of a rounded card.
+            fontSize: 12.5,
+            // Light gridlines with the card border drawn by .data-grid-wrap.
             wrapperBorderRadius: 0,
             wrapperBorder: false,
-            borderColor: "var(--line-strong)",
+            borderColor: "var(--line)",
             rowBorder: true,
-            columnBorder: true
+            columnBorder: true,
+            headerColumnBorder: true,
+            headerFontWeight: 600,
+            cellHorizontalPadding: 10,
+            selectedRowBackgroundColor: "var(--accent-soft)"
         });
     }
     return dvGridTheme;
@@ -546,15 +550,20 @@ function getDvGridTheme() {
 
 function makeDvColumnDefs() {
     var defs = [{
-        headerName: "", colId: "rowIdx", pinned: "left", width: 40,
+        headerName: "", colId: "rowIdx", pinned: "left", width: 48,
         resizable: false, sortable: false, editable: false, suppressMovable: true,
         cellRenderer: rowIdxCellRenderer
     }];
     dv.header.forEach(function (h, c) {
+        // Numbers read (and compare) better right-aligned, as in spreadsheets.
+        var numeric = isNumericColumn(dv.rows, c);
         defs.push({
             colId: "c" + c, field: "c" + c,
             editable: function (p) { return !p.node.rowPinned; },
-            sortable: false, resizable: true, minWidth: 110, suppressMovable: true,
+            // Wide enough for the whole name (~7.5px per char at 12.5px) plus the type icon.
+            sortable: false, resizable: true, flex: 1, suppressMovable: true,
+            minWidth: Math.min(280, Math.max(140, 56 + String(h || "").length * 7.5)),
+            cellClass: numeric ? "dv-cell-num" : "dv-cell-text",
             headerComponent: DataColHeader,
             headerComponentParams: { colIndex: c },
             tooltipValueGetter: function (p) { return isCellInvalid(c, p.value) ? INVALID_CELL_TITLE : ""; },
@@ -581,6 +590,7 @@ function makeDvColumnDefs() {
                 if (typeof dvUpdatePinnedStatRow === "function") dvUpdatePinnedStatRow();
                 if (typeof historyNotifyChange === "function") historyNotifyChange();
                 dvUpdateStatusBar();
+                dvSyncChrome();
                 setTimeout(function () { if (dvGridApi) dvGridApi.refreshCells({ force: true }); }, 0);
                 return true;
             }
@@ -604,7 +614,7 @@ function dvRenderEmptyGrid() {
     el.style.height = "100%";
     var COLS = 18, ROWS = 60;
     var colDefs = [{
-        headerName: "", colId: "rowIdx", pinned: "left", width: 40,
+        headerName: "", colId: "rowIdx", pinned: "left", width: 48,
         resizable: false, sortable: false, editable: false, suppressMovable: true,
         cellRenderer: function (p) { return String(p.node.rowIndex + 1); },
         cellClass: "row-idx-cell"
@@ -618,13 +628,55 @@ function dvRenderEmptyGrid() {
         theme: getDvGridTheme(),
         columnDefs: colDefs,
         rowData: rowData,
-        headerHeight: 28,
-        rowHeight: 26,
+        headerHeight: 32,
+        rowHeight: 32,
         suppressMovableColumns: true,
         suppressClipboardPaste: true,
         animateRows: false
     });
 }
+
+/* Header line above the grid ("5 rows × 4 columns") and the empty-state card
+   shown over the placeholder grid until data arrives. */
+function dvSyncChrome() {
+    var has = dv.header.length > 0;
+    var sum = document.getElementById("dvSummary");
+    if (sum) {
+        var r = dv.rows.length, c = dv.header.length;
+        sum.textContent = has ? r + (r === 1 ? " row" : " rows") + " × " + c + (c === 1 ? " column" : " columns") : "";
+    }
+    // The app starts on a blank, editable grid; while every cell is still
+    // empty, float the start card under the rows instead of covering them.
+    var blank = has && dv.rows.every(function (r) { return r.every(function (v) { return v === "" || v == null; }); });
+    var empty = document.getElementById("dvEmptyState");
+    if (empty) {
+        empty.hidden = has && !blank;
+        empty.classList.toggle("dv-empty--hint", blank);
+    }
+    var wrap = document.querySelector(".data-grid-wrap");
+    if (wrap) wrap.classList.toggle("is-empty", !has || blank);
+}
+
+(function wireEmptyState() {
+    function openImport(focusPaste) {
+        var menu = document.getElementById("dvUploadMenu"), btn = document.getElementById("dvUploadToggle");
+        if (menu && !menu.classList.contains("open") && btn) btn.click();
+        if (focusPaste) setTimeout(function () { var t = document.getElementById("dataInput"); if (t) t.focus(); }, 0);
+    }
+    var imp = document.getElementById("dvEmptyImport"), paste = document.getElementById("dvEmptyPaste"), sample = document.getElementById("dvEmptySample");
+    // Stop these clicks from reaching the menu's outside-click closer.
+    [imp, paste, sample].forEach(function (b) { b && b.addEventListener("mousedown", function (e) { e.stopPropagation(); }); });
+    imp && imp.addEventListener("click", function (e) { e.stopPropagation(); openImport(false); });
+    paste && paste.addEventListener("click", function (e) { e.stopPropagation(); openImport(true); });
+    sample && sample.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var load = document.getElementById("loadSampleBtn"), parse = document.getElementById("parseBtn");
+        if (load) load.click();
+        if (parse) parse.click();
+        var menu = document.getElementById("dvUploadMenu");
+        if (menu) menu.classList.remove("open");
+    });
+})();
 
 function buildDataGridUIInner() {
     // AG Grid is loaded lazily (see js/lazy-loader.js). It's usually already
@@ -642,6 +694,7 @@ function buildDataGridUIInner() {
     }
     renderLongPickers();
     if (typeof dvRenderShelves === "function") dvRenderShelves();
+    dvSyncChrome();
     var el = document.getElementById("dataGrid");
     if (!dv.header.length) {
         if (dvGridApi) { dvGridApi.destroy(); dvGridApi = null; }
@@ -671,8 +724,8 @@ function buildDataGridUIInner() {
             theme: getDvGridTheme(),
             columnDefs: makeDvColumnDefs(),
             rowData: rowData,
-            headerHeight: 46,
-            rowHeight: 26,
+            headerHeight: 54,
+            rowHeight: 32,
             singleClickEdit: true,
             stopEditingWhenCellsLoseFocus: true,
             suppressMovableColumns: true,
@@ -727,6 +780,14 @@ function buildDataGridUIInner() {
         });
         dvGridApi.__dvColCount = dv.header.length;
     }
+    // Small tables hug their rows (Σ row right under the data, card ends
+    // there); big ones scroll inside the full-height card. The blank starter
+    // grid keeps full height so the start card has room below the rows.
+    var wrap = el.parentNode;
+    var fit = dv.rows.length <= 40 && !(wrap && wrap.classList.contains("is-empty"));
+    dvGridApi.setGridOption("domLayout", fit ? "autoHeight" : "normal");
+    el.style.height = fit ? "" : "100%";
+    if (wrap) wrap.classList.toggle("dv-fit", fit);
     updateInvalidCellNotice();
     if (typeof dvRenderStatsSummary === "function") dvRenderStatsSummary();
     if (typeof dvUpdatePinnedStatRow === "function") dvUpdatePinnedStatRow();
@@ -850,56 +911,88 @@ function buildOutputLong() {
     };
 }
 
+// The chart role a column plays, for the header's meta line.
+function dvColumnRole(c) {
+    if (dv.shape === "long") {
+        return c === dv.longX ? { key: "X", label: "X axis" }
+            : c === dv.longSeries ? { key: "S", label: "Series" }
+            : c === dv.longValue ? { key: "Y", label: "Value" } : null;
+    }
+    return dv.roles[c] === "X" ? { key: "X", label: "X axis" } : dv.roles[c] === "Y" ? { key: "Y", label: "Y axis" } : null;
+}
+
 DataColHeader.prototype.init = function (params) {
     var c = params.colIndex;
+    var numeric = isNumericColumn(dv.rows, c);
+    var role = dvColumnRole(c);
     var el = document.createElement("div");
-    el.className = "dv-header" + (dv.shape === "wide" ? (dv.roles[c] === "X" ? " role-X" : dv.roles[c] === "Y" ? " role-Y" : "") : "");
+    el.className = "dv-header" + (role ? " role-" + role.key : "") + (numeric ? " is-num" : "");
 
     var top = document.createElement("div");
     top.className = "dv-header-top";
 
-    var badge = document.createElement("span");
-    badge.className = "col-letter-badge";
-    badge.textContent = colLetter(c);
-    top.appendChild(badge);
+    var type = document.createElement("span");
+    type.className = "dv-type material-symbols-outlined";
+    type.textContent = numeric ? "tag" : "match_case";
+    type.title = numeric ? "Numbers" : "Text";
+    top.appendChild(type);
 
     var name = document.createElement("input");
-    name.type = "text"; name.className = "hname"; name.value = dv.header[c] || "Column " + (c + 1); name.title = "Column name";
+    name.type = "text"; name.className = "hname"; name.value = dv.header[c] || "Column " + (c + 1);
+    name.title = name.value + " \u2014 click to rename";
+    name.spellcheck = false;
     ["mousedown", "click", "dblclick"].forEach(function (ev) { name.addEventListener(ev, function (e) { e.stopPropagation(); }); });
     name.addEventListener("input", function () { dv.header[c] = name.value; });
+    name.addEventListener("keydown", function (e) { if (e.key === "Enter") name.blur(); });
+    name.addEventListener("change", function () { if (typeof dvRenderShelves === "function") dvRenderShelves(); });
     top.appendChild(name);
 
-    var sortWrap = document.createElement("span");
-    sortWrap.className = "dv-sort-wrap";
-    var ascBtn = document.createElement("button");
-    ascBtn.type = "button"; ascBtn.className = "dv-sort-btn" + (dv.sortCol === c && dv.sortDir === "asc" ? " active" : "");
-    ascBtn.title = "Sort min \u2192 max (A\u2192Z)"; ascBtn.innerHTML = '<span class="material-symbols-outlined">arrow_upward</span>';
-    ascBtn.addEventListener("mousedown", function (e) { e.stopPropagation(); });
-    ascBtn.addEventListener("click", function (e) {
+    // One button that cycles: none -> ascending -> descending -> none.
+    var dir = dv.sortCol === c ? dv.sortDir : null;
+    var sortBtn = document.createElement("button");
+    sortBtn.type = "button";
+    sortBtn.className = "dv-sort-btn" + (dir ? " active" : "");
+    sortBtn.title = dir === "asc" ? "Sorted ascending \u2014 click for descending"
+        : dir === "desc" ? "Sorted descending \u2014 click to clear" : "Sort ascending";
+    sortBtn.innerHTML = '<span class="material-symbols-outlined">' + (dir === "asc" ? "arrow_upward" : dir === "desc" ? "arrow_downward" : "swap_vert") + "</span>";
+    sortBtn.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+    sortBtn.addEventListener("click", function (e) {
         e.stopPropagation();
-        dv.sortCol === c && dv.sortDir === "asc" ? dvClearSort() : sortByColumn(c, "asc");
+        if (!dir) sortByColumn(c, "asc");
+        else if (dir === "asc") sortByColumn(c, "desc");
+        else dvClearSort();
     });
-    var descBtn = document.createElement("button");
-    descBtn.type = "button"; descBtn.className = "dv-sort-btn" + (dv.sortCol === c && dv.sortDir === "desc" ? " active" : "");
-    descBtn.title = "Sort max \u2192 min (Z\u2192A)"; descBtn.innerHTML = '<span class="material-symbols-outlined">arrow_downward</span>';
-    descBtn.addEventListener("mousedown", function (e) { e.stopPropagation(); });
-    descBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        dv.sortCol === c && dv.sortDir === "desc" ? dvClearSort() : sortByColumn(c, "desc");
-    });
-    sortWrap.appendChild(ascBtn); sortWrap.appendChild(descBtn);
-    top.appendChild(sortWrap);
+    top.appendChild(sortBtn);
 
     var del = document.createElement("button");
     del.type = "button"; del.className = "col-del-btn"; del.title = "Delete column";
-    del.innerHTML = '<span class="material-symbols-outlined">close</span>';
+    del.innerHTML = '<span class="material-symbols-outlined">delete</span>';
     del.addEventListener("mousedown", function (e) { e.stopPropagation(); });
     del.addEventListener("click", function (e) { e.stopPropagation(); deleteColumn(c); });
     top.appendChild(del);
-
     el.appendChild(top);
-    // Role assignment (X/Y) now lives in the Columns/Rows shelves above the
-    // grid (js/dv_shelves.js) instead of a per-column <select> here.
+
+    // Meta line: spreadsheet letter (used by formulas) + the chart role.
+    // Roles are assigned in the shelves (js/dv_shelves.js).
+    var meta = document.createElement("div");
+    meta.className = "dv-header-meta";
+    var letter = document.createElement("span");
+    letter.className = "col-letter-badge";
+    letter.textContent = colLetter(c);
+    letter.title = "Column " + colLetter(c) + " in formulas";
+    meta.appendChild(letter);
+    if (role) {
+        var chip = document.createElement("span");
+        chip.className = "dv-role-chip role-" + role.key;
+        chip.textContent = role.label;
+        meta.appendChild(chip);
+    } else {
+        var unused = document.createElement("span");
+        unused.className = "dv-role-none";
+        unused.textContent = "Not plotted";
+        meta.appendChild(unused);
+    }
+    el.appendChild(meta);
     this.eGui = el;
 };
 DataColHeader.prototype.getGui = function () { return this.eGui; };

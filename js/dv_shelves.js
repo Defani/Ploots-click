@@ -25,8 +25,9 @@ function dvShelfFieldPill(colIdx, opts) {
 
     var badge = document.createElement("span");
     var isMeasure = dvFieldIsMeasure(colIdx);
-    badge.className = "dv-shelf-pill-badge " + (isMeasure ? "is-measure" : "is-dim");
-    badge.textContent = isMeasure ? "#" : "Abc";
+    badge.className = "dv-shelf-pill-badge material-symbols-outlined " + (isMeasure ? "is-measure" : "is-dim");
+    badge.textContent = isMeasure ? "tag" : "match_case"; // same icons as the grid headers
+    badge.title = isMeasure ? "Numbers" : "Text";
     pill.appendChild(badge);
 
     var label = document.createElement("span");
@@ -53,9 +54,10 @@ function dvShelfFieldPill(colIdx, opts) {
     return pill;
 }
 
-function dvShelfDropZone(labelText, hintText, colIdxs, onDrop, onRemove) {
+function dvShelfDropZone(labelText, hintText, colIdxs, onDrop, onRemove, roleKey) {
     var zone = document.createElement("div");
     zone.className = "dv-shelf-zone";
+    if (roleKey) zone.dataset.role = roleKey; // colors the label dot to match the grid header chips
 
     var lab = document.createElement("div");
     lab.className = "dv-shelf-zone-label";
@@ -101,7 +103,7 @@ function dvRenderShelves() {
     tray.className = "dv-shelf-tray";
     var trayLabel = document.createElement("div");
     trayLabel.className = "dv-shelf-tray-label";
-    trayLabel.textContent = "Fields";
+    trayLabel.textContent = dv.shape === "wide" ? "Unused fields" : "All fields";
     tray.appendChild(trayLabel);
     var trayPills = document.createElement("div");
     trayPills.className = "dv-shelf-tray-pills";
@@ -117,32 +119,32 @@ function dvRenderShelves() {
 
         function unassign(ci) { dv.roles[ci] = "Text"; buildDataGridUI(); }
 
-        var colsZone = dvShelfDropZone("Columns (X-axis)", "Drag a field here", xIdx !== -1 ? [xIdx] : [], function (ci) {
+        var colsZone = dvShelfDropZone("X axis", "Drop the category field here", xIdx !== -1 ? [xIdx] : [], function (ci) {
             dv.roles.forEach(function (r, i) { if (r === "X") dv.roles[i] = "Text"; });
             dv.roles[ci] = "X";
             buildDataGridUI();
-        }, unassign);
+        }, unassign, "X");
         row.appendChild(colsZone);
 
-        var rowsZone = dvShelfDropZone("Rows (Y-axis)", "Drag one or more fields here", yIdxs, function (ci) {
+        var rowsZone = dvShelfDropZone("Y axis", "Drop one or more number fields here", yIdxs, function (ci) {
             dv.roles[ci] = "Y";
             buildDataGridUI();
-        }, unassign);
+        }, unassign, "Y");
         row.appendChild(rowsZone);
 
         var unassigned = dv.header.map(function (h, i) { return i; }).filter(function (i) { return !used[i]; });
         if (!unassigned.length) {
             var empty = document.createElement("span");
             empty.className = "dv-shelf-tray-empty";
-            empty.textContent = "All fields placed on a shelf";
+            empty.textContent = "Every field is on an axis";
             trayPills.appendChild(empty);
         } else {
             unassigned.forEach(function (i) { trayPills.appendChild(dvShelfFieldPill(i)); });
         }
     } else {
-        var colsZone2 = dvShelfDropZone("Columns (X)", "Drag the category field here", [dv.longX], function (ci) { dv.longX = ci; buildDataGridUI(); });
-        var colorZone = dvShelfDropZone("Color (Series)", "Drag the grouping field here", [dv.longSeries], function (ci) { dv.longSeries = ci; buildDataGridUI(); });
-        var rowsZone2 = dvShelfDropZone("Rows (Value)", "Drag the number field here", [dv.longValue], function (ci) { dv.longValue = ci; buildDataGridUI(); });
+        var colsZone2 = dvShelfDropZone("X axis", "Drop the category field here", [dv.longX], function (ci) { dv.longX = ci; buildDataGridUI(); }, null, "X");
+        var colorZone = dvShelfDropZone("Series (color)", "Drop the grouping field here", [dv.longSeries], function (ci) { dv.longSeries = ci; buildDataGridUI(); }, null, "S");
+        var rowsZone2 = dvShelfDropZone("Value", "Drop the number field here", [dv.longValue], function (ci) { dv.longValue = ci; buildDataGridUI(); }, null, "Y");
         row.appendChild(colsZone2); row.appendChild(colorZone); row.appendChild(rowsZone2);
 
         // Long mode always needs exactly one field per shelf, so every field

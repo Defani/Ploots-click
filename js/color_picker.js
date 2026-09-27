@@ -630,7 +630,7 @@ function cpWireOnce() {
     if (!cp.open) return;
     if (e.key === "Escape") closeColorPicker();
     // Delete the selected stop, unless typing in a field.
-    if ((e.key === "Delete" || e.key === "Backspace") && cp.mode === "gradient" && !e.target.closest("input,select,textarea") &&
+    if ((e.key === "Delete" || e.key === "Backspace") && cp.mode === "gradient" && !(e.target.closest && e.target.closest("input,select,textarea")) &&
         cp.grad.stops.length > 2) {
       e.preventDefault();
       e.stopImmediatePropagation();

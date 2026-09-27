@@ -280,13 +280,23 @@ function startRulerPan(e, axis, rulerEl) {
     else startRulerPan(e, 'v', rulerLeft);
   });
 
-  // Mouse wheel over the canvas area zooms in/out instead of scrolling.
+  // Like Figma/Canva: the wheel (or two-finger trackpad swipe) pans the
+  // canvas, Shift+wheel pans sideways, and Ctrl/Cmd+wheel or a trackpad
+  // pinch (which browsers report as ctrlKey+wheel) zooms around the pointer.
   if (scroller) scroller.addEventListener('wheel', function (e) {
+    if (!(e.ctrlKey || e.metaKey)) {
+      if (e.shiftKey && !e.deltaX) {
+        e.preventDefault();
+        scroller.scrollLeft += e.deltaY;
+      }
+      return;
+    }
     e.preventDefault();
     if (typeof window.getCanvasZoomPct !== 'function' || typeof window.setCanvasZoomPct !== 'function') return;
+    // deltaMode 1 = lines (classic mouse wheels); normalise to pixels.
+    var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     var cur = window.getCanvasZoomPct();
-    var step = Math.max(2, Math.round(cur * 0.08));
-    window.setCanvasZoomPct(cur + (e.deltaY < 0 ? step : -step));
+    window.setCanvasZoomPct(cur * Math.exp(-dy * 0.0025), e.clientX, e.clientY);
   }, { passive: false });
 
   updateRulers();
