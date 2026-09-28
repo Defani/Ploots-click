@@ -496,6 +496,7 @@
   GIS.loadSampleLayer = loadSample;
 
   function refreshAll() { renderLayerList(); renderStyle(); renderView(); renderItemProps(); }
+  GIS.refreshPanel = refreshAll;
 
   // Switches the page's chart block to the map.
   function enterMapMode() {
