@@ -313,6 +313,7 @@
     if (o.gisItem === "legend") {
       h += field("Title", text("item:title", p.title)) + pair(field("Font size", num("item:fontSize", p.fontSize, 6, 36, 1)), field("Background", color("item:background", p.background || "#ffffff")));
       h += check("item:frame", p.frame, "Frame") + check("item:showLayerNames", p.showLayerNames, "Layer headings");
+      if (p.boxW || p.boxH) h += '<button id="gisLegendFit" style="width:100%;margin-top:8px;">Fit to content</button>';
     } else if (o.gisItem === "scalebar") {
       h += field("Style", select("item:style", SCALE_STYLES, p.style)) + field("Units", select("item:units", SCALE_UNITS, p.units));
       h += pair(field("Segments", num("item:segments", p.segments, 1, 10, 1)), field("Target width (px)", num("item:width", p.width, 40, 800, 1)));
@@ -409,6 +410,7 @@
         GIS.emit("style"); renderStyle();
       } else if (b.id === "gisRecolor" && l) { l.style.catColors = {}; GIS.emit("style"); renderStyle(); }
       else if (b.dataset.add) { enterMapMode(); GIS.items.add(b.dataset.add); }
+      else if (b.id === "gisLegendFit") { var lo = selectedItem(); if (lo) { GIS.items.update(lo, { boxW: 0, boxH: 0 }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisMoveBtn") GIS.mapActions && GIS.mapActions.setInteractive(true);
       else if (b.id === "gisZoomAll") GIS.mapActions && GIS.mapActions.fitAll();
       else if (b.id === "gisZoomLayer") GIS.mapActions && GIS.mapActions.zoomToLayer(GIS.active());

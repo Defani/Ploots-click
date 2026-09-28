@@ -21,7 +21,7 @@
   var INK = "#1a1a1a";
 
   var DEFAULTS = {
-    legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true },
+    legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true, boxW: 0, boxH: 0 },
     scalebar: { style: "single", segments: 4, units: "auto", width: 170, height: 6, fontSize: 10, frame: false, color: INK, labels: "all" },
     north: { style: "arrow", size: 56, color: INK, followMap: true },
     inset: { basemap: "positron", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 },
@@ -198,19 +198,33 @@
       var t = text(o.title, pad, y, fs + 2, { fontWeight: "bold" });
       parts.push(t); maxW = t.width; y += t.height + 6;
     }
+    var titleBottom = y, blk = -1, blockTop = [], blockW = [];
+    function newBlock() { blk++; blockTop[blk] = y; blockW[blk] = 0; }
+    function add() {
+      for (var i = 0; i < arguments.length; i++) {
+        var p = arguments[i];
+        p.__blk = blk;
+        p.setCoords();
+        var br = p.getBoundingRect(true, true);
+        blockW[blk] = Math.max(blockW[blk], br.left + br.width - pad);
+        parts.push(p);
+      }
+    }
     var layers = GIS.layers.filter(function (l) { return l.visible && l.kind !== "xyz"; });
     layers.forEach(function (l) {
       var entries = GIS.sym.legendEntries(l), kind = l.kind === "vector" ? GIS.geometryKind(l) : "raster";
       var ren = l.kind === "vector" ? l.style.renderer || "simple" : "simple";
       // Heatmap: the layer name and a Low -> High ramp.
       if (ren === "heatmap") {
+        newBlock();
         var hh = text(l.name, pad, y, fs, { fontWeight: "bold" });
-        parts.push(hh); maxW = Math.max(maxW, hh.width); y += row;
+        add(hh); maxW = Math.max(maxW, hh.width); y += row;
+        newBlock();
         var hw = Math.max(100, fs * 10), hc = GIS.sym.rampColors(l.style.heatRamp, false);
         var hb = new fabric.Rect({ left: pad, top: y, width: hw, height: 10, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false });
         hb.set("fill", new fabric.Gradient({ type: "linear", coords: { x1: 0, y1: 0, x2: hw, y2: 0 },
           colorStops: [{ offset: 0, color: "rgba(255,255,255,0)" }].concat(hc.map(function (c, i) { return { offset: 0.08 + 0.92 * i / (hc.length - 1 || 1), color: c }; })) }));
-        parts.push(hb, text("Low", pad, y + 13, fs - 1, { fill: "#4a4a46" }), text("High", pad + hw, y + 13, fs - 1, { originX: "right", fill: "#4a4a46" }));
+        add(hb, text("Low", pad, y + 13, fs - 1, { fill: "#4a4a46" }), text("High", pad + hw, y + 13, fs - 1, { originX: "right", fill: "#4a4a46" }));
         maxW = Math.max(maxW, hw); y += 13 + fs + 8;
         return;
       }
@@ -218,74 +232,98 @@
       // Proportional circles: nested reference circles with leader lines.
       function drawSizes(fill) {
         if (!sizes || !sizes.length) return;
+        newBlock();
         var rMax = sizes[0].r, cx = pad + rMax, base = y + 2 * rMax, lx = pad + 2 * rMax + 10;
         var st = text(l.style.sizeField, pad, y, fs - 1, { fill: "#4a4a46", fontStyle: "italic" });
-        parts.push(st); y += st.height + 4; base = y + 2 * rMax;
+        add(st); y += st.height + 4; base = y + 2 * rMax;
         sizes.forEach(function (sr) {
-          parts.push(new fabric.Circle({ left: cx, top: base - sr.r, radius: sr.r, originX: "center", originY: "center", fill: fill || "rgba(0,0,0,0)",
+          add(new fabric.Circle({ left: cx, top: base - sr.r, radius: sr.r, originX: "center", originY: "center", fill: fill || "rgba(0,0,0,0)",
             opacity: fill ? Math.max(0.15, l.style.fillOpacity) : 1, stroke: INK, strokeWidth: 0.8, selectable: false, evented: false }));
           var ty = base - 2 * sr.r;
-          parts.push(new fabric.Line([cx, ty, lx - 3, ty], { stroke: "#8a8a8a", strokeWidth: 0.6, strokeDashArray: [2, 2], selectable: false, evented: false }));
+          add(new fabric.Line([cx, ty, lx - 3, ty], { stroke: "#8a8a8a", strokeWidth: 0.6, strokeDashArray: [2, 2], selectable: false, evented: false }));
           var tv = text(numFmt(sr.value), lx, ty - fs * 0.62, fs);
-          parts.push(tv); maxW = Math.max(maxW, lx - pad + tv.width);
+          add(tv); maxW = Math.max(maxW, lx - pad + tv.width);
         });
         y = base + 10;
       }
       // Single symbol: one row, swatch + layer name. Otherwise an optional
       // bold layer heading, then one row per class/category.
       if (sizes && entries.length === 1 && !entries[0].label) {
+        newBlock();
         var ph = text(l.name, pad, y, fs, { fontWeight: "bold" });
-        parts.push(ph); maxW = Math.max(maxW, ph.width); y += row;
+        add(ph); maxW = Math.max(maxW, ph.width); y += row;
         drawSizes(entries[0].color);
         return;
       }
       if (entries.length === 1 && !entries[0].label) {
+        newBlock();
         var one = text(l.name, pad + sw + 8, y + row / 2 - 2 - fs * 0.62, fs);
         drawSwatch(entries[0].color, l, kind, pad, y + row / 2 - 2);
-        parts.push(one); maxW = Math.max(maxW, sw + 8 + one.width); y += row;
+        add(one); maxW = Math.max(maxW, sw + 8 + one.width); y += row;
         return;
       }
       if (o.showLayerNames) {
+        newBlock();
         var hdr = text(l.name, pad, y, fs, { fontWeight: "bold" });
-        parts.push(hdr); maxW = Math.max(maxW, hdr.width); y += row;
+        add(hdr); maxW = Math.max(maxW, hdr.width); y += row;
       }
       if (l.kind === "raster" && l.raster.legend && l.raster.legend.classColors) {
         var dl = l.raster.legend;
         dl.classColors.slice().reverse().forEach(function (c, ri) {
+          newBlock();
           var i = dl.classColors.length - 1 - ri, cy2 = y + row / 2 - 2;
-          parts.push(new fabric.Rect({ left: pad, top: cy2 - 6, width: sw, height: 12, fill: c, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false }));
+          add(new fabric.Rect({ left: pad, top: cy2 - 6, width: sw, height: 12, fill: c, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false }));
           var tl = text(numFmt(dl.breaks[i]) + " – " + numFmt(dl.breaks[i + 1]), pad + sw + 8, cy2 - fs * 0.62, fs);
-          parts.push(tl); maxW = Math.max(maxW, sw + 8 + tl.width); y += row;
+          add(tl); maxW = Math.max(maxW, sw + 8 + tl.width); y += row;
         });
         return;
       }
       if (l.kind === "raster" && l.raster.legend) {
+        newBlock();
         var lg = l.raster.legend, gw = 14, gh = Math.max(60, fs * 6);
         var grad = new fabric.Rect({ left: pad, top: y, width: gw, height: gh, selectable: false, evented: false, stroke: "#9a978c", strokeWidth: 0.6 });
         grad.set("fill", new fabric.Gradient({ type: "linear", coords: { x1: 0, y1: 0, x2: 0, y2: gh },
           colorStops: lg.colors.map(function (c, i) { return { offset: i / (lg.colors.length - 1 || 1), color: c }; }).reverse().map(function (s, i, arr) { return { offset: i / (arr.length - 1 || 1), color: s.color }; }) }));
-        parts.push(grad);
+        add(grad);
         var hi = text(numFmt(lg.max), pad + gw + 8, y - 2, fs), lo = text(numFmt(lg.min), pad + gw + 8, y + gh - fs - 2, fs);
-        parts.push(hi, lo); maxW = Math.max(maxW, gw + 8 + Math.max(hi.width, lo.width)); y += gh + 8;
+        add(hi, lo); maxW = Math.max(maxW, gw + 8 + Math.max(hi.width, lo.width)); y += gh + 8;
         return;
       }
       entries.forEach(function (e) {
+        newBlock();
         var cy = y + row / 2 - 2;
         if (e.color) drawSwatch(e.color, l, kind, pad, cy);
         var t2 = text(e.label || l.name, pad + (e.color ? sw + 8 : 0), cy - fs * 0.62, fs);
-        parts.push(t2); maxW = Math.max(maxW, (e.color ? sw + 8 : 0) + t2.width); y += row;
+        add(t2); maxW = Math.max(maxW, (e.color ? sw + 8 : 0) + t2.width); y += row;
       });
       if (sizes) { y += 4; drawSizes(null); }
     });
     function drawSwatch(color, l, kind, x, cy) {
       var s = l.style;
       if (s && s.renderer === "proportional") kind = "point";
-      if (kind === "line") parts.push(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), selectable: false, evented: false }));
-      else if (kind === "point") parts.push(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeColor, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));
-      else parts.push(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: color, opacity: Math.max(0.15, s.fillOpacity), stroke: s.strokeWidth > 0 ? (/^#?f{3,6}$/i.test(s.strokeColor) ? "#9a978c" : s.strokeColor) : null, strokeWidth: 0.8, selectable: false, evented: false }));
+      if (kind === "line") add(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), selectable: false, evented: false }));
+      else if (kind === "point") add(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeColor, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));
+      else add(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: color, opacity: Math.max(0.15, s.fillOpacity), stroke: s.strokeWidth > 0 ? (/^#?f{3,6}$/i.test(s.strokeColor) ? "#9a978c" : s.strokeColor) : null, strokeWidth: 0.8, selectable: false, evented: false }));
     }
     if (!layers.length) { var e0 = text("No layers", pad, y, fs, { fill: "#8a8a8a" }); parts.push(e0); maxW = e0.width; y += row; }
-    bg.set({ width: maxW + pad * 2, height: y + pad - 4 });
+    blockTop.push(y);
+    var avail = o.boxH > 0 ? Math.max(row, o.boxH - titleBottom - pad) : Infinity, gap = 16;
+    var col = 0, colY = 0, colOf = [], shiftY = [], colW = [0], colH = [0];
+    for (var k = 0; k <= blk; k++) {
+      var h = blockTop[k + 1] - blockTop[k];
+      if (colY > 0 && colY + h > avail) { col++; colY = 0; colW[col] = 0; colH[col] = 0; }
+      colOf[k] = col; shiftY[k] = titleBottom + colY - blockTop[k];
+      colY += h; colW[col] = Math.max(colW[col], blockW[k]); colH[col] = colY;
+    }
+    var colX = [0];
+    for (var c = 1; c < colW.length; c++) colX[c] = colX[c - 1] + colW[c - 1] + gap;
+    parts.forEach(function (p) {
+      if (p.__blk === undefined || p.__blk < 0) return;
+      p.set({ left: p.left + colX[colOf[p.__blk]], top: p.top + shiftY[p.__blk] });
+    });
+    var contentW = Math.max(maxW, colX[colW.length - 1] + colW[colW.length - 1]);
+    var contentH = titleBottom + d3.max(colH) + pad - 4;
+    bg.set({ width: Math.max(contentW + pad * 2, o.boxW || 0), height: Math.max(contentH, o.boxH || 0) });
     return parts;
   }
 
@@ -472,6 +510,8 @@
     obj.gisItem = type;
     obj.gisOpts = like ? like.gisOpts : obj.gisOpts;
     obj.layerName = { legend: "Legend", scalebar: "Scale bar", north: "North arrow", inset: "Inset map", colorbar: "Color bar" }[type];
+    // A north arrow only scales proportionally (corner handles).
+    if (type === "north") obj.setControlsVisibility({ ml: false, mr: false, mt: false, mb: false });
     if (like) {
       obj.set({ left: like.left, top: like.top, scaleX: like.scaleX, scaleY: like.scaleY, angle: like.angle, originX: like.originX, originY: like.originY });
       if (like.lockMovementX) obj.set({ lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true });
@@ -559,6 +599,35 @@
     var canvas = fc();
     if (!canvas || canvas._gisItemsWired) return;
     canvas._gisItemsWired = true;
+    // Resizing a legend, color bar, scale bar or north arrow re-lays it out
+    // at the new size instead of stretching it, so text keeps its size and
+    // shape (QGIS item behaviour):
+    //   legend     the box grows; entries flow into columns to fit its height
+    //   color bar  along the bar -> length, across -> thickness
+    //   scale bar  width -> target length, height -> bar height
+    //   north      proportional size, redrawn crisp
+    canvas.on("object:modified", function (e) {
+      var o = e.target;
+      if (!o || !o.gisItem || o.gisItem === "inset") return;
+      var sx = o.scaleX || 1, sy = o.scaleY || 1;
+      if (Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) return;
+      var w = o.width, h = o.height, dw = w * sx - w, dh = h * sy - h, p = o.gisOpts, patch = {};
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+      if (o.gisItem === "legend") {
+        patch = { boxW: Math.round(w * sx), boxH: Math.round(h * sy) };
+      } else if (o.gisItem === "colorbar") {
+        var vert = p.orientation === "vertical";
+        patch = { length: Math.round(clamp(p.length + (vert ? dh : dw), 40, 1200)), thickness: Math.round(clamp(p.thickness + (vert ? dw : dh), 4, 80)) };
+      } else if (o.gisItem === "scalebar") {
+        patch = { width: Math.round(clamp(p.width + dw, 40, 1200)), height: Math.round(clamp(p.height + dh, 2, 40)) };
+      } else if (o.gisItem === "north") {
+        patch = { size: Math.round(clamp(p.size * Math.max(sx, sy), 16, 400)) };
+      }
+      o.gisOpts = Object.assign({}, p, patch);
+      o.set({ scaleX: 1, scaleY: 1 });
+      rebuild(o);
+      if (typeof historyNotifyChange === "function") historyNotifyChange();
+    });
     canvas.on("object:modified", function (e) {
       var o = e.target;
       if (!o || o.gisItem !== "inset") return;
