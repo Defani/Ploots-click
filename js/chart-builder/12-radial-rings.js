@@ -1,22 +1,14 @@
 /* ==========================================================================
-   Radial Rings (multi-track polar chart) — adds a "Radial Rings" chart type
-   to the chart-builder, styled after circular multi-genome COG/category
-   plots (concentric tracks, one per series, split into angular sectors by
+   Radial Rings (multi-track polar chart) — registers the "Radial Rings"
+   chart type, styled after circular multi-genome COG/category plots
+   (concentric tracks, one per series, split into angular sectors by
    category, sector width ~ average share, bar length within the sector ~
    that series' share of the category's max).
 
-   Unlike the other chart types this one is NOT rendered with Plotly — the
-   geometry (variable-width sectors, per-track radial bars, outside labels
-   with leader lines) doesn't map cleanly onto Plotly's barpolar trace, so
-   it's drawn as plain SVG straight into #plotlyDiv, the same element the
-   rest of the app renders into. Because it isn't a Plotly graph object,
-   Plotly.toImage() (used by the normal SVG/PNG export helpers) can't read
-   it — so exportSvgFile/exportPngFile are wrapped here to export the raw
-   SVG directly when this chart type is active, and fall back to the
-   original Plotly-based export for every other chart type. Uses the same
-   data model as every other chart type (state.categories / state.seriesNames
-   / state.seriesData), so the Data tab, CSV/Excel import, per-series
-   visibility toggles, palette picker, etc. all work unmodified.
+   renderRadialRings() draws plain SVG into #plotlyDiv; the D3 engine
+   (js/d3-engine/05-special.js, wrapLegacy) calls it, so render dispatch and
+   SVG/PNG export are handled there. Uses the same data model as every other
+   chart type (state.categories / state.seriesNames / state.seriesData).
    ========================================================================== */
 (function () {
   "use strict";
@@ -186,108 +178,4 @@
   }
 
   window.renderRadialRings = renderRadialRings;
-
-  var originalRender = window.render;
-  if (typeof originalRender === "function") {
-    window.render = function () {
-      if (state.chartType === RADIAL_TYPE) {
-        if (state.categories.length === 0) return;
-        var visible = state.seriesNames.filter(function (n) { return state.seriesMeta[n].visible; });
-        if (!visible.length) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
-        renderRadialRings();
-        return;
-      }
-      return originalRender();
-    };
-  }
-
-  function getRadialSvgEl() {
-    var el = document.getElementById("plotlyDiv");
-    return el ? el.querySelector("svg") : null;
-  }
-
-  var originalExportSvg = window.exportSvgFile;
-  window.exportSvgFile = function () {
-    if (state.chartType === RADIAL_TYPE) {
-      var svgEl = getRadialSvgEl();
-      if (!svgEl) return;
-      var xml = new XMLSerializer().serializeToString(svgEl);
-      if (!/^<\?xml/.test(xml)) xml = '<?xml version="1.0" standalone="no"?>\r\n' + xml;
-      var blob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = "chart.svg";
-      a.click();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      return;
-    }
-    return originalExportSvg && originalExportSvg();
-  };
-
-  function svgElToPngDataUrl(svgEl, w, h, scale) {
-    return new Promise(function (resolve, reject) {
-      var xml = new XMLSerializer().serializeToString(svgEl);
-      var svg64 = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
-      var img = new Image();
-      img.onload = function () {
-        var c = document.createElement("canvas");
-        c.width = Math.round(w * scale);
-        c.height = Math.round(h * scale);
-        var ctx = c.getContext("2d");
-        ctx.fillStyle = typeof chartBgColor === "function" ? chartBgColor() : "#ffffff";
-        ctx.fillRect(0, 0, c.width, c.height);
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-        resolve(c.toDataURL("image/png"));
-      };
-      img.onerror = reject;
-      img.src = svg64;
-    });
-  }
-
-  var originalExportPng = window.exportPngFile;
-  window.exportPngFile = function () {
-    if (state.chartType === RADIAL_TYPE) {
-      var svgEl = getRadialSvgEl();
-      if (!svgEl) return;
-      var dpiSel = document.getElementById("dpiSelect");
-      var dpi = parseInt(dpiSel && dpiSel.value) || 300;
-      var scale = dpi / 96;
-      var cw = state.canvasWidthPx, ch = state.canvasHeightPx, r = state.chartBox;
-      svgElToPngDataUrl(svgEl, r.w, r.h, scale).then(function (dataUrl) {
-        var canvas = document.createElement("canvas");
-        canvas.width = Math.round(cw * scale);
-        canvas.height = Math.round(ch * scale);
-        var ctx = canvas.getContext("2d");
-        var pageBg = (typeof state !== "undefined" && state.canvasBg && state.canvasBg !== "transparent") ? state.canvasBg : "#ffffff";
-        ctx.fillStyle = pageBg;
-        if (!(typeof state !== "undefined" && state.canvasBg === "transparent")) {
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        var img = new Image();
-        img.onload = function () {
-          ctx.drawImage(img, r.x * scale, r.y * scale, r.w * scale, r.h * scale);
-          function finish() {
-            var a = document.createElement("a");
-            a.href = canvas.toDataURL("image/png");
-            a.download = "layout_" + dpi + "dpi.png";
-            a.click();
-          }
-          if (typeof getFabricOverlayDataUrl === "function") {
-            var overlay = getFabricOverlayDataUrl(scale);
-            if (overlay) {
-              var oimg = new Image();
-              oimg.onload = function () { ctx.drawImage(oimg, 0, 0, canvas.width, canvas.height); finish(); };
-              oimg.src = overlay;
-              return;
-            }
-          }
-          finish();
-        };
-        img.src = dataUrl;
-      });
-      return;
-    }
-    return originalExportPng && originalExportPng();
-  };
 })();

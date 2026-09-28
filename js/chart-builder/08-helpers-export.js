@@ -11,55 +11,14 @@ function plotlyColorscaleFromPalette(t) {
 }
 
 /* ==========================================================================
-   Original single-format exporters. Kept unchanged (same names, same
-   dpiSelect read) because js/chart-builder/12-radial-rings.js wraps
-   window.exportSvgFile / window.exportPngFile unconditionally at load
-   time to special-case its own hand-drawn SVG chart type. The new panel
-   below reads a hidden #dpiSelect input to stay in sync with these.
+   Single-format exporters (the canvas "SVG" / "PNG" quick buttons). Every
+   chart type is drawn by the D3 engine, and js/d3-engine/99-integration.js
+   replaces these with SVG-serialising versions; these stubs only exist so
+   that wrap has a base to chain to. The panel below reads a hidden
+   #dpiSelect input to stay in sync with them.
    ========================================================================== */
-function exportSvgFile() {
-  var box = state.chartBox;
-  Plotly.toImage(document.getElementById("plotlyDiv"), { format: "svg", width: box.w, height: box.h }).then(function (url) {
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = "chart.svg";
-    a.click();
-  });
-}
-function exportPngFile() {
-  var dpi = parseInt(document.getElementById("dpiSelect").value) || 300;
-  var scale = dpi / 96;
-  var w = state.canvasWidthPx, h = state.canvasHeightPx, box = state.chartBox;
-  Plotly.toImage(document.getElementById("plotlyDiv"), { format: "png", width: box.w, height: box.h, scale: scale }).then(function (chartUrl) {
-    var canvas = document.createElement("canvas");
-    canvas.width = Math.round(w * scale);
-    canvas.height = Math.round(h * scale);
-    var ctx = canvas.getContext("2d");
-    ctx.fillStyle = (typeof state !== "undefined" && state.canvasBg && "transparent" !== state.canvasBg) ? state.canvasBg : "#ffffff";
-    if (!(typeof state !== "undefined" && "transparent" === state.canvasBg)) ctx.fillRect(0, 0, canvas.width, canvas.height);
-    var img = new Image();
-    function finish() {
-      var a = document.createElement("a");
-      a.href = canvas.toDataURL("image/png");
-      a.download = "layout_" + dpi + "dpi.png";
-      a.click();
-    }
-    img.onload = function () {
-      ctx.drawImage(img, box.x * scale, box.y * scale, box.w * scale, box.h * scale);
-      if (typeof getFabricOverlayDataUrl === "function") {
-        var overlayUrl = getFabricOverlayDataUrl(scale);
-        if (overlayUrl) {
-          var overlayImg = new Image();
-          overlayImg.onload = function () { ctx.drawImage(overlayImg, 0, 0, canvas.width, canvas.height); finish(); };
-          overlayImg.src = overlayUrl;
-          return;
-        }
-      }
-      finish();
-    };
-    img.src = chartUrl;
-  });
-}
+function exportSvgFile() {}
+function exportPngFile() {}
 
 /* ==========================================================================
    Multi-format export panel — PNG / JPG / SVG / PDF (vector or flattened),
@@ -110,6 +69,9 @@ function exportPngFile() {
   }
 
   function isRawSvgChartType() {
+    // D3-rendered chart types draw a plain <svg> into #plotlyDiv, same as
+    // the hand-written SVG types, so they share the serialise-the-SVG path.
+    if (window.PlootsD3 && window.PlootsD3.handles(state.chartType)) return true;
     return state.chartType === "radial-rings" || state.chartType === "sunburst" || state.chartType === "ridge-plot";
   }
 
@@ -134,7 +96,7 @@ function exportPngFile() {
         img.src = svg64;
       });
     }
-    return Plotly.toImage(document.getElementById("plotlyDiv"), { format: "png", width: box.w, height: box.h, scale: scale });
+    return Promise.reject(new Error("Unsupported chart type."));
   }
 
   function getChartSvgMarkup() {
@@ -145,11 +107,8 @@ function exportPngFile() {
       if (!svgEl) return Promise.reject(new Error("Nothing to export yet."));
       return Promise.resolve(new XMLSerializer().serializeToString(svgEl));
     }
-    return Plotly.toImage(document.getElementById("plotlyDiv"), { format: "svg", width: box.w, height: box.h }).then(function (dataUrl) {
-      var comma = dataUrl.indexOf(",");
-      var payload = dataUrl.slice(comma + 1);
-      return dataUrl.indexOf(";base64,") !== -1 ? atob(payload) : decodeURIComponent(payload);
-    });
+    return Promise.reject(new Error("Unsupported chart type."));
+
   }
 
   function innerMarkupOf(svgString) {

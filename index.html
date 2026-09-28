@@ -1198,7 +1198,7 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
           <div class="side-section-body">
           <div class="check-row" style="margin-top:0;"><input type="checkbox" id="outlineMarker" checked><label for="outlineMarker">Outline on markers</label></div>
           <p class="cp-hint" style="margin-top:10px;">Value labels are toggled from the toolbar above the canvas when a chart is selected.</p>
-          <label class="field-label" style="margin-top:14px;">Axis line</label><input type="number" id="axisLineWidth" value="1.6" min="0.2" max="10" step="0.2">
+          <label class="field-label" style="margin-top:14px;">Axis line</label><input type="number" id="axisLineWidth" value="1" min="0.2" max="10" step="0.2">
           <input type="checkbox" id="showValues" style="display:none">
           <label class="field-label">Value label format</label>
           <select id="valueFormatSelect" title="Number format for value labels">
@@ -1227,8 +1227,8 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
         <div class="axis-tick-float docked" id="axisTickFloat">
         <div class="atf-title"><span class="material-symbols-outlined">tune</span>Quick Adjust (X + Y together)</div>
         <div class="atf-row">
-          <div class="atf-row-head"><span>Line thickness</span><b id="tickWidthFloatVal">1.6px</b></div>
-          <input type="range" id="tickWidthFloat" min="0.2" max="6" step="0.2" value="1.6">
+          <div class="atf-row-head"><span>Line thickness</span><b id="tickWidthFloatVal">1px</b></div>
+          <input type="range" id="tickWidthFloat" min="0.2" max="6" step="0.2" value="1">
         </div>
         <div class="atf-row">
           <div class="atf-row-head"><span>Tick length</span><b id="tickLengthFloatVal">6px</b></div>
@@ -2267,7 +2267,8 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
   <div class="hs-list" id="hsList"></div>
 </div>
 
-<script src="vendor/plotly-cartesian.min.js"></script>
+
+<script src="vendor/d3-7.9.0.min.js"></script>
 
 <!-- Chart Builder (split into js/chart-builder/ for readability - loaded in order, one global scope) -->
 <script src="js/chart-builder/01-config.js"></script>
@@ -2327,12 +2328,22 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 <script src="js/layout-editor/25-design-panel.js"></script>
 <script src="js/layout-editor/26-selection-hud.js"></script>
 <script src="js/layout-editor/27-object-float-bar.js"></script>
-<script src="js/layout-editor/28-axis-controls-sync.js"></script>
 
 <script src="js/ui_sections.js"></script>
 <script src="js/help_search.js"></script>
 <script src="js/latex_symbols.js"></script>
 <script src="js/canvas_ruler.js"></script>
+<script src="js/d3-engine/00-core.js"></script>
+<script src="js/d3-engine/01-frame.js"></script>
+<script src="js/d3-engine/02-cartesian.js"></script>
+<script src="js/d3-engine/03-stats.js"></script>
+<script src="js/d3-engine/04-flow.js"></script>
+<script src="js/d3-engine/05-special.js"></script>
+<script src="js/d3-engine/geo-country-regex.js"></script>
+<script src="js/d3-engine/06-geo.js"></script>
+<script src="js/d3-engine/99-integration.js"></script>
+<!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
+<script src="js/layout-editor/28-axis-controls-sync.js"></script>
 <script src="js/undo_redo.js"></script>
 <script>
 // Registers the offline/repeat-visit cache. Uses a relative path and scope

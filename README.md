@@ -6,7 +6,7 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
-![Plotly.js](https://img.shields.io/badge/Plotly.js-3F4F75?logo=plotly&logoColor=white)
+![D3.js](https://img.shields.io/badge/D3.js-F9A03C?logo=d3dotjs&logoColor=white)
 ![Fabric.js](https://img.shields.io/badge/Fabric.js-5.3.0-4A9C9C)
 ![MathJax](https://img.shields.io/badge/MathJax_(LaTeX)-1B3E6F?logo=latex&logoColor=white)
 ![KaTeX](https://img.shields.io/badge/KaTeX-1B3E6F?logo=latex&logoColor=white)
@@ -78,9 +78,9 @@ Live app: **[defani.github.io/Ploots-click](https://defani.github.io/Ploots-clic
 
 ### Charts
 - **18 chart types**: single bar, grouped bar, stacked bar, lollipop, line, area, scatter, pie, donut, histogram, box plot, violin plot, heatmap, waterfall, funnel, treemap, choropleth map, radial rings (multi-track)
-- **Lollipop**: thin stem (baseline → value) with a marker head, single or grouped side-by-side per category, both orientations — a real Plotly trace pair under the hood, so it exports exactly like every other chart type
-- **Choropleth map**: one value per country (ISO-3 code or country name), colored by the active palette as a continuous scale; the map-only Plotly bundle is lazy-loaded on first use so it doesn't add to the initial page weight
-- **Radial rings (multi-track)**: circular category plot in the style of multi-genome COG/functional-category figures — categories become angular sectors (width ∝ average share), each series becomes a concentric track (bar length ∝ that series' share of the category), with outside labels and a leader line per sector. Drawn as plain SVG rather than a Plotly trace, so it has its own SVG/PNG export path instead of Plotly's
+- **Lollipop**: thin stem (baseline → value) with a marker head, single or grouped side-by-side per category, both orientations, drawn by the same D3 engine as every other chart type
+- **Choropleth map**: one value per country (ISO-3 code or country name), colored on a light-to-dark scale from the active palette (continuous or classed); drawn with d3-geo from base maps served locally from `vendor/topojson/`, so maps work offline
+- **Radial rings (multi-track)**: circular category plot in the style of multi-genome COG/functional-category figures — categories become angular sectors (width ∝ average share), each series becomes a concentric track (bar length ∝ that series' share of the category), with outside labels and a leader line per sector. Drawn as its own SVG and exported through the same SVG/PNG path as every other chart type
 - **Data input**: paste tab- or comma-separated data, or import a file directly — **CSV/TSV/TXT** (parsed with Papa Parse, so quoted fields, embedded commas, and escaped quotes are all handled correctly), **Excel** (`.xlsx`/`.xls`, including multi-sheet workbooks, via SheetJS), or **JSON** (array-of-objects or 2D array), as well as pasted CSV/TSV or JSON text
 - **Dedicated Data tab**: work on a table separate from the applied chart data — transpose rows/columns, switch between **wide** (assign each column a role: X, Y, Text, Number, or Skip) and **long/tidy** shape (pick the X, Series, and Value columns), with numeric columns auto-detected, before applying the result to the chart
 - **Per-series controls**: toggle visibility, pick a custom color, rename the series label, choose a fill pattern, and send any series to a **secondary Y-axis** (bar/line/area/scatter)
@@ -129,7 +129,7 @@ Toggle it from the calculator icon in the left nav.
 ### Export
 - **PNG** at 150, 300, or 500 DPI — a full-page composite of the background, the chart, and every layout object, exactly as shown in the editor
 - **SVG** export of the chart itself
-- **Zero install for users**: Plotly.js is bundled locally; Fabric.js, MathJax, KaTeX, math.js, Papa Parse, SheetJS, AG Grid, jStat, marked, Google Fonts, and Material Symbols all load from CDN — no build step, no server, no signup required
+- **Zero install for users**: D3.js is bundled locally; Fabric.js, MathJax, KaTeX, math.js, Papa Parse, SheetJS, AG Grid, jStat, marked, Google Fonts, and Material Symbols all load from CDN — no build step, no server, no signup required
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
@@ -154,11 +154,11 @@ flowchart LR
     A4 --> B
 
     B[Data tab<br/>wide/long shape, transpose] --> C[Chart state<br/>state.series]
-    C --> D[Chart Builder<br/>render via Plotly.js]
+    C --> D[Chart Builder<br/>render via D3.js]
     D --> E[Layout canvas<br/>Fabric.js overlay:<br/>text, shapes, LaTeX]
     E --> F{Export}
     F -- PNG 150/300/500 DPI --> G1[Full-page composite<br/>chart + layout objects]
-    F -- SVG --> G2[Chart only<br/>Plotly native SVG]
+    F -- SVG --> G2[Chart only<br/>D3 SVG]
 ```
 
 > GitHub renders Mermaid with raw HTML/`<img>` stripped from node labels, so logos can't sit *inside* the boxes above — this legend maps each engine to its stage instead:
@@ -167,7 +167,7 @@ flowchart LR
 |---|---|
 | CSV/TSV parsing | ![Papa Parse](https://img.shields.io/badge/-Papa_Parse-00A98F) |
 | Excel import | ![SheetJS](https://img.shields.io/badge/-SheetJS-217346?logo=microsoftexcel&logoColor=white) |
-| Chart rendering | ![Plotly.js](https://img.shields.io/badge/-Plotly.js-3F4F75?logo=plotly&logoColor=white) |
+| Chart rendering | ![D3.js](https://img.shields.io/badge/-D3.js-F9A03C?logo=d3dotjs&logoColor=white) |
 | Layout canvas / shapes / text | ![Fabric.js](https://img.shields.io/badge/-Fabric.js-4A9C9C) |
 | LaTeX formulas on canvas | ![MathJax](https://img.shields.io/badge/-MathJax-1B3E6F?logo=latex&logoColor=white) |
 
@@ -181,7 +181,7 @@ flowchart TD
     Wide --> Detect[Numeric columns<br/>auto-detected]
     Long --> Detect
     Detect --> Apply[Apply to chart]
-    Apply --> Series[state.series<br/>drives the Plotly render]
+    Apply --> Series[state.series<br/>drives the D3 render]
 ```
 
 [⬆️ Back to Table of Contents](#table-of-contents)
@@ -199,13 +199,13 @@ flowchart TD
 │   │   ├── 04-data.js             #   parses pasted/CSV data into state.series, renders series list UI
 │   │   ├── 05-style-helpers.js    #   legend layout, color/pattern modes, value formatting, error bars
 │   │   ├── 06-canvas-units.js     #   canvas size <-> unit conversion, style toggle visibility
-│   │   ├── 07-render.js           #   the main render() function that builds/draws the Plotly chart
+│   │   ├── 07-render.js           #   legacy Plotly render(); now a no-op, js/d3-engine/ draws every chart
 │   │   ├── 08-helpers-export.js   #   string/color helpers, PNG/SVG export
 │   │   ├── 09-event-wiring.js     #   wires sidebar controls (style, axes, legend, ranges, export)
 │   │   ├── 10-view-switcher-init.js # Layout/Data/Function view switcher, boots the chart on load
-│   │   ├── 11-choropleth.js       #   Choropleth Map chart type; lazy-loads the Plotly geo bundle on first use
+│   │   ├── 11-choropleth.js       #   Choropleth Map chart type: sample data + "Peta (Choropleth)" sidebar settings
 │   │   ├── 12-radial-rings.js     #   Radial Rings chart type; hand-drawn SVG + its own SVG/PNG export path
-│   │   └── 13-lollipop.js         #   Lollipop chart type; stem + marker-head Plotly traces, grouped like bar-group
+│   │   └── 13-lollipop.js         #   Lollipop chart type registration + sample data (drawn in js/d3-engine/)
 │   ├── layout-editor/             # Fabric.js full-page canvas, split into 16 numbered files
 │   │   ├── 01-canvas-core.js      #   Fabric.js canvas setup, chart-proxy sync, stage resize
 │   │   ├── 02-toolbar-text.js     #   main toolbar wiring, "Add text" tool
@@ -233,13 +233,14 @@ flowchart TD
 │   ├── data_view.js               # Data tab: wide/long shape, transpose, column-role assignment
 │   └── data_stats.js              # Data View column statistics (powered by jStat)
 ├── vendor/
-│   └── plotly-cartesian.min.js    # Bundled Plotly.js (bar, box, heatmap, histogram, pie, scatter, violin, etc.)
+│   ├── d3-7.9.0.min.js            # D3.js 7.9.0: the chart engine (see js/d3-engine/ and D3-MIGRATION.md)
+│   └── topojson/                  # Local Natural Earth base maps (*_110m.json) for the map chart types
 ├── assets/
 │   ├── logo_light.png             # Light-topbar logo mark
 │   ├── logo_dark.png              # Dark-topbar logo mark
 │   └── palettes.png               # Palette catalog preview image (used in this README)
 ├── LICENSE                        # MIT license
-├── THIRD-PARTY-NOTICES.md         # Bundled Plotly.js's own MIT notice
+├── THIRD-PARTY-NOTICES.md         # Notices for bundled D3.js, country-regex and the topojson base maps
 └── README.md
 ```
 ### LaTeX & Symbol Catalog
@@ -476,7 +477,7 @@ Custom width/height is also available in px, mm, or cm, independent of the templ
 
 ### Fill patterns, dash styles & data-point markers
 
-**8 fill/hatch patterns** (Plotly's native pattern shapes — used whenever a series' style includes patterns): solid, `/` diagonal, `\` diagonal, `x` cross, `-` horizontal lines, `|` vertical lines, `+` cross, `.` dots.
+**8 fill/hatch patterns** (the same shapes Plotly offered, drawn as SVG patterns — used whenever a series' style includes patterns): solid, `/` diagonal, `\` diagonal, `x` cross, `-` horizontal lines, `|` vertical lines, `+` cross, `.` dots.
 
 **6 line dash styles**: solid, dot, dash, longdash, dashdot, longdashdot.
 
@@ -493,9 +494,9 @@ Beyond text boxes, the Layout canvas's Shapes panel offers **30 drawable shapes*
 
 ### Export details
 
-- **PNG** is rendered via Plotly's `toImage`, scaled from a 96 DPI baseline — 150/300/500 DPI map to a `scale` factor of `dpi / 96` (≈1.56×, 3.125×, 5.2×) applied to the full-page canvas size, so a 1920×1080 px page exports at roughly 3000×1688 (150 DPI), 6000×3375 (300 DPI), or 10000×5625 (500 DPI). The output filename is `layout_<dpi>dpi.png`.
+- **PNG** is rendered from the chart's SVG, scaled from a 96 DPI baseline — 150/300/500 DPI map to a `scale` factor of `dpi / 96` (≈1.56×, 3.125×, 5.2×) applied to the full-page canvas size, so a 1920×1080 px page exports at roughly 3000×1688 (150 DPI), 6000×3375 (300 DPI), or 10000×5625 (500 DPI). The output filename is `layout_<dpi>dpi.png`.
 - The PNG export is a **full-page composite**: background, chart, and every layout object (text, shapes, LaTeX formulas) are flattened together exactly as shown in the editor.
-- **SVG** export covers the **chart only** (via Plotly's native SVG output) — it does not include layout objects, text, or LaTeX formulas sitting on the canvas around it.
+- **SVG** export covers the **chart only** (the chart's own D3 SVG) — it does not include layout objects, text, or LaTeX formulas sitting on the canvas around it.
 
 ### Value label formatting
 
@@ -525,7 +526,7 @@ The only keyboard shortcut in the app: with a layout object selected (and the ca
 
 | Library | Version | Loaded from |
 |---|---|---|
-| Plotly.js | bundled (v3.7.0, cartesian build) | local file (`vendor/plotly-cartesian.min.js`), not CDN |
+| D3.js | bundled (v7.9.0, ISC) | local file (`vendor/d3-7.9.0.min.js`), not CDN |
 | Fabric.js | 5.3.0 | cdnjs |
 | MathJax | 3.2.2 (`es5/tex-svg.js`) | cdnjs |
 | KaTeX | 0.16.11 | cdnjs |
@@ -556,7 +557,7 @@ The only keyboard shortcut in the app: with a layout object selected (and the ca
 > SVG export is chart-only — see [Export details](#export-details).
 
 > [!NOTE]
-> Radial rings charts don't support the secondary Y-axis toggle (it's a single-axis polar layout), and the choropleth map's first render has a brief "Loading map…" placeholder while its Plotly bundle is fetched.
+> Radial rings charts don't support the secondary Y-axis toggle (it's a single-axis polar layout), and the choropleth map's first render has a brief "Memuat peta…" placeholder while its base-map topojson is fetched (then cached).
 
 > [!TIP]
 > All 18 chart types are fully functional and ready to use.
@@ -569,7 +570,7 @@ The only keyboard shortcut in the app: with a layout object selected (and the ca
 
 This project only exists because of the following open-source libraries and free services — a genuine thank-you to everyone who builds and maintains them:
 
-- **[Plotly.js](https://plotly.com/javascript/)** — the charting engine behind every chart type, the interactive preview, and the SVG/PNG rendering itself
+- **[D3.js](https://d3js.org/)** — the charting engine behind every chart type (scales, axes, shapes, layouts, d3-geo maps) and the SVG/PNG rendering itself
 - **[Fabric.js](http://fabricjs.com/)** — powers the full-page layout editor: draggable/resizable text, shapes, and the LaTeX objects that sit on top of the chart
 - **[MathJax](https://www.mathjax.org/)** — renders LaTeX (`$...$`) typed into the formula tool as real typeset math, live, on the canvas
 - **[KaTeX](https://katex.org/)** — fast, synchronous LaTeX preview for the standalone Function Plot Studio
@@ -592,7 +593,7 @@ This project only exists because of the following open-source libraries and free
 ## License
 
 Released under the [MIT License](./LICENSE). Bundled third-party code
-(`vendor/plotly-cartesian.min.js`) keeps its own MIT notice — see
+(`vendor/d3-7.9.0.min.js`, ISC) keeps its own notice — see
 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
 
 [⬆️ Back to Table of Contents](#table-of-contents)

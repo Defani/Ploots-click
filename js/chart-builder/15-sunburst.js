@@ -1,28 +1,16 @@
 /* ==========================================================================
-   Sunburst — first chart type on the new "D3 Engine" track.
-
-   Plotly has no partition/hierarchy trace in the vendored cartesian bundle,
-   and hierarchical charts (sunburst, and more D3-only chart types planned
-   later: icicle, treemap-d3, chord, force graph, ...) need a real d3.js
-   instance (d3.hierarchy / d3.partition / d3.arc), not something worth
-   hand-rolling. So this is the first chart type backed by an actual D3.js
-   library, lazy-loaded on demand the first time a "D3 Engine" chart type is
-   selected (see PlootsLazy.ensureD3 in js/lazy-loader.js) — same on-demand
-   pattern already used for the Plotly geo bundle / XLSX / AG Grid.
-
-   Like radial-rings, this is NOT a Plotly graph — it's raw SVG drawn
-   straight into #plotlyDiv, so exportSvgFile/exportPngFile are wrapped
-   here (chaining to radial-rings' own wrap) and the multi-format export
-   panel's isRawSvgChartType() check (js/chart-builder/08-helpers-export.js)
-   includes "sunburst" alongside "radial-rings".
+   Sunburst — registers the "Sunburst" chart type and draws it with
+   d3.hierarchy / d3.partition / d3.arc as SVG into #plotlyDiv. The D3
+   engine (js/d3-engine/05-special.js, wrapLegacy) calls renderSunburst(),
+   so render dispatch and SVG/PNG export are handled there.
 
    Data model: reuses the same flat state.categories / state.seriesData as
    every other chart type (Data tab, CSV/Excel import, palette picker all
    work unmodified) — but state.categories holds a slash-delimited path per
    row (e.g. "Vegetasi/Mangrove/Rapat") instead of a flat label, and only
-   the first VISIBLE series supplies the values (same convention already
-   used by choropleth's z-values). Rows are folded into a tree by shared
-   path prefixes.
+   the first VISIBLE series supplies the values (same convention used by
+   choropleth's z-values). Rows are folded into a tree by shared path
+   prefixes.
 
    Interaction: click a segment to zoom into it (standard D3 zoomable-
    sunburst technique — remap x/y into the clicked node's window); click
@@ -32,7 +20,6 @@
    ========================================================================== */
 (function () {
   "use strict";
-
   var SUNBURST_TYPE = "sunburst";
 
   if (typeof CHART_TYPE_DEFS !== "undefined") {
@@ -82,7 +69,7 @@
         node = existing;
         if (depth === parts.length - 1) {
           var v = values[i];
-          node.value = (node.value || 0) + (isFinite(v) ? v : 0);
+          node.value = (node.value || 0) + (typeof v === "number" && isFinite(v) ? v : 0);
         }
       });
     });
@@ -231,20 +218,6 @@
 
   window.renderSunburst = renderSunburst;
 
-  var originalRender = window.render;
-  if (typeof originalRender === "function") {
-    window.render = function () {
-      if (state.chartType === SUNBURST_TYPE) {
-        if (state.categories.length === 0) return;
-        var visible = state.seriesNames.filter(function (n) { return state.seriesMeta[n].visible; });
-        if (!visible.length) { if (typeof renderBlankCanvas === "function") renderBlankCanvas(); return; }
-        renderSunburst();
-        return;
-      }
-      return originalRender();
-    };
-  }
-
   // Re-selecting Sunburst (already active or not) resets the zoom, since a
   // sidebar click that lands on the already-active chart type otherwise
   // has no other visible effect.
@@ -255,94 +228,4 @@
       originalSelectChartType(v);
     };
   }
-
-  function getSunburstSvgEl() {
-    var el = document.getElementById("plotlyDiv");
-    return el ? el.querySelector("svg") : null;
-  }
-
-  var originalExportSvg = window.exportSvgFile;
-  window.exportSvgFile = function () {
-    if (state.chartType === SUNBURST_TYPE) {
-      var svgEl = getSunburstSvgEl();
-      if (!svgEl) return;
-      var xml = new XMLSerializer().serializeToString(svgEl);
-      if (!/^<\?xml/.test(xml)) xml = '<?xml version="1.0" standalone="no"?>\r\n' + xml;
-      var blob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = "chart.svg";
-      a.click();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      return;
-    }
-    return originalExportSvg && originalExportSvg();
-  };
-
-  function svgElToPngDataUrl(svgEl, w, h, scale) {
-    return new Promise(function (resolve, reject) {
-      var xml = new XMLSerializer().serializeToString(svgEl);
-      var svg64 = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
-      var img = new Image();
-      img.onload = function () {
-        var c = document.createElement("canvas");
-        c.width = Math.round(w * scale);
-        c.height = Math.round(h * scale);
-        var ctx = c.getContext("2d");
-        ctx.fillStyle = typeof chartBgColor === "function" ? chartBgColor() : "#ffffff";
-        ctx.fillRect(0, 0, c.width, c.height);
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-        resolve(c.toDataURL("image/png"));
-      };
-      img.onerror = reject;
-      img.src = svg64;
-    });
-  }
-
-  var originalExportPng = window.exportPngFile;
-  window.exportPngFile = function () {
-    if (state.chartType === SUNBURST_TYPE) {
-      var svgEl = getSunburstSvgEl();
-      if (!svgEl) return;
-      var dpiSel = document.getElementById("dpiSelect");
-      var dpi = parseInt(dpiSel && dpiSel.value) || 300;
-      var scale = dpi / 96;
-      var cw = state.canvasWidthPx, ch = state.canvasHeightPx, r = state.chartBox;
-      svgElToPngDataUrl(svgEl, r.w, r.h, scale).then(function (dataUrl) {
-        var canvas = document.createElement("canvas");
-        canvas.width = Math.round(cw * scale);
-        canvas.height = Math.round(ch * scale);
-        var ctx = canvas.getContext("2d");
-        var pageBg = (typeof state !== "undefined" && state.canvasBg && state.canvasBg !== "transparent") ? state.canvasBg : "#ffffff";
-        ctx.fillStyle = pageBg;
-        if (!(typeof state !== "undefined" && state.canvasBg === "transparent")) {
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        var img = new Image();
-        img.onload = function () {
-          ctx.drawImage(img, r.x * scale, r.y * scale, r.w * scale, r.h * scale);
-          function finish() {
-            var a = document.createElement("a");
-            a.href = canvas.toDataURL("image/png");
-            a.download = "layout_" + dpi + "dpi.png";
-            a.click();
-          }
-          if (typeof getFabricOverlayDataUrl === "function") {
-            var overlay = getFabricOverlayDataUrl(scale);
-            if (overlay) {
-              var oimg = new Image();
-              oimg.onload = function () { ctx.drawImage(oimg, 0, 0, canvas.width, canvas.height); finish(); };
-              oimg.src = overlay;
-              return;
-            }
-          }
-          finish();
-        };
-        img.src = dataUrl;
-      });
-      return;
-    }
-    return originalExportPng && originalExportPng();
-  };
 })();
