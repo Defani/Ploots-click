@@ -952,20 +952,18 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 .home-actions button{flex:1;padding:8px 10px}
 .home-close{position:absolute;top:14px;right:14px;border:none;background:none;color:var(--ink-soft);cursor:pointer;padding:4px;min-width:0}
 @media (max-width:600px){.home-cards{grid-template-columns:1fr}}
-/* Panel docking (29-panel-dock.js): the Design/Layers panel is a column of
-   .app next to the sidebar, so nothing floats over the canvas. */
-.app>.layers-panel{position:relative;top:auto;right:auto;bottom:auto;left:auto;height:auto;flex:none;border-left:none;border-right:1px solid var(--line)}
+/* One left sidebar (29-sidebar-design.js): the Design/Layers panel is a
+   sidebar panel, so nothing sits on the right of the canvas. */
+#panel-design .layers-panel{position:static;width:auto;height:auto;border:none;background:none;box-shadow:none;overflow:visible;z-index:auto}
+#panel-design .rp-tabs{display:none}
+#panel-design .layers-panel-head{height:auto;padding:4px 14px 8px;border-bottom:none;justify-content:flex-end}
+#panel-design .layers-panel.rp-design .layers-panel-head{display:none}
 .canvas-vscroll{right:0}
 .canvas-hscroll{right:16px}
 .canvas-zoom-bar{right:28px}
-body.dock-right .app>.main{order:1}
-body.dock-right .app>.layers-panel{order:2;border-right:none;border-left:1px solid var(--line)}
-body.dock-right .sidebar-container{order:3;flex-direction:row-reverse;border-right:none;border-left:1px solid var(--line)}
-body.dock-right .sidebar-nav{border-right:none;border-left:1px solid var(--line)}
-body.rp-hidden .app>.layers-panel,body.data-view-active .app>.layers-panel{display:none}
-#rightPanelBtn.active{color:var(--accent);border-color:var(--accent)}
-/* Map mode: the chart-only rail buttons step aside. */
-body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-panel="panel-axis"],body.gis-mode .nav-btn[data-panel="panel-legend"],body.gis-mode .nav-btn[data-panel="panel-color"],body.gis-mode #navDataToggle{display:none}
+/* Each mode shows its own menus: charts hide Map, maps hide the chart menus. */
+body:not(.gis-mode) .nav-btn[data-panel="panel-map"]{display:none}
+body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-panel="panel-axis"],body.gis-mode .nav-btn[data-panel="panel-legend"],body.gis-mode .nav-btn[data-panel="panel-color"],body.gis-mode #navDataToggle,body.gis-mode .nav-sep-chart{display:none}
 </style>
 </head>
 <body>
@@ -1805,10 +1803,8 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
           <div class="layers-empty" id="layersEmptyMsg">
             <span class="material-symbols-outlined">stacks</span>
             <strong>No layers yet</strong>
-            Add text, shapes or images and they'll stack up here.
           </div>
         </div>
-        <div class="layers-foot">Drag to reorder · Ctrl/Shift+click to multi-select</div>
         <!-- Per-layer "⋯" menu (21-layers-panel.js) -->
         <div class="layer-menu" id="layerMenu" role="menu">
           <button type="button" data-act="rename"><span class="material-symbols-outlined">edit</span>Rename</button>
@@ -2419,7 +2415,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
-<script src="js/layout-editor/29-panel-dock.js"></script>
+<script src="js/layout-editor/29-sidebar-design.js"></script>
 <script src="js/undo_redo.js"></script>
 <script>
 // Registers the offline/repeat-visit cache. Uses a relative path and scope

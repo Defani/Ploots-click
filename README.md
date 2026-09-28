@@ -78,7 +78,7 @@ The app opens on a **Home** screen: make a **Chart** from tabular data or a **Ma
   <img src="assets/screenshots/editor-light.png" alt="Ploots Click editor: chart type gallery on the left, a grouped bar chart on an A4 page, Design panel on the right" width="100%">
 </p>
 
-All panels sit on **one side** of the window so the page gets the most room: the rail and sidebar (Home, Data, Map, Canvas, Chart, Axis, Legend, Shapes, Style, LaTeX, Export) with the Figma-style **Design** and **Layers** panel next to them. Two buttons at the top right move the panels to the **left or right** and hide the Design/Layers panel. The page canvas has rulers, the mouse wheel zooms, and a dark theme is one click away (moon icon):
+Everything is set from **one sidebar on the left**, so the page keeps the rest of the window. Its rail is grouped by task — **Home** · **Data** (charts) or **Map** (maps) · **Canvas**, **Design**, **Layers** · **Chart**, **Axis**, **Legend**, **Style** (charts) · **Shapes**, **LaTeX** · **Export** — and each mode only shows the menus it uses. The page canvas has rulers, the mouse wheel zooms, and a dark theme is one click away (moon icon):
 
 <p align="center">
   <img src="assets/screenshots/editor-dark.png" alt="The same editor in dark theme" width="100%">
@@ -191,7 +191,7 @@ Every chart type, rendered by the D3 engine from its built-in sample data (click
   <img src="assets/screenshots/text-toolbar.png" alt="Selected text annotation with the floating text toolbar and the Design panel" width="100%">
 </p>
 
-**Shapes and other objects** get the same kind of floating bar (fill, stroke, dash, opacity, position). A Figma-style **size badge** (`W × H`) sits under the selection, with dashed **distance guides** to the page's left and top edges. The **Design** tab edits position, alignment to the page, rotation and flips, size (with a proportion lock), opacity, corner radius, fill, stroke and drop shadow:
+**Shapes and other objects** get the same kind of floating bar (fill, stroke, dash, opacity, position). A Figma-style **size badge** (`W × H`) sits under the selection, with dashed **distance guides** to the page's left and top edges. The **Design** panel edits position, alignment to the page, rotation and flips, size (with a proportion lock), opacity, corner radius, fill, stroke and drop shadow:
 
 <p align="center">
   <img src="assets/screenshots/object-design-panel.png" alt="Highlight rectangle selected, showing the floating object bar and the Design panel" width="100%">
@@ -380,7 +380,7 @@ flowchart TD
 │   │   ├── 26-selection-hud.js    #   W × H badge and distance guides for the selection
 │   │   ├── 27-object-float-bar.js #   floating bars for shapes, images, formulas, groups
 │   │   ├── 28-axis-controls-sync.js # keeps the Axis tab's controls and the Format Axis panel in sync
-│   │   └── 29-panel-dock.js       #   panels on one side (left/right), hide the Design/Layers panel
+│   │   └── 29-sidebar-design.js   #   Design and Layers as left-sidebar panels; groups the rail per mode
 │   ├── gis/                       # Map workspace (MapLibre GL)
 │   │   ├── 00-store.js            #   layers (vector / raster / XYZ), selection, export GeoJSON/CSV
 │   │   ├── 01-symbology.js        #   single / categorized / graduated (Jenks, quantile, equal)
