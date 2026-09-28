@@ -3,7 +3,7 @@
 // workspace:
 //   always  Undo/Redo · Insert (Text, Shape, Image, Pen, Formula) · Export
 //   charts  Chart type ▾ · Data · Palette ▾ · Legend
-//   maps    Add layer ▾ · Basemap ▾ · Attributes · Move · Grid · Map items ▾
+//   maps    Add layer ▾ · Basemap ▾ · Attributes · Move · Tools ▾ · Grid · Map items ▾
 // The existing Text/Shape/Image/Pen/Lock buttons keep their ids and
 // handlers; they only gain a label. Menus open in a floating panel on
 // <body>, so the scrollable top bar never clips them.
@@ -45,6 +45,7 @@
 
   // Formula joins the Insert group, right after Pen.
   var insertGroup = $('toolAddText').parentNode;
+  insertGroup.classList.add('tb-insert');
   var formula = button('function', 'Formula', 'Insert a LaTeX formula');
   formula.addEventListener('click', function () { activateSidebarPanel('panel-latex'); });
   insertGroup.appendChild(formula);
@@ -144,9 +145,10 @@
   var bmBtn = button('map', 'Basemap', 'Basemap', 'tb-drop');
   var attrBtn = button('table', 'Attributes', 'Attribute table');
   var moveBtn = button('open_with', 'Move', 'Move the map content (pan, select, identify)');
+  var toolsBtn = button('construction', 'Tools', 'Map tools', 'tb-drop');
   var gridBtn = button('grid_4x4', 'Grid', 'Coordinate grid');
   var itemsBtn = button('dashboard_customize', 'Map items', 'Add a layout item', 'tb-drop');
-  [addBtn, bmBtn, attrBtn, moveBtn, gridBtn, itemsBtn].forEach(function (b) { mapGroup.appendChild(b); });
+  [addBtn, bmBtn, attrBtn, moveBtn, toolsBtn, gridBtn, itemsBtn].forEach(function (b) { mapGroup.appendChild(b); });
 
   function mapPanel() { if (GIS) GIS.enterMapMode(); activateSidebarPanel('panel-map'); }
   addBtn.addEventListener('click', function () {
@@ -177,6 +179,30 @@
     setTimeout(syncState, 50);
   });
   moveBtn.addEventListener('click', function () { if (GIS.mapActions) GIS.mapActions.setInteractive(!GIS.mapActions.isInteractive()); });
+  toolsBtn.addEventListener('click', function () {
+    var A = GIS.mapActions, on = A && A.isInteractive(), cur = on ? A.tool() : '';
+    var l = GIS.active(), vec = l && l.kind === 'vector';
+    function t(v, icon, text) { return item('tool:' + v, sym(icon), text, cur === v); }
+    openMenu(toolsBtn,
+      head('Navigate') + t('pan', 'pan_tool', 'Pan') + t('identify', 'info', 'Identify features') +
+      item('full', sym('fit_screen'), 'Zoom full') + item('layer', sym('zoom_in_map'), 'Zoom to layer') +
+      head('Select') + t('select', 'arrow_selector_tool', 'Select features') + item('expr', sym('rule'), 'Select by expression…') + item('clear', sym('deselect'), 'Clear selection') +
+      head('Measure') + t('measure', 'straighten', 'Measure line') + t('area', 'square_foot', 'Measure area') +
+      head('Layer') + item('filter', sym('filter_alt'), 'Filter…') + item('calc', sym('calculate'), 'Field calculator…') + item('props', sym('tune'), 'Layer properties…'),
+      function (v) {
+        if (!A) return;
+        if (v.indexOf('tool:') === 0) { A.setInteractive(true); A.setTool(v.slice(5)); return; }
+        if (v === 'full') A.fitAll();
+        else if (v === 'layer') A.zoomToLayer(GIS.active());
+        else if (v === 'clear') A.clearSelection();
+        else if (!l) return;
+        else if (v === 'props') GIS.layerProperties(l);
+        else if (!vec) return;
+        else if (v === 'expr') GIS.exprDialog(l, 'select');
+        else if (v === 'filter') GIS.exprDialog(l, 'filter');
+        else if (v === 'calc') GIS.fieldCalculator(l);
+      });
+  });
   gridBtn.addEventListener('click', function () {
     state.mapGrid = !state.mapGrid;
     render();

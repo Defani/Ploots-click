@@ -127,18 +127,41 @@
     if (!box) return;
     if (!GIS.layers.length) { box.innerHTML = '<div class="gis-empty">No layers</div>'; return; }
     var act = GIS.active();
-    box.innerHTML = GIS.layers.map(function (l, i) {
-      var sel = l.kind === "vector" && l.selection.size ? '<em class="gis-sel-badge">' + l.selection.size + "</em>" : "";
-      return '<div class="gis-layer' + (act && act.id === l.id ? " active" : "") + '" data-id="' + l.id + '" draggable="true">' +
-        '<input type="checkbox" data-vis="' + l.id + '"' + (l.visible ? " checked" : "") + ' title="Show / hide">' +
-        '<span class="material-symbols-outlined gis-kind">' + KIND_ICON[l.kind] + "</span>" +
-        '<span class="gis-layer-name" title="Double-click to rename">' + esc(l.name) + "</span>" + sel +
-        '<button data-up="' + l.id + '" title="Move up"' + (i === 0 ? " disabled" : "") + '><span class="material-symbols-outlined">arrow_upward</span></button>' +
-        '<button data-down="' + l.id + '" title="Move down"' + (i === GIS.layers.length - 1 ? " disabled" : "") + '><span class="material-symbols-outlined">arrow_downward</span></button>' +
-        '<button data-zoom="' + l.id + '" title="Zoom to layer"><span class="material-symbols-outlined">zoom_in_map</span></button>' +
-        '<button data-del="' + l.id + '" title="Remove layer"><span class="material-symbols-outlined">close</span></button>' +
+    box.innerHTML = GIS.layers.map(function (l) {
+      var vec = l.kind === "vector", entries = vec || l.kind === "mvt" ? GIS.sym.legendEntries(l) : [];
+      var many = entries.length > 1, open = many && expanded[l.id];
+      var sel = vec && l.selection.size ? '<em class="gis-sel-badge" title="Selected">' + l.selection.size + "</em>" : "";
+      var count = "";
+      if (vec && l.showCount) {
+        var mask = GIS.filterMask(l), shown = mask ? mask.filter(Boolean).length : l.data.features.length;
+        count = '<span class="gis-count">[' + shown.toLocaleString("en-US") + "]</span>";
+      }
+      var icon = entries.length === 1 && entries[0].color ? swatch(l, entries[0].color) : '<span class="material-symbols-outlined gis-kind">' + KIND_ICON[l.kind] + "</span>";
+      var h = '<div class="gis-layer' + (act && act.id === l.id ? " active" : "") + (l.visible ? "" : " off") + '" data-id="' + l.id + '" draggable="true">' +
+        (many ? '<button class="gis-twisty" data-tw="' + l.id + '" title="' + (open ? "Collapse" : "Expand") + '"><span class="material-symbols-outlined">' + (open ? "expand_more" : "chevron_right") + "</span></button>" : '<span class="gis-twisty-sp"></span>') +
+        '<input type="checkbox" data-vis="' + l.id + '"' + (l.visible ? " checked" : "") + ' title="Show / hide">' + icon +
+        '<span class="gis-layer-name">' + esc(l.name) + "</span>" + count +
+        (l.filter ? '<span class="material-symbols-outlined gis-flag" title="Filter: ' + esc(l.filter) + '">filter_alt</span>' : "") +
+        (l.legend === false && l.kind !== "xyz" ? '<span class="material-symbols-outlined gis-flag" title="Not in legend">format_list_bulleted</span>' : "") +
+        (l.minScale > 0 || l.maxScale > 0 ? '<span class="material-symbols-outlined gis-flag" title="Scale dependent visibility">zoom_out_map</span>' : "") + sel +
+        (l.kind !== "xyz" && l.kind !== "mvt" ? '<button data-zoom="' + l.id + '" title="Zoom to layer"><span class="material-symbols-outlined">zoom_in_map</span></button>' : "") +
+        (vec ? '<button data-table="' + l.id + '" title="Open attribute table"><span class="material-symbols-outlined">table</span></button>' : "") +
+        '<button data-menu="' + l.id + '" title="Layer menu"><span class="material-symbols-outlined">more_vert</span></button>' +
         "</div>";
+      if (open) {
+        h += '<div class="gis-layer-entries">' + entries.map(function (e) {
+          return '<div class="gis-entry">' + (e.color ? swatch(l, e.color) : '<span class="gis-sw-sp"></span>') + "<span>" + esc(e.label) + "</span></div>";
+        }).join("") + "</div>";
+      }
+      return h;
     }).join("");
+  }
+  var expanded = {};
+  // Symbol preview in the layer list: polygon square, line stroke or dot.
+  function swatch(l, color) {
+    var kind = l.kind === "vector" ? GIS.geometryKind(l) : "polygon";
+    if (l.kind === "vector" && l.style.renderer === "heatmap") return '<span class="material-symbols-outlined gis-kind">local_fire_department</span>';
+    return '<span class="gis-sw gis-sw-' + kind + '" style="--c:' + esc(color) + '"></span>';
   }
 
   function wireLayerList() {
@@ -146,22 +169,27 @@
     box.addEventListener("click", function (e) {
       var t = e.target, b = t.closest("button");
       if (b) {
-        if (b.dataset.up) GIS.move(b.dataset.up, GIS.layers.findIndex(function (l) { return l.id === b.dataset.up; }) - 1);
-        else if (b.dataset.down) GIS.move(b.dataset.down, GIS.layers.findIndex(function (l) { return l.id === b.dataset.down; }) + 1);
-        else if (b.dataset.zoom) GIS.mapActions && GIS.mapActions.zoomToLayer(GIS.get(b.dataset.zoom));
-        else if (b.dataset.del) GIS.remove(b.dataset.del);
+        if (b.dataset.zoom) GIS.mapActions && GIS.mapActions.zoomToLayer(GIS.get(b.dataset.zoom));
+        else if (b.dataset.table) { GIS.setActive(b.dataset.table); GIS.attributeTable.show(b.dataset.table); }
+        else if (b.dataset.tw) { expanded[b.dataset.tw] = !expanded[b.dataset.tw]; renderLayerList(); }
+        else if (b.dataset.menu) { var r = b.getBoundingClientRect(); GIS.layerMenu(b.dataset.menu, r.left, r.bottom + 4); }
         return;
       }
       if (t.dataset.vis) { var l = GIS.get(t.dataset.vis); l.visible = t.checked; GIS.emit("style"); return; }
       var row = t.closest(".gis-layer");
       if (row) GIS.setActive(row.dataset.id);
     });
+    // Double-click a layer: properties (QGIS); right-click: layer menu.
     box.addEventListener("dblclick", function (e) {
-      var nameEl = e.target.closest(".gis-layer-name");
-      if (!nameEl) return;
-      var l = GIS.get(nameEl.parentNode.dataset.id);
-      var n = (window.prompt("Layer name", l.name) || "").trim();
-      if (n) { l.name = n; GIS.emit("layers"); }
+      var r = e.target.closest(".gis-layer");
+      if (!r || e.target.closest("button,input")) return;
+      GIS.layerProperties(GIS.get(r.dataset.id));
+    });
+    box.addEventListener("contextmenu", function (e) {
+      var r = e.target.closest(".gis-layer");
+      if (!r) return;
+      e.preventDefault();
+      GIS.layerMenu(r.dataset.id, e.clientX, e.clientY);
     });
     box.addEventListener("dragstart", function (e) { var r = e.target.closest(".gis-layer"); if (r) { dragId = r.dataset.id; e.dataTransfer.effectAllowed = "move"; } });
     box.addEventListener("dragover", function (e) { if (dragId) e.preventDefault(); });
@@ -177,6 +205,7 @@
   /* -------------------------------------------------------- layer style */
 
   var SYMS = [["single", "Single"], ["categorized", "Categorized"], ["graduated", "Graduated"]];
+  var DASHES = [["solid", "Solid"], ["dash", "Dash"], ["dot", "Dot"], ["dashdot", "Dash dot"]];
   var METHODS = [["jenks", "Natural breaks (Jenks)"], ["quantile", "Quantile"], ["equal", "Equal interval"]];
 
   function renderStyle() {
@@ -186,7 +215,14 @@
     var h = '<div class="gis-style-name">' + esc(l.name) + "</div>";
     h += field("Layer opacity", range("layerTop:opacity", l.opacity, 0, 1, 0.05));
     if (l.kind === "xyz") { box.innerHTML = h + field("Tile URL", text("layerTop:url", l.url)); return; }
-    if (l.kind === "mvt") { box.innerHTML = h + field("Color", color("layerTop:color", l.color)) + '<div class="gis-meta">Vector tiles · ' + esc(l.sourceLayer) + "</div>"; return; }
+    if (l.kind === "mvt") {
+      h += pair(field("Fill color", color("layerTop:color", l.color)), field("Outline color", color("layerTop:outlineColor", l.outlineColor || l.color)));
+      h += field("Fill opacity", range("layerTop:fillOpacity", l.fillOpacity != null ? l.fillOpacity : 0.45, 0, 1, 0.05));
+      h += pair(field("Line width", num("layerTop:lineWidth", l.lineWidth != null ? l.lineWidth : 0.8, 0, 20, 0.1)), field("Line style", select("layerTop:lineDash", DASHES, l.lineDash || "solid")));
+      h += field("Point size", num("layerTop:pointRadius", l.pointRadius || 4, 1, 40, 0.5));
+      box.innerHTML = h + '<div class="gis-meta">Vector tiles · ' + esc(l.sourceLayer) + "</div>";
+      return;
+    }
     if (l.kind === "raster") {
       var r = l.raster, bands = r.bands.map(function (b, i) { return [i, "Band " + (i + 1)]; });
       h += field("Render type", select("raster:mode", [["single", "Singleband pseudocolor"]].concat(r.bands.length >= 3 ? [["rgb", "Multiband color (RGB)"]] : []), r.mode));
@@ -250,8 +286,9 @@
     var kind = GIS.geometryKind(l);
     if (kind === "polygon") h += field("Fill opacity", range("layer:fillOpacity", s.fillOpacity, 0, 1, 0.05));
     h += pair(field("Stroke color", color("layer:strokeColor", s.strokeColor)), field("Stroke width", num("layer:strokeWidth", s.strokeWidth, 0, 20, 0.1)));
+    if (kind === "polygon") h += field("Stroke style", select("layer:strokeDash", DASHES, s.strokeDash));
     if (kind === "point") h += field("Point size", num("layer:pointRadius", s.pointRadius, 1, 50, 0.5));
-    if (kind === "line") h += field("Line width", num("layer:lineWidth", s.lineWidth, 0.2, 30, 0.2));
+    if (kind === "line") h += pair(field("Line width", num("layer:lineWidth", s.lineWidth, 0.2, 30, 0.2)), field("Line style", select("layer:lineDash", DASHES, s.lineDash)));
     h += field("Labels", '<select data-bind="layer:labelField">' + opt("", "No labels", !s.labelField) + options(f.all.map(function (k) { return [k, k]; }), s.labelField) + "</select>");
     h += field("Label template", text("layer:labelTemplate", s.labelTemplate, "{name} ({value})"));
     if (s.labelField || s.labelTemplate) {
@@ -323,7 +360,9 @@
     if (o.gisItem === "legend") {
       h += field("Title", text("item:title", p.title)) + pair(field("Font size", num("item:fontSize", p.fontSize, 6, 36, 1)), field("Background", color("item:background", p.background || "#ffffff")));
       h += check("item:frame", p.frame, "Frame") + check("item:showLayerNames", p.showLayerNames, "Layer headings");
+      h += check("item:onlyVisible", p.onlyVisible !== false, "Only visible layers");
       if (p.boxW || p.boxH) h += '<button id="gisLegendFit" style="width:100%;margin-top:8px;">Fit to content</button>';
+      h += '<label class="field-label">Legend items</label><div class="gis-legend-pick">' + legendPick(p) + "</div>";
     } else if (o.gisItem === "scalebar") {
       h += field("Style", select("item:style", SCALE_STYLES, p.style)) + field("Units", select("item:units", SCALE_UNITS, p.units));
       h += pair(field("Segments", num("item:segments", p.segments, 1, 10, 1)), field("Target width (px)", num("item:width", p.width, 40, 800, 1)));
@@ -350,6 +389,42 @@
       h += field("Frame width", num("item:frameWidth", p.frameWidth, 0, 8, 0.5)) + check("item:showLayers", p.showLayers, "Show layers");
     }
     box.innerHTML = h;
+  }
+
+  // Checklist of layers, and of the classes of each listed layer.
+  function legendPick(p) {
+    var hidden = p.hidden || [], he = p.hiddenEntries || {};
+    var rows = GIS.layers.filter(function (l) { return l.kind !== "xyz"; }).map(function (l) {
+      var on = hidden.indexOf(l.id) < 0 && l.legend !== false, entries = GIS.sym.legendEntries(l);
+      var h = '<label class="check-row gis-lp-layer' + (l.visible || p.onlyVisible === false ? "" : " off") + '"><input type="checkbox" data-lp-layer="' + l.id + '"' + (on ? " checked" : "") + ">" + esc(l.legendName || l.name) + "</label>";
+      if (on && entries.length > 1) {
+        h += '<div class="gis-lp-entries">' + entries.map(function (e) {
+          var lab = String(e.label), off = (he[l.id] || []).indexOf(lab) >= 0;
+          return '<label class="check-row"><input type="checkbox" data-lp-entry="' + l.id + '" data-lp-label="' + esc(lab) + '"' + (off ? "" : " checked") + ">" +
+            (e.color ? '<i style="background:' + esc(e.color) + '"></i>' : "") + esc(lab) + "</label>";
+        }).join("") + "</div>";
+      }
+      return h;
+    });
+    return rows.join("") || '<div class="gis-empty">No layers</div>';
+  }
+  function onLegendPick(el) {
+    var o = selectedItem();
+    if (!o || o.gisItem !== "legend") return;
+    var p = o.gisOpts;
+    if (el.dataset.lpLayer) {
+      var id = el.dataset.lpLayer, l = GIS.get(id), hidden = (p.hidden || []).filter(function (x) { return x !== id; });
+      if (!el.checked) hidden.push(id);
+      else if (l && l.legend === false) { l.legend = true; GIS.emit("layers"); }
+      GIS.items.update(o, { hidden: hidden });
+    } else {
+      var lid = el.dataset.lpEntry, lab = el.dataset.lpLabel, he = JSON.parse(JSON.stringify(p.hiddenEntries || {}));
+      var list = (he[lid] || []).filter(function (x) { return x !== lab; });
+      if (!el.checked) list.push(lab);
+      he[lid] = list;
+      GIS.items.update(o, { hiddenEntries: he });
+    }
+    renderItemProps();
   }
 
   /* --------------------------------------------------------- binding */
@@ -402,6 +477,7 @@
     panel.addEventListener("change", function (e) {
       var t = e.target;
       if (t.dataset && t.dataset.bind && (t.type === "checkbox" || t.tagName === "SELECT")) onBind(t);
+      if (t.dataset && (t.dataset.lpLayer || t.dataset.lpEntry)) onLegendPick(t);
       if (t.dataset && t.dataset.cat != null) {
         var l = GIS.active(), c = GIS.sym.categories(l)[+t.dataset.cat];
         l.style.catColors = Object.assign({}, l.style.catColors); l.style.catColors[c.value] = t.value;
@@ -517,7 +593,8 @@
   }
   GIS.enterMapMode = enterMapMode;
 
-  GIS.on("layers", function () { renderLayerList(); renderStyle(); });
+  GIS.on("layers", function () { renderLayerList(); renderStyle(); renderItemProps(); });
+  GIS.on("style", renderLayerList);
   GIS.on("active", function () { renderLayerList(); renderStyle(); });
   GIS.on("selection", renderLayerList);
   GIS.on("data", function () { renderStyle(); });

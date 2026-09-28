@@ -21,7 +21,7 @@
   var INK = "#1a1a1a";
 
   var DEFAULTS = {
-    legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true, boxW: 0, boxH: 0 },
+    legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true, boxW: 0, boxH: 0, hidden: [], hiddenEntries: {}, onlyVisible: true },
     scalebar: { style: "single", segments: 4, units: "auto", width: 170, height: 6, fontSize: 10, frame: false, color: INK, labels: "all" },
     north: { style: "arrow", size: 56, color: INK, followMap: true },
     inset: { basemap: "positron", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 },
@@ -190,6 +190,18 @@
 
   /* ------------------------------------------------------------ legend */
 
+  function lname(l) { return l.legendName || l.name; }
+
+  // Layers a legend lists: visible (unless the legend also lists hidden
+  // layers), not a tile layer, "Show in legend" on, and not removed from
+  // this legend.
+  GIS.legendLayers = function (o) {
+    o = o || {};
+    return GIS.layers.filter(function (l) {
+      return l.kind !== "xyz" && (l.visible || o.onlyVisible === false) && l.legend !== false && (o.hidden || []).indexOf(l.id) < 0;
+    });
+  };
+
   function buildLegend(o) {
     var fs = o.fontSize, row = fs + 8, sw = 18, pad = 10, parts = [], y = pad, maxW = 0;
     var bg = rect(0, 0, 10, 10, o.background || "rgba(0,0,0,0)", o.frame ? "#9a978c" : null, 0.8);
@@ -210,14 +222,15 @@
         parts.push(p);
       }
     }
-    var layers = GIS.layers.filter(function (l) { return l.visible && l.kind !== "xyz"; });
+    var layers = GIS.legendLayers(o);
     layers.forEach(function (l) {
-      var entries = GIS.sym.legendEntries(l), kind = l.kind === "vector" ? GIS.geometryKind(l) : "raster";
+      var hiddenE = (o.hiddenEntries || {})[l.id] || [];
+      var entries = GIS.sym.legendEntries(l).filter(function (e) { return hiddenE.indexOf(String(e.label)) < 0; }), kind = l.kind === "vector" ? GIS.geometryKind(l) : "raster";
       var ren = l.kind === "vector" ? l.style.renderer || "simple" : "simple";
       // Heatmap: the layer name and a Low -> High ramp.
       if (ren === "heatmap") {
         newBlock();
-        var hh = text(l.name, pad, y, fs, { fontWeight: "bold" });
+        var hh = text(lname(l), pad, y, fs, { fontWeight: "bold" });
         add(hh); maxW = Math.max(maxW, hh.width); y += row;
         newBlock();
         var hw = Math.max(100, fs * 10), hc = GIS.sym.rampColors(l.style.heatRamp, false);
@@ -250,21 +263,21 @@
       // bold layer heading, then one row per class/category.
       if (sizes && entries.length === 1 && !entries[0].label) {
         newBlock();
-        var ph = text(l.name, pad, y, fs, { fontWeight: "bold" });
+        var ph = text(lname(l), pad, y, fs, { fontWeight: "bold" });
         add(ph); maxW = Math.max(maxW, ph.width); y += row;
         drawSizes(entries[0].color);
         return;
       }
       if (entries.length === 1 && !entries[0].label) {
         newBlock();
-        var one = text(l.name, pad + sw + 8, y + row / 2 - 2 - fs * 0.62, fs);
+        var one = text(lname(l), pad + sw + 8, y + row / 2 - 2 - fs * 0.62, fs);
         drawSwatch(entries[0].color, l, kind, pad, y + row / 2 - 2);
         add(one); maxW = Math.max(maxW, sw + 8 + one.width); y += row;
         return;
       }
       if (o.showLayerNames) {
         newBlock();
-        var hdr = text(l.name, pad, y, fs, { fontWeight: "bold" });
+        var hdr = text(lname(l), pad, y, fs, { fontWeight: "bold" });
         add(hdr); maxW = Math.max(maxW, hdr.width); y += row;
       }
       if (l.kind === "raster" && l.raster.legend && l.raster.legend.classColors) {
@@ -293,7 +306,7 @@
         newBlock();
         var cy = y + row / 2 - 2;
         if (e.color) drawSwatch(e.color, l, kind, pad, cy);
-        var t2 = text(e.label || l.name, pad + (e.color ? sw + 8 : 0), cy - fs * 0.62, fs);
+        var t2 = text(e.label || lname(l), pad + (e.color ? sw + 8 : 0), cy - fs * 0.62, fs);
         add(t2); maxW = Math.max(maxW, (e.color ? sw + 8 : 0) + t2.width); y += row;
       });
       if (sizes) { y += 4; drawSizes(null); }

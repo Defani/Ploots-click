@@ -914,6 +914,77 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 .gis-layer button:disabled{opacity:.3;cursor:default}
 .gis-layer button .material-symbols-outlined{font-size:15px}
 .gis-sel-badge{font-style:normal;font-size:10px;background:#ffcc00;color:#1a1a1a;border-radius:8px;padding:0 5px}
+/* Layer tree, context menu and dialogs (js/gis/09-layer-menu.js) */
+.gis-layer.off .gis-layer-name{color:var(--ink-soft)}
+.gis-layer [data-zoom],.gis-layer [data-table]{display:none}
+.gis-layer:hover [data-zoom],.gis-layer:hover [data-table],.gis-layer.active [data-zoom],.gis-layer.active [data-table]{display:flex}
+.gis-layer .gis-twisty{width:16px;height:22px;padding:0}
+.gis-twisty-sp{width:16px;flex:none}
+.gis-count{font-size:10.5px;color:var(--ink-soft);flex:none}
+.gis-flag{font-size:13px!important;color:var(--accent);flex:none}
+.gis-sw{width:14px;height:14px;flex:none;display:inline-block;box-sizing:border-box}
+.gis-sw-polygon{background:var(--c);border:1px solid rgba(0,0,0,.25);border-radius:2px}
+.gis-sw-line{height:3px;background:var(--c);border-radius:2px}
+.gis-sw-point{width:10px;height:10px;margin:0 2px;background:var(--c);border:1px solid rgba(0,0,0,.3);border-radius:50%}
+.gis-sw-sp{width:14px;flex:none}
+.gis-layer-entries{border-bottom:1px solid var(--line);padding:2px 0 4px 44px;max-height:220px;overflow:auto}
+.gis-entry{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:2px 0;min-width:0}
+.gis-entry span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gis-ctx{position:fixed;z-index:2100;display:none;min-width:220px;max-height:86vh;overflow:auto;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 14px 36px rgba(0,0,0,.22);padding:5px}
+.gis-ctx.open{display:block}
+.gis-ctx-head{font-size:11px;font-weight:600;color:var(--ink-soft);padding:5px 8px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.gis-ctx button{display:flex;align-items:center;gap:9px;width:100%;border:none;background:none;padding:6px 8px;border-radius:6px;color:var(--ink);cursor:pointer;text-align:left;font-size:12.5px}
+.gis-ctx button:hover:not(:disabled){background:var(--panel-2)}
+.gis-ctx button:disabled{opacity:.4;cursor:default}
+.gis-ctx button.danger{color:var(--danger)}
+.gis-ctx button .material-symbols-outlined{font-size:17px;color:var(--ink-soft)}
+.gis-ctx button.danger .material-symbols-outlined{color:var(--danger)}
+.gis-ctx .gis-ctx-check{color:var(--accent)!important}
+.gis-ctx-sep{height:1px;background:var(--line);margin:4px 2px}
+.gis-dlg-back{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;padding:16px}
+.gis-dlg{width:420px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;background:var(--panel);color:var(--ink);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.gis-dlg.wide{width:600px}
+.gis-dlg-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line);font-weight:600;font-size:13px}
+.gis-dlg-head button{border:none;background:none;color:var(--ink-soft);cursor:pointer;display:flex;padding:3px;border-radius:6px}
+.gis-dlg-head button:hover{background:var(--panel-2);color:var(--ink)}
+.gis-dlg-body{padding:12px 16px;overflow:auto}
+.gis-dlg-body input[type=text],.gis-dlg-body input[type=number],.gis-dlg-body select,.gis-dlg-body textarea{width:100%;box-sizing:border-box}
+.gis-dlg-foot{display:flex;justify-content:flex-end;gap:8px;padding:10px 16px;border-top:1px solid var(--line)}
+.gis-dlg-foot button{padding:6px 14px;width:auto;flex:none}
+.gis-expr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gis-expr-lbl{font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:4px}
+.gis-expr-lbl em{font-weight:400;font-style:normal}
+.gis-expr-list{height:150px;overflow:auto;border:1px solid var(--line-strong);border-radius:6px;padding:2px}
+.gis-expr-list button{display:block;width:100%;text-align:left;border:none;background:none;padding:3px 6px;border-radius:4px;font-size:12px;color:var(--ink);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gis-expr-list button:hover{background:var(--panel-2)}
+.gis-expr-list button.active{background:var(--accent-soft);color:var(--accent)}
+.gis-expr-hint{font-size:11.5px;color:var(--ink-soft);padding:6px}
+.gis-expr-ops{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0 8px}
+.gis-expr-ops button{padding:3px 8px;font:12px ui-monospace,Consolas,monospace;min-width:0}
+.gis-expr-text{height:78px;font:12.5px ui-monospace,Consolas,monospace;resize:vertical}
+.gis-expr-status{min-height:18px;font-size:11.5px;margin:6px 0 8px;color:var(--ink-soft)}
+.gis-expr-status.ok{color:#2e8540}
+.gis-expr-status.error{color:var(--danger)}
+.gis-calc-top{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.gis-calc-top>div{display:flex;flex-direction:column;gap:6px}
+.gis-props-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center}
+.gis-props-grid .field-label{margin:0}
+.gis-props-sec{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);margin:14px 0 6px}
+.gis-props-info{width:100%;border-collapse:collapse;font-size:12px}
+.gis-props-info th{text-align:left;font-weight:500;color:var(--ink-soft);padding:3px 10px 3px 0;white-space:nowrap;vertical-align:top;width:90px}
+.gis-props-info td{padding:3px 0;word-break:break-word}
+.gis-props-url{font:11px ui-monospace,Consolas,monospace}
+.gis-props-scale>div{display:grid;grid-template-columns:1fr 110px auto;gap:6px;align-items:center;margin-top:6px}
+.gis-props-scale .field-label{margin:0}
+.gis-props-scale button{padding:5px 8px;font-size:11.5px}
+.gis-legend-pick{border:1px solid var(--line);border-radius:8px;padding:4px 8px;max-height:260px;overflow:auto}
+.gis-legend-pick .check-row{margin:3px 0;font-size:12px;display:flex;align-items:center;gap:6px}
+.gis-lp-layer{font-weight:600}
+.gis-lp-layer.off{color:var(--ink-soft)}
+.gis-lp-entries{padding-left:20px}
+.gis-lp-entries i{width:11px;height:11px;border-radius:2px;flex:none;border:1px solid rgba(0,0,0,.2)}
+.gis-measure-readout{position:absolute;left:10px;bottom:10px;z-index:5;background:var(--panel);color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:6px 10px;font-size:12px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.18);pointer-events:none}
+.gis-measure-readout b{font-weight:600;color:var(--ink-soft);margin-right:4px}
 .gis-empty{padding:10px;color:var(--ink-soft);font-size:12px;text-align:center}
 .gis-style-name{font-weight:600;font-size:12.5px;margin:2px 0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gis-meta{margin-top:8px;font-size:11px;color:var(--ink-soft)}
@@ -967,6 +1038,7 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 .tb-btn{width:auto!important;height:34px!important;padding:0 10px 0 8px!important;gap:6px;border-color:transparent!important;border-radius:8px!important;color:var(--ink)!important;flex-direction:row}
 .tb-btn .material-symbols-outlined{font-size:19px;color:var(--ink-soft)}
 .tb-lbl{font:500 12.5px Inter,'Segoe UI',Arial,sans-serif;white-space:nowrap}
+@media (max-width:1680px){.tb-insert .tb-lbl{display:none}.tb-insert .tb-btn{padding:0 8px!important}}
 .tb-btn:hover{background:var(--panel)!important}
 .tb-btn.active,.tb-btn.on{background:var(--accent-soft)!important;color:var(--accent)!important}
 .tb-btn.active .material-symbols-outlined,.tb-btn.on .material-symbols-outlined{color:var(--accent)}
@@ -2484,6 +2556,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/06-panel.js"></script>
 <script src="js/gis/07-home.js"></script>
 <script src="js/gis/08-catalog.js"></script>
+<script src="js/gis/09-layer-menu.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>

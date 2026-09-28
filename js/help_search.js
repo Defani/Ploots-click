@@ -87,7 +87,13 @@
       kw: 'catalog data gfw global forest watch klhk kemenhut kehutanan bnpb big government gbif inaturalist species occurrence download' },
     { title: 'Attribute table', panel: 'panel-map', section: 'gisLayers', icon: 'table',
       desc: 'View, edit, select and export features of a vector layer.',
-      kw: 'attribute table features select edit export csv geojson' }
+      kw: 'attribute table features select edit export csv geojson' },
+    { title: 'Layer menu', panel: 'panel-map', section: 'gisLayers', icon: 'more_vert',
+      desc: 'Right-click a layer: filter, select by expression, field calculator, legend, properties, duplicate.',
+      kw: 'layer menu context right click filter definition query select by expression field calculator properties scale visibility duplicate rename legend feature count' },
+    { title: 'Measure', panel: 'panel-map', section: 'gisView', icon: 'straighten',
+      desc: 'Measure line length or area from the Tools menu or the map tool bar.',
+      kw: 'measure distance length area perimeter ruler tools zoom extent previous next' }
   ];
 
   var panelEl, backdropEl, inputEl, listEl;

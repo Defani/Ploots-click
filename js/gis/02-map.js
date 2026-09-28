@@ -126,16 +126,26 @@
       '<button data-tool="pan" title="Pan"><span class="material-symbols-outlined">pan_tool</span></button>' +
       '<button data-tool="select" title="Select features"><span class="material-symbols-outlined">arrow_selector_tool</span></button>' +
       '<button data-tool="identify" title="Identify"><span class="material-symbols-outlined">info</span></button>' +
+      '<button data-tool="measure" title="Measure line (double-click to finish)"><span class="material-symbols-outlined">straighten</span></button>' +
+      '<button data-tool="area" title="Measure area (double-click to finish)"><span class="material-symbols-outlined">square_foot</span></button>' +
       '<span class="gis-tools-sep"></span>' +
+      '<button data-act="zoom-in" title="Zoom in"><span class="material-symbols-outlined">zoom_in</span></button>' +
+      '<button data-act="zoom-out" title="Zoom out"><span class="material-symbols-outlined">zoom_out</span></button>' +
+      '<button data-act="zoom-full" title="Zoom full (all layers)"><span class="material-symbols-outlined">fit_screen</span></button>' +
       '<button data-act="zoom-layer" title="Zoom to active layer"><span class="material-symbols-outlined">zoom_in_map</span></button>' +
       '<button data-act="zoom-sel" title="Zoom to selection"><span class="material-symbols-outlined">center_focus_strong</span></button>' +
       '<button data-act="clear-sel" title="Clear selection"><span class="material-symbols-outlined">deselect</span></button>' +
+      '<button data-act="prev" title="Previous extent"><span class="material-symbols-outlined">undo</span></button>' +
+      '<button data-act="next" title="Next extent"><span class="material-symbols-outlined">redo</span></button>' +
       '<span class="gis-tools-sep"></span>' +
       '<button data-act="done" class="gis-done">Done</button>';
     var box = document.createElement("div");
     box.className = "gis-select-box";
     box.style.display = "none";
-    wrap.appendChild(mapDiv); wrap.appendChild(overlay); wrap.appendChild(box); wrap.appendChild(tools);
+    var readout = document.createElement("div");
+    readout.className = "gis-measure-readout";
+    readout.style.display = "none";
+    wrap.appendChild(mapDiv); wrap.appendChild(overlay); wrap.appendChild(box); wrap.appendChild(tools); wrap.appendChild(readout);
     gd.appendChild(wrap);
 
     var opts = {
@@ -145,12 +155,12 @@
     };
     if (s.mapView) { opts.center = s.mapView.center; opts.zoom = s.mapView.zoom; opts.bearing = s.mapView.bearing; opts.pitch = s.mapView.pitch; }
     var map = new maplibregl.Map(opts);
-    M = { gd: gd, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, basemap: s.mapBasemap,
-      keys: {}, interactive: false, tool: "pan", loaded: false, layerCount: 0 };
+    M = { gd: gd, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, readout: readout, basemap: s.mapBasemap,
+      keys: {}, interactive: false, tool: "pan", loaded: false, layerCount: 0, hist: [], histPos: -1, meas: null };
     map.boxZoom.disable();
     map.doubleClickZoom.disable();
 
-    map.on("style.load", function () { M.keys = {}; applyLayers(); });
+    map.on("style.load", function () { M.keys = {}; applyLayers(); drawMeasure(); });
     map.on("load", function () {
       M.loaded = true;
       if (!state.mapView) fitAll();
@@ -162,8 +172,10 @@
       if (raf) return;
       raf = requestAnimationFrame(function () { raf = 0; drawOverlay(); emitView(false); });
     });
-    map.on("moveend", function () { emitView(true); });
+    map.on("moveend", function () { emitView(true); pushExtent(); });
+    map.on("zoomend", function () { if (hasScaleRange()) applyLayers(); });
     map.on("click", onMapClick);
+    map.on("dblclick", function () { if (M.meas && !M.meas.done && M.meas.pts.length) { M.meas.done = true; M.meas.hover = null; drawMeasure(); } });
     map.on("mousemove", onMapHover);
 
     tools.addEventListener("click", function (e) {
@@ -172,6 +184,11 @@
       if (b.dataset.tool) setTool(b.dataset.tool);
       else if (b.dataset.act === "done") setInteractive(false);
       else if (b.dataset.act === "zoom-layer") zoomToLayer(GIS.active());
+      else if (b.dataset.act === "zoom-in") map.zoomIn();
+      else if (b.dataset.act === "zoom-out") map.zoomOut();
+      else if (b.dataset.act === "zoom-full") fitAll();
+      else if (b.dataset.act === "prev") stepExtent(-1);
+      else if (b.dataset.act === "next") stepExtent(1);
       else if (b.dataset.act === "zoom-sel") zoomToSelection();
       else if (b.dataset.act === "clear-sel") clearSelection();
     });
@@ -237,8 +254,25 @@
     var map = M.map;
     if (map.getLayer(id)) map.removeLayer(id);
     def.id = id;
+    if (curRange) { def.minzoom = curRange[0]; def.maxzoom = curRange[1]; }
     map.addLayer(def, before);
   }
+
+  // Scale-dependent visibility (QGIS "Scale dependent visibility"): the
+  // layer shows between minScale (most zoomed out, 1:N) and maxScale (most
+  // zoomed in). Scales become zoom levels at the current view; page scale
+  // and zoom differ by a constant, so the mapping holds at every zoom.
+  var curRange = null;
+  function hasScaleRange() { return GIS.layers.some(function (l) { return l.minScale > 0 || l.maxScale > 0; }); }
+  function zoomRange(l) {
+    if (!(l.minScale > 0) && !(l.maxScale > 0)) return null;
+    var cur = GIS.getScale(), z0 = M.map.getZoom();
+    if (!cur) return null;
+    var lo = l.minScale > 0 ? z0 + Math.log2(cur / l.minScale) : 0, hi = l.maxScale > 0 ? z0 + Math.log2(cur / l.maxScale) : 24;
+    return [Math.max(0, Math.min(24, lo)), Math.max(0, Math.min(24, Math.max(hi, lo + 0.01)))];
+  }
+  var DASH = { solid: null, dash: [4, 2.5], dot: [0.1, 2], dashdot: [4, 2, 0.1, 2] };
+  function dashed(paint, style) { if (DASH[style]) paint["line-dasharray"] = DASH[style]; return paint; }
 
   function setSource(id, def, key) {
     var map = M.map;
@@ -272,6 +306,7 @@
     // Bottom of the list first, so the top layer is drawn last.
     GIS.layers.slice().reverse().forEach(function (l) {
       var id = "gis-" + l.id, vis = l.visible ? "visible" : "none";
+      curRange = zoomRange(l);
       if (l.kind === "xyz") {
         setSource(id, { type: "raster", tiles: [l.url], tileSize: 256 }, l.url);
         put(id + "-r", { type: "raster", source: id, layout: { visibility: vis }, paint: { "raster-opacity": l.opacity } });
@@ -280,9 +315,10 @@
       if (l.kind === "mvt") {
         setSource(id, { type: "vector", tiles: [l.url], maxzoom: l.maxzoom || 14 }, l.url);
         var sl = l.sourceLayer;
-        put(id + "-fill", { type: "fill", source: id, "source-layer": sl, filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false], layout: { visibility: vis }, paint: { "fill-color": l.color, "fill-opacity": 0.45 * l.opacity } });
-        put(id + "-line", { type: "line", source: id, "source-layer": sl, layout: { visibility: vis }, paint: { "line-color": l.color, "line-width": 0.8, "line-opacity": l.opacity } });
-        put(id + "-point", { type: "circle", source: id, "source-layer": sl, filter: ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false], layout: { visibility: vis }, paint: { "circle-color": l.color, "circle-radius": 4, "circle-opacity": l.opacity } });
+        var fo = l.fillOpacity != null ? l.fillOpacity : 0.45, lc = l.outlineColor || l.color;
+        put(id + "-fill", { type: "fill", source: id, "source-layer": sl, filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false], layout: { visibility: vis }, paint: { "fill-color": l.color, "fill-opacity": fo * l.opacity } });
+        put(id + "-line", { type: "line", source: id, "source-layer": sl, layout: { visibility: vis }, paint: dashed({ "line-color": lc, "line-width": l.lineWidth != null ? l.lineWidth : 0.8, "line-opacity": l.opacity }, l.lineDash) });
+        put(id + "-point", { type: "circle", source: id, "source-layer": sl, filter: ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false], layout: { visibility: vis }, paint: { "circle-color": l.color, "circle-radius": l.pointRadius || 4, "circle-opacity": l.opacity } });
         return;
       }
       if (l.kind === "raster") {
@@ -293,12 +329,12 @@
       GIS.ensureStyle(l);
       var s = l.style, ren = s.renderer || "simple";
       var tbl = s.field === GIS.TABLE_FIELD ? JSON.stringify(GIS.table()) : "";
-      var dkey = [l.rev || 0, s.symbology, s.field, s.joinField, tbl, s.labelTemplate, s.labelField, s.labelPlacement].join("|");
+      var dkey = [l.rev || 0, s.symbology, s.field, s.joinField, tbl, s.labelTemplate, s.labelField, s.labelPlacement, l.filter || ""].join("|");
       if (M.keys[id] !== dkey) setSource(id, { type: "geojson", data: GIS.sym.styledData(l) }, dkey);
-      var lkey = [l.rev || 0, s.labelField, s.labelTemplate, s.labelPlacement].join("|");
+      var lkey = [l.rev || 0, s.labelField, s.labelTemplate, s.labelPlacement, l.filter || ""].join("|");
       if (M.keys[id + "-lbl"] !== lkey) setSource(id + "-lbl", { type: "geojson", data: GIS.sym.labelData(l) }, lkey);
       if (ren !== "simple") {
-        var pkey = [l.rev || 0, ren, s.symbology, s.field, s.joinField, tbl, s.sizeField, s.sizeMin, s.sizeMax, s.sizeScale, s.heatField, s.pointRadius].join("|");
+        var pkey = [l.rev || 0, ren, s.symbology, s.field, s.joinField, tbl, s.sizeField, s.sizeMin, s.sizeMax, s.sizeScale, s.heatField, s.pointRadius, l.filter || ""].join("|");
         if (M.keys[id + "-pts"] !== pkey) setSource(id + "-pts", { type: "geojson", data: GIS.sym.pointData(l) }, pkey);
       }
 
@@ -313,8 +349,8 @@
       // Under proportional circles the polygons become a neutral base.
       var baseFill = ren === "proportional" ? "#e8e6de" : color;
       put(id + "-fill", { type: "fill", source: id, filter: polys, layout: { visibility: feat }, paint: { "fill-color": baseFill, "fill-opacity": (ren === "proportional" ? 0.9 : s.fillOpacity) * op } });
-      put(id + "-outline", { type: "line", source: id, filter: polys, layout: { visibility: feat, "line-join": "round" }, paint: { "line-color": s.strokeColor, "line-width": s.strokeWidth, "line-opacity": s.strokeWidth > 0 ? op : 0 } });
-      put(id + "-line", { type: "line", source: id, filter: lines, layout: { visibility: feat, "line-cap": "round", "line-join": "round" }, paint: { "line-color": color, "line-width": s.lineWidth, "line-opacity": op } });
+      put(id + "-outline", { type: "line", source: id, filter: polys, layout: { visibility: feat, "line-join": "round" }, paint: dashed({ "line-color": s.strokeColor, "line-width": s.strokeWidth, "line-opacity": s.strokeWidth > 0 ? op : 0 }, s.strokeDash) });
+      put(id + "-line", { type: "line", source: id, filter: lines, layout: { visibility: feat, "line-cap": "round", "line-join": "round" }, paint: dashed({ "line-color": color, "line-width": s.lineWidth, "line-opacity": op }, s.lineDash) });
       put(id + "-point", { type: "circle", source: id, filter: points, layout: { visibility: pointVis }, paint: {
         "circle-color": color, "circle-radius": s.pointRadius, "circle-opacity": Math.max(0.05, s.fillOpacity) * op,
         "circle-stroke-color": s.strokeColor, "circle-stroke-width": s.strokeWidth, "circle-stroke-opacity": op } });
@@ -348,6 +384,8 @@
         "text-font": font, "text-size": s.labelSize, "text-offset": [0, -0.6], "symbol-spacing": 250, "text-max-angle": 40,
         "text-allow-overlap": ov, "text-ignore-placement": ov, "text-keep-upright": true }, paint: lpaint });
     });
+    curRange = null;
+    drawMeasure();
     drawOverlay();
   }
 
@@ -587,11 +625,96 @@
     M.tool = t;
     Array.prototype.forEach.call(M.tools.querySelectorAll("[data-tool]"), function (b) { b.classList.toggle("active", b.dataset.tool === t); });
     if (t === "select") M.map.dragPan.disable(); else M.map.dragPan.enable();
-    M.map.getCanvas().style.cursor = t === "pan" ? "" : t === "select" ? "crosshair" : "help";
+    M.map.getCanvas().style.cursor = t === "pan" ? "" : t === "select" || t === "measure" || t === "area" ? "crosshair" : "help";
+    if (M.meas && M.meas.kind !== t) clearMeasure();
+    GIS.emit("interactive", true);
+  }
+
+  /* ---------------------------------------------------------- measure */
+  // Click to add vertices, double-click to finish; distances and areas are
+  // on the sphere (d3.geoDistance / d3.geoArea, mean Earth radius).
+  var R_EARTH = 6371008.8;
+  function clearMeasure() {
+    if (!M) return;
+    M.meas = null;
+    drawMeasure();
+  }
+  function fmtLen(m) { return m >= 1000 ? (m / 1000).toLocaleString("en-US", { maximumFractionDigits: m >= 100000 ? 0 : 2 }) + " km" : m.toLocaleString("en-US", { maximumFractionDigits: 1 }) + " m"; }
+  function fmtArea(a) {
+    if (a >= 1e6) return (a / 1e6).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " km² (" + (a / 1e4).toLocaleString("en-US", { maximumFractionDigits: 0 }) + " ha)";
+    if (a >= 1e4) return (a / 1e4).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " ha";
+    return a.toLocaleString("en-US", { maximumFractionDigits: 1 }) + " m²";
+  }
+  function dedupe(pts) { return pts.filter(function (p, i) { return !i || p[0] !== pts[i - 1][0] || p[1] !== pts[i - 1][1]; }); }
+  function measureValues(pts) {
+    var len = 0, seg = 0;
+    for (var i = 1; i < pts.length; i++) { seg = d3.geoDistance(pts[i - 1], pts[i]) * R_EARTH; len += seg; }
+    var area = 0;
+    if (pts.length >= 3) {
+      var a = d3.geoArea({ type: "Polygon", coordinates: [pts.concat([pts[0]])] });
+      if (a > 2 * Math.PI) a = 4 * Math.PI - a;
+      area = a * R_EARTH * R_EARTH;
+      len += d3.geoDistance(pts[pts.length - 1], pts[0]) * R_EARTH;
+    }
+    return { len: len, seg: seg, area: area };
+  }
+  function drawMeasure() {
+    if (!M) return;
+    var map = M.map, m = M.meas, pts = m ? dedupe(m.pts.concat(m.hover && !m.done ? [m.hover] : [])) : [];
+    updateReadout(m, pts);
+    // isStyleLoaded() is false while tiles load; sources only need the style.
+    if (!map.style || !map.style._loaded) return;
+    var feats = pts.map(function (p) { return { type: "Feature", geometry: { type: "Point", coordinates: p }, properties: {} }; });
+    if (pts.length >= 2) feats.push({ type: "Feature", properties: {},
+      geometry: m.kind === "area" && pts.length >= 3 ? { type: "Polygon", coordinates: [pts.concat([pts[0]])] } : { type: "LineString", coordinates: pts } });
+    var data = { type: "FeatureCollection", features: feats };
+    if (map.getSource("ploots-measure")) map.getSource("ploots-measure").setData(data);
+    else {
+      map.addSource("ploots-measure", { type: "geojson", data: data });
+      map.addLayer({ id: "ploots-measure-fill", type: "fill", source: "ploots-measure", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": "#ff5a1f", "fill-opacity": 0.15 } });
+      map.addLayer({ id: "ploots-measure-line", type: "line", source: "ploots-measure", filter: ["!=", ["geometry-type"], "Point"], paint: { "line-color": "#ff5a1f", "line-width": 2, "line-dasharray": [3, 1.5] } });
+      map.addLayer({ id: "ploots-measure-pt", type: "circle", source: "ploots-measure", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 3.5, "circle-color": "#ffffff", "circle-stroke-color": "#ff5a1f", "circle-stroke-width": 1.6 } });
+    }
+    ["ploots-measure-fill", "ploots-measure-line", "ploots-measure-pt"].forEach(function (id) { if (map.getLayer(id)) map.moveLayer(id); });
+  }
+  function updateReadout(m, pts) {
+    if (!pts.length) { M.readout.style.display = "none"; return; }
+    var v = measureValues(pts);
+    M.readout.style.display = "";
+    M.readout.innerHTML = m.kind === "area"
+      ? "<b>Area</b> " + fmtArea(v.area) + "<br><b>Perimeter</b> " + fmtLen(v.len)
+      : "<b>Length</b> " + fmtLen(v.len) + (pts.length > 2 ? "<br><b>Last segment</b> " + fmtLen(v.seg) : "");
+  }
+  GIS.measure = measureValues;
+
+  /* ---------------------------------------------------- extent history */
+  function pushExtent() {
+    if (!M) return;
+    if (M.navigating) { M.navigating = false; return; }
+    var c = M.map.getCenter(), v = { center: [c.lng, c.lat], zoom: M.map.getZoom(), bearing: M.map.getBearing() };
+    var last = M.hist[M.histPos];
+    if (last && Math.abs(last.zoom - v.zoom) < 1e-6 && Math.abs(last.center[0] - v.center[0]) < 1e-9 && Math.abs(last.center[1] - v.center[1]) < 1e-9) return;
+    M.hist = M.hist.slice(0, M.histPos + 1);
+    M.hist.push(v);
+    if (M.hist.length > 50) M.hist.shift();
+    M.histPos = M.hist.length - 1;
+  }
+  function stepExtent(d) {
+    if (!M) return;
+    var i = M.histPos + d;
+    if (i < 0 || i >= M.hist.length) return;
+    M.histPos = i;
+    M.navigating = true;
+    M.map.jumpTo(M.hist[i]);
+    saveView();
   }
 
   function onMapHover(e) {
     if (!M || !M.interactive || M.tool === "pan") return;
+    if (M.tool === "measure" || M.tool === "area") {
+      if (M.meas && !M.meas.done) { M.meas.hover = [e.lngLat.lng, e.lngLat.lat]; drawMeasure(); }
+      return;
+    }
     var l = GIS.active();
     if (!l || l.kind !== "vector") return;
     var hit = M.map.queryRenderedFeatures(e.point, { layers: queryLayers(l) });
@@ -600,6 +723,12 @@
 
   function onMapClick(e) {
     if (!M || !M.interactive || M.boxDragged) return;
+    if (M.tool === "measure" || M.tool === "area") {
+      if (!M.meas || M.meas.done) M.meas = { kind: M.tool, pts: [], done: false };
+      M.meas.pts.push([e.lngLat.lng, e.lngLat.lat]);
+      drawMeasure();
+      return;
+    }
     var l = GIS.active();
     if (l && l.kind === "mvt" && M.tool === "identify") {
       var hm = M.map.queryRenderedFeatures(e.point, { layers: ["-fill", "-line", "-point"].map(function (x) { return "gis-" + l.id + x; }).filter(function (x) { return M.map.getLayer(x); }) });
@@ -666,7 +795,11 @@
     });
   }
 
-  function onKey(e) { if (e.key === "Escape" && M && M.interactive) setInteractive(false); }
+  function onKey(e) {
+    if (e.key !== "Escape" || !M || !M.interactive) return;
+    if (M.meas) { clearMeasure(); return; }
+    setInteractive(false);
+  }
 
   function saveView() {
     if (!M) return;
@@ -688,6 +821,7 @@
     if (on) { setTool(M.tool || "pan"); document.addEventListener("keydown", onKey); }
     else {
       document.removeEventListener("keydown", onKey);
+      clearMeasure();
       M.map.dragPan.enable();
       M.map.getCanvas().style.cursor = "";
       saveView();
@@ -722,6 +856,10 @@
   GIS.mapActions = {
     setInteractive: setInteractive, isInteractive: function () { return !!(M && M.interactive); },
     setTool: setTool, fitAll: fitAll, zoomToLayer: zoomToLayer, zoomToSelection: zoomToSelection, clearSelection: clearSelection,
+    tool: function () { return M ? M.tool : "pan"; },
+    zoomToFeatures: function (layer, idx) {
+      if (layer && layer.kind === "vector") fitBounds(GIS.featureBounds(idx.map(function (i) { return layer.data.features[i]; }).filter(Boolean)), 16);
+    },
     redraw: function () { if (M) { applyLayers(); } }
   };
 

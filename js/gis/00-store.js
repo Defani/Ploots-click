@@ -14,6 +14,11 @@
      vector  GeoJSON FeatureCollection; style = QGIS-like symbology
      raster  georeferenced image (GeoTIFF) as a MapLibre image source
      xyz     raster tile URL template
+     mvt     vector tile URL template (one colour)
+
+   Common layer settings (QGIS layer properties): legend (show in legend
+   items), legendName, filter (expression, see GIS.expr), minScale/maxScale
+   (scale-dependent visibility, 1:N; 0 = no limit), showCount.
 
    Events (PlootsGIS.on): "layers" (added/removed/reordered/renamed),
    "style" (symbology or visibility), "data" (features edited),
@@ -39,6 +44,7 @@
     symbology: "single", field: "", joinField: "",
     singleColor: "#2f6360", catColors: {}, classes: 5, method: "jenks", ramp: "YlGn", reverse: false,
     fillOpacity: 0.8, strokeColor: "#ffffff", strokeWidth: 0.8, pointRadius: 6, lineWidth: 2,
+    strokeDash: "solid", lineDash: "solid",
     missingColor: "#d9d6cc", labelField: "", labelSize: 12, labelColor: "#1a1a1a",
     // Labels: {field} template, halo, font, placement along lines, overlap.
     labelTemplate: "", labelHaloColor: "#ffffff", labelHaloWidth: 1.4, labelFont: "regular", labelPlacement: "auto", labelOverlap: false,
@@ -136,6 +142,45 @@
       GIS.activeId = layer.id;
       GIS.emit("layers");
       return layer;
+    },
+
+    // Copy of a layer (data and style are deep-copied), placed above it.
+    duplicate: function (id) {
+      var src = GIS.get(id);
+      if (!src) return null;
+      var copy = Object.assign({}, src, { id: "L" + (nextId++), name: src.name + " copy" });
+      if (src.kind === "vector") {
+        copy.data = JSON.parse(JSON.stringify(src.data));
+        copy.style = JSON.parse(JSON.stringify(src.style));
+        copy.selection = new Set();
+      }
+      if (src.kind === "raster") copy.raster = Object.assign({}, src.raster);
+      GIS.layers.splice(GIS.layers.indexOf(src), 0, copy);
+      GIS.activeId = copy.id;
+      GIS.emit("layers");
+      return copy;
+    },
+
+    // Feature indices kept by the layer filter (definition query), or null
+    // when there is no filter. A broken filter keeps everything.
+    filterMask: function (layer) {
+      if (!layer || layer.kind !== "vector" || !layer.filter) return null;
+      var fn;
+      try { fn = GIS.expr.compile(layer.filter); } catch (e) { return null; }
+      return layer.data.features.map(function (f) { try { return !!fn(f.properties); } catch (e) { return false; } });
+    },
+    selectWhere: function (layer, expression, mode) {
+      var fn = GIS.expr.compile(expression), next = mode === "add" || mode === "remove" || mode === "within" ? new Set(layer.selection) : new Set();
+      layer.data.features.forEach(function (f, i) {
+        var hit = false;
+        try { hit = !!fn(f.properties); } catch (e) { }
+        if (mode === "remove") { if (hit) next.delete(i); }
+        else if (mode === "within") { if (!hit) next.delete(i); }
+        else if (hit) next.add(i);
+      });
+      layer.selection = next;
+      GIS.emit("selection");
+      return next.size;
     },
 
     remove: function (id) {
@@ -244,6 +289,120 @@
       GIS.download(csv, safeName(layer.name) + (selectedOnly ? "_selected" : "") + ".csv", "text/csv");
     }
   };
+
+  /* ------------------------------------------------------ expressions */
+  // A small QGIS-style expression language for filters and "select by
+  // expression", compiled without eval:
+  //   "population" > 50 AND "subregion" = 'Maritime'
+  //   name LIKE 'Ma%'   iso3 IN ('IDN', 'MYS')   "area" IS NOT NULL
+  //   ("pop" / "area") * 1000 >= 2   NOT "flag"
+  // Field names are bare words or "double quoted"; text is 'single quoted'.
+  var KEYWORDS = /^(AND|OR|NOT|IN|LIKE|ILIKE|IS|NULL|TRUE|FALSE)$/i;
+  function tokenize(src) {
+    var out = [], i = 0, m;
+    while (i < src.length) {
+      var rest = src.slice(i);
+      if ((m = /^\s+/.exec(rest))) { i += m[0].length; continue; }
+      if ((m = /^(\d+\.?\d*(e[+-]?\d+)?|\.\d+)/i.exec(rest))) { out.push({ t: "num", v: parseFloat(m[0]) }); i += m[0].length; continue; }
+      if (rest[0] === "'") {
+        var s = "", j = i + 1;
+        for (; j < src.length; j++) { if (src[j] === "'") { if (src[j + 1] === "'") { s += "'"; j++; continue; } break; } s += src[j]; }
+        if (j >= src.length) throw new Error("Unclosed text");
+        out.push({ t: "str", v: s }); i = j + 1; continue;
+      }
+      if (rest[0] === '"') {
+        var e = src.indexOf('"', i + 1);
+        if (e < 0) throw new Error("Unclosed field name");
+        out.push({ t: "field", v: src.slice(i + 1, e) }); i = e + 1; continue;
+      }
+      if ((m = /^(<=|>=|<>|!=|==|\|\||[=<>+\-*\/%(),])/.exec(rest))) { out.push({ t: "op", v: m[0] }); i += m[0].length; continue; }
+      if ((m = /^[A-Za-z_\u00C0-\uFFFF][\w\u00C0-\uFFFF]*/.exec(rest))) {
+        out.push(KEYWORDS.test(m[0]) ? { t: "kw", v: m[0].toUpperCase() } : { t: "field", v: m[0] }); i += m[0].length; continue;
+      }
+      throw new Error("Unexpected '" + rest[0] + "'");
+    }
+    return out;
+  }
+  function num(v) { return v === null || v === undefined || v === "" ? NaN : Number(v); }
+  function cmpVals(a, b) {
+    var na = num(a), nb = num(b);
+    if (isFinite(na) && isFinite(nb)) return na < nb ? -1 : na > nb ? 1 : 0;
+    a = String(a); b = String(b);
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+  function likeRe(p, ci) { return new RegExp("^" + String(p).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*").replace(/_/g, ".") + "$", ci ? "i" : ""); }
+  function compile(src) {
+    var toks = tokenize(String(src || "")), p = 0;
+    if (!toks.length) throw new Error("Empty expression");
+    function peek(v) { var t = toks[p]; return t && (t.t === "op" || t.t === "kw") && t.v === v; }
+    function eat(v) { if (!peek(v)) throw new Error("Expected " + v); p++; }
+    function orE() { var a = andE(); while (peek("OR")) { p++; var b = andE(); a = (function (x, y) { return function (r) { return !!x(r) || !!y(r); }; })(a, b); } return a; }
+    function andE() { var a = notE(); while (peek("AND")) { p++; var b = notE(); a = (function (x, y) { return function (r) { return !!x(r) && !!y(r); }; })(a, b); } return a; }
+    function notE() { if (peek("NOT")) { p++; var a = notE(); return function (r) { return !a(r); }; } return cmpE(); }
+    function cmpE() {
+      var a = addE(), t = toks[p];
+      if (!t) return a;
+      if (t.t === "kw" && t.v === "IS") {
+        p++; var neg = peek("NOT"); if (neg) p++; eat("NULL");
+        return function (r) { var v = a(r), isNull = v === null || v === undefined || v === ""; return neg ? !isNull : isNull; };
+      }
+      var not = false;
+      if (peek("NOT") && toks[p + 1] && toks[p + 1].t === "kw" && /^(IN|LIKE|ILIKE)$/.test(toks[p + 1].v)) { not = true; p++; t = toks[p]; }
+      if (t.t === "kw" && t.v === "IN") {
+        p++; eat("("); var list = [addE()];
+        while (peek(",")) { p++; list.push(addE()); }
+        eat(")");
+        return function (r) { var v = a(r), hit = list.some(function (f) { return cmpVals(v, f(r)) === 0; }); return not ? !hit : hit; };
+      }
+      if (t.t === "kw" && (t.v === "LIKE" || t.v === "ILIKE")) {
+        p++; var pat = addE(), ci = t.v === "ILIKE";
+        return function (r) { var v = a(r), hit = v != null && likeRe(pat(r), ci).test(String(v)); return not ? !hit : hit; };
+      }
+      if (t.t === "op" && /^(=|==|!=|<>|<|<=|>|>=)$/.test(t.v)) {
+        p++; var b = addE(), op = t.v;
+        return function (r) {
+          var x = a(r), y = b(r);
+          if (x === null || x === undefined || y === null || y === undefined) return false;
+          var c = cmpVals(x, y);
+          return op === "=" || op === "==" ? c === 0 : op === "!=" || op === "<>" ? c !== 0 : op === "<" ? c < 0 : op === "<=" ? c <= 0 : op === ">" ? c > 0 : c >= 0;
+        };
+      }
+      return a;
+    }
+    function addE() {
+      var a = mulE();
+      while (peek("+") || peek("-") || peek("||")) {
+        var op = toks[p++].v, b = mulE();
+        a = (function (x, y, o) {
+          return function (r) { var u = x(r), w = y(r); return o === "||" ? String(u == null ? "" : u) + String(w == null ? "" : w) : o === "+" ? num(u) + num(w) : num(u) - num(w); };
+        })(a, b, op);
+      }
+      return a;
+    }
+    function mulE() {
+      var a = unary();
+      while (peek("*") || peek("/") || peek("%")) {
+        var op = toks[p++].v, b = unary();
+        a = (function (x, y, o) { return function (r) { var u = num(x(r)), w = num(y(r)); return o === "*" ? u * w : o === "/" ? u / w : u % w; }; })(a, b, op);
+      }
+      return a;
+    }
+    function unary() { if (peek("-")) { p++; var a = unary(); return function (r) { return -num(a(r)); }; } return prim(); }
+    function prim() {
+      var t = toks[p++];
+      if (!t) throw new Error("Unexpected end");
+      if (t.t === "num" || t.t === "str") return function () { return t.v; };
+      if (t.t === "field") return function (r) { return r[t.v]; };
+      if (t.t === "kw" && t.v === "NULL") return function () { return null; };
+      if (t.t === "kw" && (t.v === "TRUE" || t.v === "FALSE")) return function () { return t.v === "TRUE"; };
+      if (t.t === "op" && t.v === "(") { var e = orE(); eat(")"); return e; }
+      throw new Error("Unexpected " + t.v);
+    }
+    var fn = orE();
+    if (p < toks.length) throw new Error("Unexpected " + toks[p].v);
+    return fn;
+  }
+  GIS.expr = { compile: compile };
 
   function safeName(s) { return String(s || "layer").replace(/[\\/:*?"<>|]+/g, "").replace(/\.(geo)?json$/i, "").trim() || "layer"; }
 
