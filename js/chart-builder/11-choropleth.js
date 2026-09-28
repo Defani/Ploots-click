@@ -1,43 +1,22 @@
 /* ==========================================================================
-   Choropleth Map — adds a "Choropleth Map" chart type to the chart-builder.
+   Choropleth Map — registers the chart type's settings (state defaults)
+   and the "Peta (Choropleth)" sidebar section, shown only while this chart
+   type is active.
 
-   The choropleth trace ships inside vendor/plotly-ploots.min.js (custom
-   Plotly 3.7.0 build = cartesian traces + waterfall/funnel/treemap/sankey/
-   splom + choropleth/scattergeo), so there is ONE Plotly instance for every
-   chart type — no second bundle, no window.Plotly swap. Country outlines
-   (topojson) are served locally from vendor/topojson/ via the topojsonURL
-   config below, so maps also work offline and without cdn.plot.ly.
-
-   v2 additions (this file):
-     - Custom GeoJSON support (trace.geojson + featureidkey) so the map is
-       not limited to Plotly's built-in world/country atlas — this is what
-       makes province/kabupaten-level thematic maps (e.g. AGC per kabupaten)
-       possible, not just country-level maps.
-     - Classed/binned choropleth (equal-interval or quantile), in addition
-       to the original continuous gradient — standard practice for thematic
-       biomass/carbon maps.
-     - Manual z-range (zmin/zmax) so multiple maps (e.g. different years)
-       can share one color scale for a fair visual comparison.
-     - Reversescale toggle, missing-data land color, scope + projection
-       controls for the built-in world atlas mode.
-     - A "Peta (Choropleth)" sidebar section, shown only while this chart
-       type is active, following the same side-section markup/toggle
-       pattern already used elsewhere in index.html (js/ui_sections.js
-       handles the open/close click delegation for any .side-section, so
-       nothing else needs to change for a section injected at runtime).
+   The map itself is drawn by the D3 engine (js/d3-engine/06-geo.js), which
+   reads every state.choropleth* value set here: world atlas (scope +
+   projection) or custom GeoJSON with featureidkey and fit-to-bounds,
+   continuous or classed (equal interval / quantile) colouring, manual z
+   range, reversed scale and the colour for regions without data.
    ========================================================================== */
 (function () {
   "use strict";
-
-  // Local copy of Plotly's Natural Earth topojson (vendor/topojson/*_110m.json).
-  var PLOOTS_TOPOJSON_URL = new URL("vendor/topojson/", document.baseURI).href;
-
   // ---- state defaults (added once; harmless if this file loads twice) ----
   function ensureChoroplethState() {
     if (state.choroplethGeoMode === undefined) state.choroplethGeoMode = "world"; // "world" | "custom"
     if (state.choroplethGeoJsonText === undefined) state.choroplethGeoJsonText = "";
     if (state.choroplethGeoJsonObj === undefined) state.choroplethGeoJsonObj = null;
-    if (state.choroplethFeatureIdKey === undefined) state.choroplethFeatureIdKey = ""; // "" -> Plotly default "id"
+    if (state.choroplethFeatureIdKey === undefined) state.choroplethFeatureIdKey = ""; // "" -> use feature.id
     if (state.choroplethFitBounds === undefined) state.choroplethFitBounds = true;
     if (state.choroplethScope === undefined) state.choroplethScope = "world";
     if (state.choroplethProjection === undefined) state.choroplethProjection = "natural earth";
@@ -51,194 +30,6 @@
     if (state.choroplethZMax === undefined) state.choroplethZMax = null;
   }
   ensureChoroplethState();
-
-  function looksIso3(codes) {
-    return codes.length > 0 && codes.every(function (c) {
-      return /^[A-Za-z]{3}$/.test((c == null ? "" : String(c)).trim());
-    });
-  }
-
-  function showMapPlaceholder(msg) {
-    var el = document.getElementById("plotlyDiv");
-    if (!el) return;
-    var w = state.chartBox.w, h = state.chartBox.h;
-    try { if (el._fullLayout) Plotly.purge(el); } catch (e) {}
-    el.innerHTML = "";
-    var wrap = document.createElement("div");
-    wrap.className = "ploots-map-placeholder";
-    var bg = (typeof chartBgColor === "function" ? chartBgColor() : "#ffffff");
-    wrap.style.cssText = "display:flex;align-items:center;justify-content:center;width:" + w + "px;height:" + h + "px;font-family:" + state.fontBody + ";color:#5c5c58;font-size:13px;background:" + bg + ";text-align:center;padding:20px;box-sizing:border-box;";
-    wrap.textContent = msg;
-    el.appendChild(wrap);
-  }
-
-  // ---- classed (binned) colorscale ----------------------------------------
-  // Builds a step-function Plotly colorscale (array of [pos,color] stops
-  // with each class repeated at its boundaries) instead of a continuous
-  // gradient, plus the class breakpoints for the colorbar ticks. Standard
-  // choropleth cartography practice for thematic maps (e.g. discrete AGC
-  // or carbon-stock classes) where a continuous ramp is harder to read.
-  function buildClassedScale(zValues, nClasses, method, baseColors, zminIn, zmaxIn) {
-    var valid = zValues.filter(function (v) { return typeof v === "number" && isFinite(v); });
-    if (!valid.length) return null;
-    nClasses = Math.max(2, Math.min(9, Math.round(nClasses) || 5));
-    var lo = isFinite(zminIn) ? zminIn : Math.min.apply(null, valid);
-    var hi = isFinite(zmaxIn) ? zmaxIn : Math.max.apply(null, valid);
-    if (hi <= lo) hi = lo + 1;
-
-    var breaks = [lo];
-    if ("quantile" === method) {
-      var sorted = valid.slice().sort(function (a, b) { return a - b; });
-      for (var i = 1; i < nClasses; i++) {
-        var idx = Math.min(sorted.length - 1, Math.floor((i / nClasses) * sorted.length));
-        breaks.push(sorted[idx]);
-      }
-    } else {
-      for (var j = 1; j < nClasses; j++) breaks.push(lo + (hi - lo) * (j / nClasses));
-    }
-    breaks.push(hi);
-    // enforce strictly increasing breakpoints (quantile ties on skewed data)
-    for (var k = 1; k < breaks.length; k++) {
-      if (breaks[k] <= breaks[k - 1]) breaks[k] = breaks[k - 1] + (hi - lo) * 1e-6 + 1e-9;
-    }
-    hi = breaks[breaks.length - 1];
-
-    var classColors = [];
-    for (var c = 0; c < nClasses; c++) classColors.push(baseColors[c % baseColors.length]);
-
-    var scale = [];
-    for (var s = 0; s < nClasses; s++) {
-      var p0 = (breaks[s] - lo) / (hi - lo);
-      var p1 = (breaks[s + 1] - lo) / (hi - lo);
-      p0 = Math.max(0, Math.min(1, p0));
-      p1 = Math.max(0, Math.min(1, p1));
-      scale.push([p0, classColors[s]]);
-      scale.push([p1, classColors[s]]);
-    }
-    scale[0][0] = 0;
-    scale[scale.length - 1][0] = 1;
-    return { scale: scale, breaks: breaks, zmin: lo, zmax: hi };
-  }
-
-  function reverseColorscale(scale) {
-    var colors = scale.map(function (s) { return s[1]; }).reverse();
-    return scale.map(function (s, i) { return [s[0], colors[i]]; });
-  }
-
-  function renderChoropleth() {
-    var box = state.chartBox, w = box.w, h = box.h;
-    var seriesName = state.seriesNames.filter(function (n) { return state.seriesMeta[n].visible; })[0];
-    if (!seriesName) { renderBlankCanvas(); return; }
-
-    var custom = "custom" === state.choroplethGeoMode;
-    if (custom && !state.choroplethGeoJsonObj) {
-      showMapPlaceholder("Tempel atau unggah GeoJSON kustom di panel \"Peta (Choropleth)\" pada sidebar untuk merender peta ini (misalnya batas provinsi/kabupaten).");
-      return;
-    }
-
-    var locations = state.categories;
-    var z = state.seriesData[seriesName];
-    var colors = PALETTES[state.paletteIdx].colors;
-    var label = state.seriesMeta[seriesName].label || seriesName;
-    var fmt = function (v) { return formatValue(v, state.valueFormat || "auto"); };
-
-    var colorscale, zmin, zmax, colorbarExtra = {};
-    if ("classed" === state.choroplethColorMode) {
-      var classed = buildClassedScale(z, state.choroplethClasses, state.choroplethClassMethod, colors, state.choroplethZMin, state.choroplethZMax);
-      if (classed) {
-        colorscale = state.choroplethReverseScale ? reverseColorscale(classed.scale) : classed.scale;
-        zmin = classed.zmin;
-        zmax = classed.zmax;
-        colorbarExtra = {
-          tickmode: "array",
-          tickvals: classed.breaks,
-          ticktext: classed.breaks.map(fmt)
-        };
-      }
-    }
-    if (!colorscale) {
-      var base = isGrayscaleMode() ? "Greys" : plotlyColorscaleFromPalette(colors);
-      colorscale = state.choroplethReverseScale && Array.isArray(base) ? reverseColorscale(base) : base;
-      if ("custom" === state.choroplethZMode && Number.isFinite(state.choroplethZMin) && Number.isFinite(state.choroplethZMax)) {
-        zmin = state.choroplethZMin;
-        zmax = state.choroplethZMax;
-      }
-    }
-
-    var trace = {
-      type: "choropleth",
-      locations: locations,
-      z: z,
-      customdata: locations,
-      text: z.map(fmt),
-      hovertemplate: "%{customdata}<br>" + escapeHtml(label) + ": %{text}<extra></extra>",
-      colorscale: colorscale,
-      marker: { line: { color: "#ffffff", width: state.outlineFrame ? 1 : 0.5 } },
-      colorbar: Object.assign({
-        title: { text: label, font: { family: state.fontBody, size: state.bodyFontSize || 12, color: TEXT_INK } },
-        thickness: 14,
-        outlinewidth: 0,
-        tickfont: { family: state.fontBody, size: Math.max((state.bodyFontSize || 12) - 2, 9), color: TEXT_INK }
-      }, colorbarExtra),
-      showscale: state.showLegend
-    };
-    if (isFinite(zmin)) trace.zmin = zmin;
-    if (isFinite(zmax)) trace.zmax = zmax;
-
-    if (custom) {
-      trace.geojson = state.choroplethGeoJsonObj;
-      if (state.choroplethFeatureIdKey) trace.featureidkey = state.choroplethFeatureIdKey;
-    } else {
-      trace.locationmode = looksIso3(locations) ? "ISO-3" : "country names";
-    }
-
-    var geo = {
-      showframe: false,
-      showcoastlines: true,
-      coastlinecolor: "#cfcabb",
-      showland: true,
-      landcolor: state.choroplethMissingColor,
-      showocean: false,
-      showcountries: !custom,
-      countrycolor: "#ffffff",
-      bgcolor: "#ffffff"
-    };
-    if (custom) {
-      geo.fitbounds = state.choroplethFitBounds ? "geojson" : false;
-      geo.visible = true;
-    } else {
-      geo.scope = state.choroplethScope || "world";
-      geo.projection = { type: state.choroplethProjection || "natural earth" };
-    }
-
-    var layout = {
-      width: w,
-      height: h,
-      paper_bgcolor: typeof chartBgColor === "function" ? chartBgColor() : "#ffffff",
-      font: { family: state.fontBody, size: state.bodyFontSize || 12, color: TEXT_INK },
-      margin: { t: 15, r: 15, b: 15, l: 15 },
-      geo: geo,
-      showlegend: false
-    };
-
-    var ph = document.querySelector("#plotlyDiv > .ploots-map-placeholder");
-    if (ph) ph.remove();
-    Plotly.newPlot("plotlyDiv", [trace], layout, {
-      responsive: false,
-      displaylogo: false,
-      displayModeBar: true,
-      modeBarButtonsToRemove: ["lasso2d", "select2d"],
-      topojsonURL: PLOOTS_TOPOJSON_URL
-    }).then(function () {
-      try { Plotly.Plots.resize("plotlyDiv"); } catch (e) {}
-      state.chartRenderedW = w;
-      state.chartRenderedH = h;
-    }).catch(function (err) {
-      showMapPlaceholder("Gagal merender peta: " + (err && err.message ? err.message : "periksa GeoJSON/featureidkey."));
-    });
-  }
-
-  window.renderChoropleth = renderChoropleth;
 
   // ==========================================================================
   // Sidebar panel: "Peta (Choropleth)" — injected once into #panel-chart,
