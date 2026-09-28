@@ -127,6 +127,17 @@
       return layer;
     },
 
+    // Vector tile layer (e.g. a GFW dataset): drawn from tiles, one colour.
+    addMVT: function (url, sourceLayer, name, attribution) {
+      var pal = PALETTES[state.paletteIdx].colors;
+      var layer = { id: "L" + (nextId++), kind: "mvt", name: name || "Vector tiles", visible: true, opacity: 1, url: url, sourceLayer: sourceLayer,
+        attribution: attribution || "", color: pal[GIS.layers.length % pal.length] };
+      GIS.layers.unshift(layer);
+      GIS.activeId = layer.id;
+      GIS.emit("layers");
+      return layer;
+    },
+
     remove: function (id) {
       GIS.layers = GIS.layers.filter(function (l) { return l.id !== id; });
       if (GIS.activeId === id) GIS.activeId = GIS.layers[0] ? GIS.layers[0].id : null;

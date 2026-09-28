@@ -66,7 +66,7 @@
         '<p class="status" id="gisStatus" style="display:none;"></p>' +
         '<div id="gisLayerList" class="gis-layer-list"></div>', true) +
       section("gisStyle", "palette", "Layer style", "", true) +
-      section("gisBasemapSec", "map", "Basemap", '<select id="gisBasemap">' + options(GIS.BASEMAPS.map(function (b) { return [b.id, b.label]; }), state.mapBasemap) + "</select>", true) +
+      section("gisBasemapSec", "map", "Basemap", '<select id="gisBasemap">' + basemapOptions() + "</select>", true) +
       section("gisView", "explore", "Map view", "", true) +
       section("gisGrid", "grid_4x4", "Grid", "", false) +
       section("gisFrame", "crop_square", "Frame", "", false) +
@@ -101,6 +101,15 @@
     refreshAll();
   }
 
+  // Basemap <option>s grouped like the catalog (vector styles, imagery, ...).
+  function basemapOptions() {
+    var groups = [];
+    GIS.BASEMAPS.forEach(function (b) { if (groups.indexOf(b.group) < 0) groups.push(b.group); });
+    return groups.map(function (g) {
+      return '<optgroup label="' + esc(g) + '">' + GIS.BASEMAPS.filter(function (b) { return b.group === g; }).map(function (b) { return opt(b.id, b.label, b.id === state.mapBasemap); }).join("") + "</optgroup>";
+    }).join("");
+  }
+
   function setStatus(msg, ok) {
     var el = $("gisStatus");
     if (!el) return;
@@ -111,7 +120,7 @@
 
   /* -------------------------------------------------------- layer list */
 
-  var KIND_ICON = { vector: "polyline", raster: "grid_on", xyz: "travel_explore" };
+  var KIND_ICON = { vector: "polyline", raster: "grid_on", xyz: "travel_explore", mvt: "layers" };
 
   function renderLayerList() {
     var box = $("gisLayerList");
@@ -177,6 +186,7 @@
     var h = '<div class="gis-style-name">' + esc(l.name) + "</div>";
     h += field("Layer opacity", range("layerTop:opacity", l.opacity, 0, 1, 0.05));
     if (l.kind === "xyz") { box.innerHTML = h + field("Tile URL", text("layerTop:url", l.url)); return; }
+    if (l.kind === "mvt") { box.innerHTML = h + field("Color", color("layerTop:color", l.color)) + '<div class="gis-meta">Vector tiles · ' + esc(l.sourceLayer) + "</div>"; return; }
     if (l.kind === "raster") {
       var r = l.raster, bands = r.bands.map(function (b, i) { return [i, "Band " + (i + 1)]; });
       h += field("Render type", select("raster:mode", [["single", "Singleband pseudocolor"]].concat(r.bands.length >= 3 ? [["rgb", "Multiband color (RGB)"]] : []), r.mode));
@@ -313,6 +323,7 @@
     if (o.gisItem === "legend") {
       h += field("Title", text("item:title", p.title)) + pair(field("Font size", num("item:fontSize", p.fontSize, 6, 36, 1)), field("Background", color("item:background", p.background || "#ffffff")));
       h += check("item:frame", p.frame, "Frame") + check("item:showLayerNames", p.showLayerNames, "Layer headings");
+      if (p.boxW || p.boxH) h += '<button id="gisLegendFit" style="width:100%;margin-top:8px;">Fit to content</button>';
     } else if (o.gisItem === "scalebar") {
       h += field("Style", select("item:style", SCALE_STYLES, p.style)) + field("Units", select("item:units", SCALE_UNITS, p.units));
       h += pair(field("Segments", num("item:segments", p.segments, 1, 10, 1)), field("Target width (px)", num("item:width", p.width, 40, 800, 1)));
@@ -409,6 +420,7 @@
         GIS.emit("style"); renderStyle();
       } else if (b.id === "gisRecolor" && l) { l.style.catColors = {}; GIS.emit("style"); renderStyle(); }
       else if (b.dataset.add) { enterMapMode(); GIS.items.add(b.dataset.add); }
+      else if (b.id === "gisLegendFit") { var lo = selectedItem(); if (lo) { GIS.items.update(lo, { boxW: 0, boxH: 0 }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisMoveBtn") GIS.mapActions && GIS.mapActions.setInteractive(true);
       else if (b.id === "gisZoomAll") GIS.mapActions && GIS.mapActions.fitAll();
       else if (b.id === "gisZoomLayer") GIS.mapActions && GIS.mapActions.zoomToLayer(GIS.active());

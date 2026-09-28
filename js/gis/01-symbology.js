@@ -229,6 +229,7 @@
 
   // Legend rows for one layer: [{ color, label }] (color null = note row).
   function legendEntries(layer) {
+    if (layer.kind === "mvt") return [{ color: layer.color, label: "" }];
     if (layer.kind !== "vector") return [];
     var s = layer.style;
     if (s.symbology === "single" || !s.field) return [{ color: s.singleColor, label: "" }];

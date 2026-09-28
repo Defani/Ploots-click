@@ -42,6 +42,7 @@ const PRECACHE_URLS = [
   "./js/gis/05-attribute-table.js",
   "./js/gis/06-panel.js",
   "./js/gis/07-home.js",
+  "./js/gis/08-catalog.js",
   "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",

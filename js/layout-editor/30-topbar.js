@@ -153,18 +153,22 @@
     openMenu(addBtn,
       item('vector', sym('polyline'), 'Vector (GeoJSON, TopoJSON)') + item('raster', sym('grid_on'), 'Raster (GeoTIFF)') +
       item('xyz', sym('travel_explore'), 'XYZ tiles') + item('url', sym('link'), 'From URL or text') +
-      '<div class="tb-sep"></div>' + item('sample', sym('public'), 'Sample layer'),
+      '<div class="tb-sep"></div>' + item('catalog', sym('travel_explore'), 'Data catalog (GFW, government, GBIF…)') + item('sample', sym('public'), 'Sample layer'),
       function (v) {
         if (v === 'vector' || v === 'raster') { var inp = $(v === 'vector' ? 'gisVectorFile' : 'gisRasterFile'); if (inp) inp.click(); return; }
         if (v === 'sample') { GIS.loadSampleLayer(); return; }
+        if (v === 'catalog') { GIS.openCatalog(); return; }
         mapPanel();
         var btn = $(v === 'xyz' ? 'gisXyzBtn' : 'gisUrlBtn'), wrap = $(v === 'xyz' ? 'gisXyzWrap' : 'gisUrlWrap');
         if (btn && wrap && wrap.style.display === 'none') btn.click();
       });
   });
   bmBtn.addEventListener('click', function () {
-    var html = head('Basemap');
-    GIS.BASEMAPS.forEach(function (b) { html += item(b.id, sym(b.id === 'none' ? 'block' : b.tiles ? 'satellite_alt' : 'map'), b.label, b.id === state.mapBasemap); });
+    var html = '', group = null;
+    GIS.BASEMAPS.forEach(function (b) {
+      if (b.group !== group) { group = b.group; html += head(group); }
+      html += item(b.id, sym(b.id === 'none' ? 'block' : b.tiles ? 'satellite_alt' : 'map'), b.label, b.id === state.mapBasemap);
+    });
     openMenu(bmBtn, html, function (v) { state.mapBasemap = v; render(); if (GIS.refreshPanel) GIS.refreshPanel(); });
   });
   attrBtn.addEventListener('click', function () {
