@@ -38,8 +38,12 @@
   PD.renderActive = function () {
     var el = gd();
     if (!el) return;
-    if (!window.state.categories.length) PD.renderBlank(el);
-    else PD.renderers[window.state.chartType](el, window.state);
+    var type = window.state.chartType;
+    // Map-type renderers (07-maplibre.js) keep live state on the div; any
+    // other type tears it down first. dataFree types draw without table rows.
+    if (el._plootsCleanup && !(PD.dataFree && PD.dataFree[type])) el._plootsCleanup();
+    if (!window.state.categories.length && !(PD.dataFree && PD.dataFree[type])) PD.renderBlank(el);
+    else PD.renderers[type](el, window.state);
     afterRender();
   };
 
@@ -48,6 +52,7 @@
     if (PD.handles(window.state.chartType)) return PD.renderActive();
     var el = gd();
     if (el) {
+      if (el._plootsCleanup) el._plootsCleanup();
       var stale = el.querySelector("svg.ploots-d3");
       if (stale) { el.removeChild(stale); el._plootsD3 = null; }
     }
@@ -57,6 +62,7 @@
   window.renderBlankCanvas = function () {
     var el = gd();
     if (!el) return;
+    if (PD.dataFree && PD.dataFree[window.state.chartType] && PD.handles(window.state.chartType)) { PD.renderActive(); return; }
     PD.renderBlank(el);
     window.state.chartRenderedW = window.state.chartBox.w;
     window.state.chartRenderedH = window.state.chartBox.h;
@@ -73,28 +79,35 @@
     return el ? (el.querySelector("svg.ploots-d3") || el.querySelector("svg")) : null;
   }
 
-  function serialise(svgEl) {
-    var xml = new XMLSerializer().serializeToString(svgEl);
-    if (!/^<\?xml/.test(xml)) xml = '<?xml version="1.0" standalone="no"?>\r\n' + xml;
-    return xml;
-  }
+  // The chart's SVG markup for export. Renderers that aren't a single <svg>
+  // (the MapLibre map) provide gd._plootsExport(scale) -> Promise<string>.
+  PD.chartSvgMarkup = function (scale) {
+    var el = gd();
+    if (el && el._plootsExport) return el._plootsExport(scale);
+    var svgEl = d3SvgEl();
+    return svgEl ? Promise.resolve(new XMLSerializer().serializeToString(svgEl)) : Promise.reject(new Error("Nothing to export yet."));
+  };
 
   var previousExportSvg = window.exportSvgFile;
   window.exportSvgFile = function () {
     if (!PD.handles(window.state.chartType)) return previousExportSvg && previousExportSvg();
-    var svgEl = d3SvgEl();
-    if (!svgEl) return;
-    var blob = new Blob([serialise(svgEl)], { type: "image/svg+xml;charset=utf-8" });
-    var url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = "chart.svg"; a.click();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    PD.chartSvgMarkup(2).then(function (xml) {
+      if (!/^<\?xml/.test(xml)) xml = '<?xml version="1.0" standalone="no"?>\r\n' + xml;
+      var blob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+      var url = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = url; a.download = "chart.svg"; a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }).catch(function () { });
   };
 
   var previousExportPng = window.exportPngFile;
   window.exportPngFile = function () {
     if (!PD.handles(window.state.chartType)) return previousExportPng && previousExportPng();
-    var svgEl = d3SvgEl();
-    if (!svgEl) return;
+    var dpiSel0 = document.getElementById("dpiSelect");
+    PD.chartSvgMarkup((parseInt(dpiSel0 && dpiSel0.value) || 300) / 96).then(exportPngFromMarkup).catch(function () { });
+  };
+
+  function exportPngFromMarkup(xml) {
     var st = window.state, dpiSel = document.getElementById("dpiSelect");
     var dpi = parseInt(dpiSel && dpiSel.value) || 300, scale = dpi / 96, r = st.chartBox;
     var canvas = document.createElement("canvas");
@@ -115,8 +128,8 @@
       o.onload = function () { ctx.drawImage(o, 0, 0, canvas.width, canvas.height); finish(); };
       o.src = overlay;
     };
-    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(serialise(svgEl));
-  };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+  }
 
   /* --------------------------------------------- Format Axis click strips */
 

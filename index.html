@@ -876,6 +876,95 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 .sidebar-container .atf-title{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink)}
 .sidebar-container .atf-title .material-symbols-outlined{font-size:18px;color:var(--ink-soft)}
 </style>
+<style>
+/* GIS map workspace (js/gis/) */
+.gj-map-wrap .maplibregl-canvas{outline:none}
+.chart-block.gj-interactive{z-index:3;outline:2px solid var(--accent);outline-offset:2px}
+.gis-map-tools{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:2px;padding:4px;border-radius:10px;background:var(--panel);box-shadow:0 4px 16px rgba(0,0,0,.22);border:1px solid var(--line)}
+.gis-map-tools button{display:flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border:none;border-radius:7px;background:none;color:var(--ink);cursor:pointer}
+.gis-map-tools button:hover{background:var(--panel-2)}
+.gis-map-tools button.active{background:var(--accent-soft);color:var(--accent)}
+.gis-map-tools .material-symbols-outlined{font-size:19px}
+.gis-map-tools .gis-done{background:var(--accent);color:#fff;font:600 12px Inter,'Segoe UI',Arial,sans-serif;padding:0 12px}
+.gis-map-tools .gis-done:hover{background:var(--accent-strong)}
+.gis-tools-sep{width:1px;height:20px;background:var(--line-strong);margin:0 3px}
+.gis-select-box{position:absolute;z-index:4;border:1.5px dashed #d89a00;background:rgba(255,234,0,.15);pointer-events:none}
+.gj-class-list{margin-top:8px;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:4px}
+.gj-class-row{display:flex;align-items:center;gap:8px;padding:3px 4px;font-size:12px}
+.gj-class-row input[type=color]{width:26px;height:18px;padding:0;border:1px solid var(--line-strong);border-radius:3px;background:none;flex:none}
+.gj-class-row i{width:26px;height:14px;border-radius:2px;flex:none;border:1px solid var(--line-strong)}
+.gj-class-row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gj-class-row em{font-style:normal;color:var(--ink-soft);font-size:11px}
+.gj-popup-title{font:600 12px Inter,'Segoe UI',Arial,sans-serif;margin-bottom:4px;color:#1a1a1a}
+.gj-popup{border-collapse:collapse;font:12px Inter,'Segoe UI',Arial,sans-serif;color:#1a1a1a}
+.gj-popup th{text-align:left;padding:2px 8px 2px 0;color:#6b6b66;font-weight:500;vertical-align:top;white-space:nowrap}
+.gj-popup td{padding:2px 0;word-break:break-word}
+.gis-layer-actions{display:flex;gap:6px;margin-top:6px}
+.gis-layer-actions>button{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 4px;font-size:11.5px;min-width:0}
+.gis-layer-actions .material-symbols-outlined,.gis-item-add .material-symbols-outlined{font-size:16px}
+.gis-layer-list{margin-top:10px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.gis-layer{display:flex;align-items:center;gap:4px;padding:5px 6px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px}
+.gis-layer:last-child{border-bottom:none}
+.gis-layer.active{background:var(--accent-soft)}
+.gis-layer input{margin:0;flex:none}
+.gis-layer .gis-kind{font-size:16px;color:var(--ink-soft)}
+.gis-layer-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gis-layer button{border:none;background:none;padding:2px;min-width:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer;border-radius:4px}
+.gis-layer button:hover{background:var(--panel-2);color:var(--ink)}
+.gis-layer button:disabled{opacity:.3;cursor:default}
+.gis-layer button .material-symbols-outlined{font-size:15px}
+.gis-sel-badge{font-style:normal;font-size:10px;background:#ffcc00;color:#1a1a1a;border-radius:8px;padding:0 5px}
+.gis-empty{padding:10px;color:var(--ink-soft);font-size:12px;text-align:center}
+.gis-style-name{font-weight:600;font-size:12.5px;margin:2px 0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gis-meta{margin-top:8px;font-size:11px;color:var(--ink-soft)}
+.gis-item-add{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.gis-item-add button{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 4px;font-size:11.5px}
+#gisItemProps{margin-top:10px}
+.gis-attr-dock{position:absolute;left:0;right:0;bottom:0;height:260px;z-index:31;display:flex;flex-direction:column;background:var(--panel);border-top:1px solid var(--line-strong);box-shadow:0 -6px 20px var(--shadow)}
+.gis-attr-resize{height:5px;cursor:ns-resize;flex:none}
+.gis-attr-bar{display:flex;align-items:center;gap:4px;padding:2px 8px 6px;flex:none;font-size:12px;flex-wrap:wrap}
+.gis-attr-bar>button,.gis-attr-export>button{display:flex;align-items:center;gap:4px;border:none;background:none;padding:4px 6px;border-radius:6px;color:var(--ink);cursor:pointer;min-width:0}
+.gis-attr-bar>button:hover,.gis-attr-export>button:hover{background:var(--panel-2)}
+.gis-attr-bar>button.active{background:var(--accent-soft);color:var(--accent)}
+.gis-attr-bar .material-symbols-outlined{font-size:18px}
+.gis-attr-layer{width:auto;max-width:200px;padding:3px 6px}
+.gis-attr-count{color:var(--ink-soft);margin:0 4px}
+.gis-attr-sep{width:1px;height:18px;background:var(--line-strong);margin:0 4px}
+.gis-attr-search{margin-left:auto;width:160px;padding:4px 8px}
+.gis-attr-export{position:relative}
+.gis-attr-menu{display:none;position:absolute;bottom:100%;left:0;min-width:190px;background:var(--panel);border:1px solid var(--line-strong);border-radius:8px;box-shadow:0 6px 20px var(--shadow);padding:4px;z-index:30}
+.gis-attr-export.open .gis-attr-menu{display:block}
+.gis-attr-menu button{display:block;width:100%;text-align:left;border:none;background:none;padding:6px 8px;border-radius:5px;font-size:12px;color:var(--ink);cursor:pointer}
+.gis-attr-menu button:hover{background:var(--panel-2)}
+.gis-attr-grid{flex:1;min-height:0}
+.home-screen{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(10,12,16,.45);backdrop-filter:blur(3px)}
+.home-screen.show{display:flex}
+.home-card-wrap{position:relative;width:min(720px,92vw);background:var(--panel);color:var(--ink);border-radius:16px;padding:34px 34px 30px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.home-head h1{margin:0;font-size:22px;font-weight:700}
+.home-head p{margin:6px 0 22px;color:var(--ink-soft);font-size:14px}
+.home-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.home-card{border:1px solid var(--line-strong);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s,box-shadow .15s}
+.home-card:hover{border-color:var(--accent);box-shadow:0 6px 20px var(--accent-soft)}
+.home-icon{font-size:34px;color:var(--accent)}
+.home-card h2{margin:4px 0 0;font-size:17px}
+.home-card p{margin:0 0 12px;color:var(--ink-soft);font-size:12.5px;line-height:1.45;flex:1}
+.home-actions{display:flex;gap:8px}
+.home-actions button{flex:1;padding:8px 10px}
+.home-close{position:absolute;top:14px;right:14px;border:none;background:none;color:var(--ink-soft);cursor:pointer;padding:4px;min-width:0}
+@media (max-width:600px){.home-cards{grid-template-columns:1fr}}
+/* One left sidebar (29-sidebar-design.js): the Design/Layers panel is a
+   sidebar panel, so nothing sits on the right of the canvas. */
+#panel-design .layers-panel{position:static;width:auto;height:auto;border:none;background:none;box-shadow:none;overflow:visible;z-index:auto}
+#panel-design .rp-tabs{display:none}
+#panel-design .layers-panel-head{height:auto;padding:4px 14px 8px;border-bottom:none;justify-content:flex-end}
+#panel-design .layers-panel.rp-design .layers-panel-head{display:none}
+.canvas-vscroll{right:0}
+.canvas-hscroll{right:16px}
+.canvas-zoom-bar{right:28px}
+/* Each mode shows its own menus: charts hide Map, maps hide the chart menus. */
+body:not(.gis-mode) .nav-btn[data-panel="panel-map"]{display:none}
+body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-panel="panel-axis"],body.gis-mode .nav-btn[data-panel="panel-legend"],body.gis-mode .nav-btn[data-panel="panel-color"],body.gis-mode #navDataToggle,body.gis-mode .nav-sep-chart{display:none}
+</style>
 </head>
 <body>
 <div class="topbar glass">
@@ -903,32 +992,18 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
         <button class="tool-btn" id="toolAddImage" title="Add image"><span class="material-symbols-outlined">image</span></button>
         <input type="file" id="imageFileInput" accept="image/*" style="display:none">
         <div class="draw-tool-wrap">
-          <button class="tool-btn" id="toolDraw" title="Pen tool (freehand drawing)"><span class="material-symbols-outlined">draw</span></button>
+          <button class="tool-btn" id="toolDraw" title="Pen tool"><span class="material-symbols-outlined">ink_pen</span></button>
           <div class="draw-popover" id="drawPopover">
-            <div class="draw-mode-row">
-              <button class="draw-mode-btn active" id="drawModePen" data-mode="pen" title="Pen">
-                <span class="material-symbols-outlined">edit</span>Pen
-              </button>
-              <button class="draw-mode-btn" id="drawModeHighlighter" data-mode="highlighter" title="Highlighter">
-                <span class="material-symbols-outlined">ink_highlighter</span>Highlighter
-              </button>
-              <button class="draw-mode-btn" id="drawModeMarker" data-mode="marker" title="Marker">
-                <span class="material-symbols-outlined">brush</span>Marker
-              </button>
-              <button class="draw-mode-btn" id="drawModeEraser" data-mode="eraser" title="Eraser (draws in canvas background)">
-                <span class="material-symbols-outlined">ink_eraser</span>Eraser
-              </button>
-            </div>
             <div class="draw-opt-row">
-              <label class="field-label" style="margin-top:0;">Color</label>
-              <button class="tool-btn color-tool-btn" id="drawColorBtn" title="Pen color">
+              <label class="field-label" style="margin-top:0;">Stroke</label>
+              <button class="tool-btn color-tool-btn" id="drawColorBtn" title="Stroke color">
                 <span class="material-symbols-outlined">palette</span>
                 <span class="cp-swatch-bar" id="drawColorSwatch"></span>
               </button>
             </div>
             <div class="draw-opt-row">
-              <label class="field-label" style="margin-top:0;">Thickness</label>
-              <input type="range" id="drawThickness" min="1" max="60" step="1">
+              <label class="field-label" style="margin-top:0;">Width</label>
+              <input type="range" id="drawThickness" min="0.5" max="30" step="0.5">
               <span class="draw-opt-val" id="drawThicknessVal"></span>
             </div>
             <div class="draw-opt-row">
@@ -936,7 +1011,8 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
               <input type="range" id="drawOpacity" min="0.05" max="1" step="0.05">
               <span class="draw-opt-val" id="drawOpacityVal"></span>
             </div>
-            <button class="btn-primary" id="drawDoneBtn" style="margin-top:10px;">Done drawing</button>
+            <div class="check-row"><input type="checkbox" id="penFill"><label for="penFill">Fill closed shapes</label></div>
+            <button class="btn-primary" id="drawDoneBtn" style="margin-top:10px;">Done</button>
           </div>
         </div>
         </div>
@@ -957,7 +1033,7 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
   </div>
 
   <div class="topbar-right">
-    <button class="theme-toggle-btn" id="helpSearchBtn" title="Cari menu (seperti Help di RStudio)" aria-label="Cari menu">
+    <button class="theme-toggle-btn" id="helpSearchBtn" title="Search menus" aria-label="Search menus">
       <span class="material-symbols-outlined">help</span>
     </button>
     <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle dark mode" aria-label="Toggle dark mode">
@@ -1037,7 +1113,6 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
             <button type="button" class="active" data-pdfmode="vector">Vector</button>
             <button type="button" data-pdfmode="flatten">Flatten</button>
           </div>
-          <p class="cp-hint">Vector keeps text and shapes editable in a PDF editor. Flatten rasterizes everything into a single image, like Canva's "Flatten to PDF".</p>
         </div>
 
         <div id="exportDpiWrap">
@@ -1117,7 +1192,6 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
               <button type="button" class="swatch-btn" data-bg="#0e2a1f" style="background:#0e2a1f" title="Forest"></button>
               <button type="button" class="swatch-btn" data-bg="transparent" style="background-image:linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);background-size:8px 8px;background-position:0 0,0 4px,4px -4px,-4px 0" title="Transparent"></button>
             </div>
-            <p class="cp-hint">Sets the page background behind your chart and layout objects. "Transparent" is included in PNG exports.</p>
           </div>
         </div>
       </div>
@@ -1197,7 +1271,6 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
           <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">tune</span>Display</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
           <div class="side-section-body">
           <div class="check-row" style="margin-top:0;"><input type="checkbox" id="outlineMarker" checked><label for="outlineMarker">Outline on markers</label></div>
-          <p class="cp-hint" style="margin-top:10px;">Value labels are toggled from the toolbar above the canvas when a chart is selected.</p>
           <label class="field-label" style="margin-top:14px;">Axis line</label><input type="number" id="axisLineWidth" value="1" min="0.2" max="10" step="0.2">
           <input type="checkbox" id="showValues" style="display:none">
           <label class="field-label">Value label format</label>
@@ -1583,7 +1656,6 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
           <button type="button" role="menuitem" data-zoom="50">50%</button>
           <button type="button" role="menuitem" data-zoom="100">100%<kbd>Ctrl 0</kbd></button>
           <button type="button" role="menuitem" data-zoom="200">200%</button>
-          <div class="cz-menu-hint">Scroll to pan &middot; Ctrl + scroll or pinch to zoom</div>
         </div>
       </div>
 
@@ -1619,7 +1691,6 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
               <button type="button" class="dp-chip" id="dpPageBgChip" title="Background color"><span></span></button>
               <input type="text" class="dp-hex" id="dpPageBgHex" spellcheck="false">
             </div>
-            <p class="dp-hint">Select an object on the canvas to edit its position, size, fill and stroke.</p>
           </section>
 
           <section class="dp-sec" id="dpSecPos">
@@ -1732,10 +1803,8 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
           <div class="layers-empty" id="layersEmptyMsg">
             <span class="material-symbols-outlined">stacks</span>
             <strong>No layers yet</strong>
-            Add text, shapes or images and they'll stack up here.
           </div>
         </div>
-        <div class="layers-foot">Drag to reorder · Ctrl/Shift+click to multi-select</div>
         <!-- Per-layer "⋯" menu (21-layers-panel.js) -->
         <div class="layer-menu" id="layerMenu" role="menu">
           <button type="button" data-act="rename"><span class="material-symbols-outlined">edit</span>Rename</button>
@@ -2097,7 +2166,6 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
             <div class="dv-datapane-head">
               <span class="material-symbols-outlined">dataset</span>Chart mapping
             </div>
-            <div class="dv-datapane-hint">Drag fields onto the axes to decide what the chart plots.</div>
             <!-- Row/Column shelves — Tableau-style: drag a field pill here to
                  set what drives the chart's rows vs. columns (see dv_shelves.js). -->
             <div class="dv-shelves" id="dvShelves"></div>
@@ -2110,7 +2178,6 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
             <div class="dv-top-row">
               <div class="dv-title-block">
                 <div class="dv-title">Data <span class="dv-summary" id="dvSummary"></span></div>
-                <div class="dv-hint">Click a column name to rename it · click a cell to edit · paste from Excel or Sheets</div>
               </div>
               <div class="dv-top-controls">
                 <div class="dv-sort-select-wrap">
@@ -2253,12 +2320,12 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 <div class="hs-backdrop" id="hsBackdrop"></div>
 <div class="hs-panel" id="hsPanel">
   <div class="hs-header">
-    <span class="hs-title"><span class="material-symbols-outlined">help</span>Cari Menu</span>
-    <button class="cp-close" id="hsClose" title="Tutup"><span class="material-symbols-outlined">close</span></button>
+    <span class="hs-title"><span class="material-symbols-outlined">help</span>Search menus</span>
+    <button class="cp-close" id="hsClose" title="Close"><span class="material-symbols-outlined">close</span></button>
   </div>
   <div class="hs-search-wrap">
     <span class="material-symbols-outlined hs-search-icon">search</span>
-    <input type="text" id="hsSearchInput" class="hs-search-input" placeholder="Cari menu… misal: legend, warna, tick, export" autocomplete="off">
+    <input type="text" id="hsSearchInput" class="hs-search-input" placeholder="Search… e.g. legend, color, tick, export, map" autocomplete="off">
   </div>
   <div class="hs-list" id="hsList"></div>
 </div>
@@ -2337,9 +2404,18 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 <script src="js/d3-engine/05-special.js"></script>
 <script src="js/d3-engine/geo-country-regex.js"></script>
 <script src="js/d3-engine/06-geo.js"></script>
+<script src="js/gis/00-store.js"></script>
+<script src="js/gis/01-symbology.js"></script>
+<script src="js/gis/02-map.js"></script>
+<script src="js/gis/03-items.js"></script>
+<script src="js/gis/04-raster.js"></script>
+<script src="js/gis/05-attribute-table.js"></script>
+<script src="js/gis/06-panel.js"></script>
+<script src="js/gis/07-home.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
+<script src="js/layout-editor/29-sidebar-design.js"></script>
 <script src="js/undo_redo.js"></script>
 <script>
 // Registers the offline/repeat-visit cache. Uses a relative path and scope

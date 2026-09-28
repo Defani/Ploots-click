@@ -155,7 +155,6 @@
     }
     edge('rulerTop', 'top');
     edge('rulerLeft', 'left');
-    edge('layersPanel', 'right');
     edge('canvasVScroll', 'right');
     edge('canvasHScroll', 'bottom');
     r.width = r.right - r.left;

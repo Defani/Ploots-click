@@ -1,6 +1,6 @@
 /* ==========================================================================
    Choropleth Map — registers the chart type's settings (state defaults)
-   and the "Peta (Choropleth)" sidebar section, shown only while this chart
+   and the "Choropleth map" sidebar section, shown only while this chart
    type is active.
 
    The map itself is drawn by the D3 engine (js/d3-engine/06-geo.js), which
@@ -32,7 +32,7 @@
   ensureChoroplethState();
 
   // ==========================================================================
-  // Sidebar panel: "Peta (Choropleth)" — injected once into #panel-chart,
+  // Sidebar panel: "Choropleth map" — injected once into #panel-chart,
   // right after the existing "Chart Type" section, following the same
   // .side-section / .side-section-head / .side-section-body markup used
   // throughout index.html. js/ui_sections.js already delegates the
@@ -44,17 +44,17 @@
   function buildPanelHtml() {
     return (
       '<div class="side-section" id="' + SECTION_ID + '" data-section="choropleth-map" style="display:none;">' +
-        '<div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">public</span>Peta (Choropleth)</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>' +
+        '<div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">public</span>Choropleth map</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>' +
         '<div class="side-section-body">' +
 
-          '<label class="field-label" style="margin-top:2px;">Basis peta</label>' +
+          '<label class="field-label" style="margin-top:2px;">Base map</label>' +
           '<div class="toggle-group">' +
-            '<button id="choroGeoModeWorld" class="active">Dunia (negara)</button>' +
-            '<button id="choroGeoModeCustom">GeoJSON kustom</button>' +
+            '<button id="choroGeoModeWorld" class="active">World (countries)</button>' +
+            '<button id="choroGeoModeCustom">Custom GeoJSON</button>' +
           '</div>' +
 
           '<div id="choroWorldWrap">' +
-            '<label class="field-label">Cakupan (scope)</label>' +
+            '<label class="field-label">Scope</label>' +
             '<select id="choroScope">' +
               '<option value="world">World</option>' +
               '<option value="asia">Asia</option>' +
@@ -64,7 +64,7 @@
               '<option value="south america">South America</option>' +
               '<option value="usa">USA</option>' +
             '</select>' +
-            '<label class="field-label">Proyeksi</label>' +
+            '<label class="field-label">Projection</label>' +
             '<select id="choroProjection">' +
               '<option value="natural earth">Natural earth</option>' +
               '<option value="equirectangular">Equirectangular</option>' +
@@ -73,49 +73,46 @@
               '<option value="conic conformal">Conic conformal</option>' +
               '<option value="azimuthal equal area">Azimuthal equal area</option>' +
             '</select>' +
-            '<p class="cp-hint">Kolom data (kategori) diisi kode ISO-3 (mis. IDN) atau nama negara. Untuk peta administratif Indonesia (provinsi/kabupaten), gunakan "GeoJSON kustom".</p>' +
           '</div>' +
 
           '<div id="choroCustomWrap" style="display:none;">' +
-            '<label class="field-label" style="margin-top:14px;">GeoJSON (tempel teks)</label>' +
+            '<label class="field-label" style="margin-top:14px;">GeoJSON (paste text)</label>' +
             '<textarea id="choroGeoJsonText" placeholder=\'{"type":"FeatureCollection","features":[...]}\' style="height:80px;font-size:11px;"></textarea>' +
             '<div class="row" style="margin-top:6px;">' +
-              '<button id="choroParseBtn">Muat dari teks</button>' +
-              '<button class="file-btn" id="choroFileBtnWrap">Unggah file<input type="file" id="choroFileInput" accept=".json,.geojson,application/json"></button>' +
+              '<button id="choroParseBtn">Load text</button>' +
+              '<button class="file-btn" id="choroFileBtnWrap">Upload file<input type="file" id="choroFileInput" accept=".json,.geojson,application/json"></button>' +
             '</div>' +
-            '<button id="choroLoadExampleBtn" style="width:100%;margin-top:6px;">Contoh: batas provinsi Indonesia</button>' +
+            '<button id="choroLoadExampleBtn" style="width:100%;margin-top:6px;">Sample: Indonesian provinces</button>' +
             '<p class="status" id="choroGeoStatus" style="display:none;"></p>' +
-            '<label class="field-label">Kunci ID fitur (featureidkey)</label>' +
-            '<input type="text" id="choroFeatureIdKey" placeholder="properties.name (kosongkan = pakai id bawaan)">' +
-            '<p class="cp-hint">Nilai pada kolom kategori data harus persis sama dengan nilai properti ini di setiap fitur GeoJSON (case-sensitive).</p>' +
-            '<div class="check-row"><input type="checkbox" id="choroFitBounds" checked><label for="choroFitBounds">Zoom otomatis ke wilayah (fitbounds)</label></div>' +
+            '<label class="field-label">Feature ID key</label>' +
+            '<input type="text" id="choroFeatureIdKey" placeholder="properties.name (empty = feature id)">' +
+            '<div class="check-row"><input type="checkbox" id="choroFitBounds" checked><label for="choroFitBounds">Zoom to features</label></div>' +
           '</div>' +
 
-          '<label class="field-label" style="margin-top:14px;">Mode warna</label>' +
+          '<label class="field-label" style="margin-top:14px;">Color mode</label>' +
           '<div class="toggle-group">' +
-            '<button id="choroColorContinuous" class="active">Kontinu</button>' +
-            '<button id="choroColorClassed">Berkelas</button>' +
+            '<button id="choroColorContinuous" class="active">Continuous</button>' +
+            '<button id="choroColorClassed">Classed</button>' +
           '</div>' +
           '<div id="choroClassedWrap" style="display:none;">' +
             '<div class="num-pair" style="margin-top:8px;">' +
-              '<div><label class="field-label" style="margin-top:0;">Jumlah kelas</label><input type="number" id="choroClasses" value="5" min="2" max="9" step="1"></div>' +
-              '<div><label class="field-label" style="margin-top:0;">Metode</label><select id="choroClassMethod"><option value="equal">Interval sama</option><option value="quantile">Kuantil</option></select></div>' +
+              '<div><label class="field-label" style="margin-top:0;">Classes</label><input type="number" id="choroClasses" value="5" min="2" max="9" step="1"></div>' +
+              '<div><label class="field-label" style="margin-top:0;">Method</label><select id="choroClassMethod"><option value="equal">Equal interval</option><option value="quantile">Quantile</option></select></div>' +
             '</div>' +
           '</div>' +
 
-          '<label class="field-label">Rentang nilai (z)</label>' +
+          '<label class="field-label">Value range</label>' +
           '<div class="toggle-group">' +
-            '<button id="choroZAuto" class="active">Otomatis</button>' +
-            '<button id="choroZCustom">Kustom</button>' +
+            '<button id="choroZAuto" class="active">Auto</button>' +
+            '<button id="choroZCustom">Custom</button>' +
           '</div>' +
           '<div class="num-pair" id="choroZInputs" style="margin-top:8px;display:none;">' +
             '<div><label class="field-label" style="margin-top:0;">Min</label><input type="number" id="choroZMin" step="any"></div>' +
             '<div><label class="field-label" style="margin-top:0;">Max</label><input type="number" id="choroZMax" step="any"></div>' +
           '</div>' +
-          '<p class="cp-hint">Set manual agar beberapa peta (mis. AGC 2019 vs 2024) memakai skala warna yang sama untuk perbandingan yang adil.</p>' +
 
-          '<div class="check-row" style="margin-top:14px;"><input type="checkbox" id="choroReverseScale"><label for="choroReverseScale">Balik arah skala warna</label></div>' +
-          '<label class="field-label">Warna wilayah tanpa data</label>' +
+          '<div class="check-row" style="margin-top:14px;"><input type="checkbox" id="choroReverseScale"><label for="choroReverseScale">Reverse color scale</label></div>' +
+          '<label class="field-label">No-data color</label>' +
           '<input type="color" class="full-color-picker" id="choroMissingColor" value="#f0eee4">' +
 
         '</div>' +
@@ -144,11 +141,11 @@
 
   function applyParsedGeoJson(obj, sourceLabel) {
     if (!obj || !Array.isArray(obj.features)) {
-      setGeoStatus("GeoJSON tidak valid: butuh FeatureCollection dengan array \"features\".", false);
+      setGeoStatus("Invalid GeoJSON: a FeatureCollection with a \"features\" array is required.", false);
       return;
     }
     state.choroplethGeoJsonObj = obj;
-    setGeoStatus((sourceLabel || "GeoJSON") + " dimuat — " + obj.features.length + " fitur.", true);
+    setGeoStatus((sourceLabel || "GeoJSON") + " loaded: " + obj.features.length + " features.", true);
     if ("choropleth" === state.chartType) render();
   }
 
@@ -190,7 +187,7 @@
     var parseBtn = document.getElementById("choroParseBtn");
     parseBtn.addEventListener("click", function () {
       var txt = textArea.value.trim();
-      if (!txt) { setGeoStatus("Tempel teks GeoJSON terlebih dahulu.", false); return; }
+      if (!txt) { setGeoStatus("Paste GeoJSON text first.", false); return; }
       try {
         var obj = JSON.parse(txt);
         state.choroplethGeoJsonText = txt;
@@ -199,7 +196,7 @@
         state.choroplethFeatureIdKey = key.value;
         applyParsedGeoJson(obj, "GeoJSON dari teks");
       } catch (e) {
-        setGeoStatus("Gagal parse JSON: " + e.message, false);
+        setGeoStatus("Could not parse JSON: " + e.message, false);
       }
     });
 
@@ -218,7 +215,7 @@
           state.choroplethFeatureIdKey = key.value;
           applyParsedGeoJson(obj, f.name);
         } catch (e) {
-          setGeoStatus("Gagal parse file: " + e.message, false);
+          setGeoStatus("Could not parse the file: " + e.message, false);
         }
       };
       reader.readAsText(f);
@@ -232,7 +229,7 @@
     // verified here.
     var exampleBtn = document.getElementById("choroLoadExampleBtn");
     exampleBtn.addEventListener("click", function () {
-      setGeoStatus("Mengunduh contoh GeoJSON provinsi…", true);
+      setGeoStatus("Downloading the province sample…", true);
       fetch("https://raw.githubusercontent.com/superpikar/indonesia-geojson/master/indonesia-province-simple.json")
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (obj) {
@@ -241,10 +238,10 @@
           var key = document.getElementById("choroFeatureIdKey");
           key.value = detectNameKey(obj.features && obj.features[0]);
           state.choroplethFeatureIdKey = key.value;
-          applyParsedGeoJson(obj, "Contoh provinsi Indonesia");
+          applyParsedGeoJson(obj, "Indonesian provinces sample");
         })
         .catch(function (e) {
-          setGeoStatus("Gagal mengunduh contoh (periksa koneksi): " + e.message, false);
+          setGeoStatus("Could not download the sample (check your connection): " + e.message, false);
         });
     });
 

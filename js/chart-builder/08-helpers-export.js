@@ -75,14 +75,20 @@ function exportPngFile() {}
     return state.chartType === "radial-rings" || state.chartType === "sunburst" || state.chartType === "ridge-plot";
   }
 
+  // SVG markup of the chart; D3 types go through PlootsD3.chartSvgMarkup so
+  // the MapLibre map can hand over a captured image instead of its live DOM.
+  function chartMarkup(scale) {
+    if (window.PlootsD3 && window.PlootsD3.chartSvgMarkup && window.PlootsD3.handles(state.chartType)) return window.PlootsD3.chartSvgMarkup(scale);
+    var el = document.getElementById("plotlyDiv");
+    var svgEl = el ? el.querySelector("svg") : null;
+    if (!svgEl) return Promise.reject(new Error("Nothing to export yet."));
+    return Promise.resolve(new XMLSerializer().serializeToString(svgEl));
+  }
+
   function getChartRasterDataUrl(scale) {
     var box = state.chartBox;
     if (isRawSvgChartType()) {
-      var el = document.getElementById("plotlyDiv");
-      var svgEl = el ? el.querySelector("svg") : null;
-      if (!svgEl) return Promise.reject(new Error("Nothing to export yet."));
-      return new Promise(function (resolve, reject) {
-        var xml = new XMLSerializer().serializeToString(svgEl);
+      return chartMarkup(scale).then(function (xml) { return new Promise(function (resolve, reject) {
         var svg64 = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
         var img = new Image();
         img.onload = function () {
@@ -94,21 +100,14 @@ function exportPngFile() {}
         };
         img.onerror = reject;
         img.src = svg64;
-      });
+      }); });
     }
     return Promise.reject(new Error("Unsupported chart type."));
   }
 
   function getChartSvgMarkup() {
-    var box = state.chartBox;
-    if (isRawSvgChartType()) {
-      var el = document.getElementById("plotlyDiv");
-      var svgEl = el ? el.querySelector("svg") : null;
-      if (!svgEl) return Promise.reject(new Error("Nothing to export yet."));
-      return Promise.resolve(new XMLSerializer().serializeToString(svgEl));
-    }
+    if (isRawSvgChartType()) return chartMarkup(2);
     return Promise.reject(new Error("Unsupported chart type."));
-
   }
 
   function innerMarkupOf(svgString) {

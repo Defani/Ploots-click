@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v4";
+const CACHE_NAME = "ploots-click-v5";
 
 const PRECACHE_URLS = [
   "./",
@@ -34,6 +34,14 @@ const PRECACHE_URLS = [
   "./js/d3-engine/05-special.js",
   "./js/d3-engine/geo-country-regex.js",
   "./js/d3-engine/06-geo.js",
+  "./js/gis/00-store.js",
+  "./js/gis/01-symbology.js",
+  "./js/gis/02-map.js",
+  "./js/gis/03-items.js",
+  "./js/gis/04-raster.js",
+  "./js/gis/05-attribute-table.js",
+  "./js/gis/06-panel.js",
+  "./js/gis/07-home.js",
   "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",
@@ -91,6 +99,7 @@ const PRECACHE_URLS = [
   "./js/layout-editor/26-selection-hud.js",
   "./js/layout-editor/27-object-float-bar.js",
   "./js/layout-editor/28-axis-controls-sync.js",
+  "./js/layout-editor/29-sidebar-design.js",
   "./js/ui_sections.js",
   "./js/help_search.js",
   "./js/latex_symbols.js",
