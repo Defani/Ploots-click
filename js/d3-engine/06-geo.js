@@ -77,6 +77,8 @@
   var SCOPE_FILE = { world: "world", asia: "asia", africa: "africa", europe: "europe", "north america": "north-america", "south america": "south-america", usa: "usa" };
   var atlas = {}, loading = {};
 
+  PD.topoFeature = topoFeature; // also used by the GeoJSON map's TopoJSON import
+
   // Returns the decoded atlas for a scope, or null while it loads (the
   // active chart is redrawn when it arrives).
   function getAtlas(scope) {

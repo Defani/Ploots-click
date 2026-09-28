@@ -53,7 +53,10 @@
     svg2pdf: "https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js",
     // D3 fallback: vendor/d3-7.9.0.min.js is loaded eagerly by index.html,
     // so this CDN copy is only fetched if that local file failed to load.
-    d3: "https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"
+    d3: "https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js",
+    // GeoJSON Map chart type (js/d3-engine/07-maplibre.js), on demand.
+    maplibre: "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.9.0/maplibre-gl.js",
+    maplibreCss: "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.9.0/maplibre-gl.css"
   };
 
   var pending = {};
@@ -70,6 +73,18 @@
         reject(new Error("Ploots: failed to load " + url));
       };
       document.head.appendChild(s);
+    });
+    return pending[url];
+  }
+
+  function loadCss(url) {
+    if (pending[url]) return pending[url];
+    pending[url] = new Promise(function (resolve) {
+      var l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = url;
+      l.onload = l.onerror = function () { resolve(); }; // unstyled popups are not fatal
+      document.head.appendChild(l);
     });
     return pending[url];
   }
@@ -107,6 +122,10 @@
     },
     ensureD3: function () {
       return (typeof d3 !== "undefined" && d3.hierarchy) ? Promise.resolve() : loadScript(CDN.d3);
+    },
+    ensureMapLibre: function () {
+      loadCss(CDN.maplibreCss);
+      return typeof maplibregl !== "undefined" ? Promise.resolve() : loadScript(CDN.maplibre);
     }
   };
 
