@@ -13,7 +13,6 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 ![Papa Parse](https://img.shields.io/badge/CSV%2FTSV_Parsing-Papa_Parse-00A98F)
 ![SheetJS](https://img.shields.io/badge/Excel_Import-SheetJS-217346?logo=microsoftexcel&logoColor=white)
 ![AG Grid](https://img.shields.io/badge/Data_View-AG_Grid-13B5EA)
-![jStat](https://img.shields.io/badge/Statistics-jStat-6E4B9E)
 ![Google Fonts](https://img.shields.io/badge/Google_Fonts-4285F4?logo=googlefonts&logoColor=white)
 ![Material Symbols](https://img.shields.io/badge/Icons-Material_Symbols-4285F4?logo=googlefonts&logoColor=white)
 ![Iconify](https://img.shields.io/badge/Icon_Reserve-Iconify-1769AA?logo=iconify&logoColor=white)
@@ -174,7 +173,7 @@ Every chart type, rendered by the D3 engine from its built-in sample data (click
 
 - A spreadsheet-style table (AG Grid), separate from the applied chart data: edit cells, rename columns, add rows/columns, paste from Excel or Sheets, sort and search.
 - **Chart mapping shelves**: drag fields onto the X and Y axes to decide what the chart plots; fields left off both shelves are listed as unused.
-- **Wide ↔ long/tidy** reshaping, **transpose**, spreadsheet **formulas** (`=SUM(A1:A5)`, `=AVERAGE(...)`, cell references) and per-column **Statistics** (jStat), with a Σ summary row.
+- **Wide ↔ long/tidy** reshaping, **transpose**, spreadsheet **formulas** (`=SUM(A1:A5)`, `=AVERAGE(...)`, cell references) and per-column **Statistics**, with a Σ summary row.
 - **Revert** discards the edits; **Apply to chart** sends the table to the chart.
 
 ### Editor: toolbars, Design panel & layers
@@ -352,7 +351,7 @@ flowchart TD
 │   ├── data_view.js               # Data View: AG Grid table, wide/long reshape, transpose
 │   ├── dv_shelves.js              # Data View chart-mapping shelves (drag fields onto X / Y)
 │   ├── data_formulas.js           # Data View spreadsheet formulas (=SUM, =AVERAGE, ...)
-│   ├── data_stats.js              # Data View column statistics (jStat)
+│   ├── data_stats.js              # Data View column statistics (plain JS)
 │   ├── color_picker.js            # Colour picker: solid/gradient, HSV, eyedropper, swatches
 │   ├── palettes.js                # Built-in palette catalog, grid and search
 │   ├── canvas_background.js       # Page background colour
@@ -360,9 +359,7 @@ flowchart TD
 │   ├── latex_symbols.js           # LaTeX (MathJax) formulas on canvas + the symbol/unit catalog
 │   ├── help_search.js             # Help search: find a menu or setting by name
 │   ├── ui_sections.js             # Collapsible sidebar sections
-│   ├── undo_redo.js               # Global undo/redo history
-│   ├── function_plot.js           # Function Plot panel (not loaded by index.html at the moment)
-│   └── standalone_function_plot.js # Function Plot Studio (not loaded; still written against Plotly)
+│   └── undo_redo.js               # Global undo/redo history
 ├── vendor/
 │   ├── d3-7.9.0.min.js            # D3.js 7.9.0, bundled locally
 │   └── topojson/                  # Natural Earth base maps (*_110m.json) for the map chart types
@@ -677,7 +674,6 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 | Papa Parse | 5.4.1 | cdnjs |
 | SheetJS (xlsx) | 0.18.5 | cdnjs — Excel `.xlsx`/`.xls` import |
 | AG Grid Community | 35.3.0 | cdnjs |
-| jStat | 1.9.6 | cdnjs — Data View column statistics |
 | marked | 16.3.0 | cdnjs — renders this README as HTML on the splash screen |
 | jsPDF | 2.5.1 | cdnjs — PDF export |
 | svg2pdf.js | 2.2.3 | cdnjs — vector charts in PDF export |
@@ -688,7 +684,7 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 ## Known limitations
 
 <details>
-<summary>Click to expand — 6 known limitations</summary>
+<summary>Click to expand — 5 known limitations</summary>
 
 > [!NOTE]
 > Everything runs in the browser tab — there's no server-side processing, so very large datasets or very high-DPI exports can be slow or memory-heavy depending on the device.
@@ -704,9 +700,6 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 
 > [!NOTE]
 > Radial rings charts don't support the secondary Y-axis toggle (it's a single-axis polar layout), and a map's first render shows a brief "Memuat peta…" placeholder while its base-map topojson loads from `vendor/topojson/` (then cached).
-
-> [!NOTE]
-> The Function Plot panels (`js/function_plot.js`, `js/standalone_function_plot.js`) are not loaded by the app at the moment; they still target Plotly and need porting to the D3 engine.
 
 > [!TIP]
 > All 25 chart types are fully functional and ready to use.
@@ -726,7 +719,6 @@ This project only exists because of the following open-source libraries and free
 - **[Papa Parse](https://www.papaparse.com/)** — makes CSV/TSV import reliable, even with messy real-world data (quoted fields, embedded commas, escaped quotes)
 - **[SheetJS](https://sheetjs.com/)** — reads Excel `.xlsx`/`.xls` files (including multi-sheet workbooks) directly in the browser
 - **[AG Grid](https://www.ag-grid.com/)** (Community edition) — the editable spreadsheet-style table behind the Data View
-- **[jStat](https://jstat.github.io/)** — powers the column statistics in the Data View
 - **[marked](https://marked.js.org/)** — renders this README as HTML on the app's splash screen
 - **[jsPDF](https://github.com/parallax/jsPDF)** and **[svg2pdf.js](https://github.com/yWorks/svg2pdf.js)** — PDF export, with the chart kept as vector graphics
 - **[Google Fonts](https://fonts.google.com/)** — serves the typography options used throughout the app

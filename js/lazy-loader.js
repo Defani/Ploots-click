@@ -13,7 +13,7 @@
      Tier 2 — fired once the browser reports it's idle after first paint, so
               it never competes with Tier 1 or the initial render. Reserved
               for libs used often, but not in the first frame: math.js
-              (Function Plot Studio) and MathJax (LaTeX Editor & Symbols).
+              (Data View formulas) and MathJax (LaTeX Editor & Symbols).
 
      Tier 3 — loaded strictly on demand, kicked off from the exact button/tab
               that needs it (AG Grid for Data View, XLSX for Excel import).
