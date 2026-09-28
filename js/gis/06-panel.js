@@ -76,6 +76,7 @@
           '<button data-add="scalebar"><span class="material-symbols-outlined">straighten</span>Scale bar</button>' +
           '<button data-add="north"><span class="material-symbols-outlined">navigation</span>North arrow</button>' +
           '<button data-add="inset"><span class="material-symbols-outlined">picture_in_picture</span>Inset map</button>' +
+          '<button data-add="colorbar"><span class="material-symbols-outlined">gradient</span>Color bar</button>' +
         '</div><div id="gisItemProps"></div>', true);
     var sidebar = document.querySelector(".sidebar");
     sidebar.insertBefore(panel, sidebar.firstChild);
@@ -186,6 +187,8 @@
         h += field("Band", select("raster:band", bands, r.band));
         h += field("Color ramp", select("raster:ramp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), r.ramp));
         h += check("raster:reverse", r.reverse, "Invert ramp");
+        h += pair(field("Color mode", select("raster:classMode", [["continuous", "Continuous"], ["discrete", "Discrete"]], r.classMode)),
+          r.classMode === "discrete" ? field("Classes", num("raster:classes", r.classes, 2, 20, 1)) : "");
         h += check("raster:auto", r.auto, "Stretch to 2–98% cumulative count");
         if (!r.auto) h += pair(field("Min", num("raster:min", r.min)), field("Max", num("raster:max", r.max)));
       }
@@ -286,6 +289,17 @@
     } else if (o.gisItem === "north") {
       h += field("Style", select("item:style", NORTH_STYLES, p.style)) + pair(field("Size", num("item:size", p.size, 16, 300, 1)), field("Color", color("item:color", p.color)));
       h += check("item:followMap", p.followMap, "Follow map rotation");
+    } else if (o.gisItem === "colorbar") {
+      var srcs = GIS.layers.filter(function (l) { return l.kind === "raster" || (l.kind === "vector" && l.style.symbology === "graduated"); });
+      h += field("Layer", '<select data-bind="item:layerId">' + opt("", "Auto", !p.layerId) + options(srcs.map(function (l) { return [l.id, l.name]; }), p.layerId) + "</select>");
+      h += pair(field("Mode", select("item:mode", [["auto", "Follow layer"], ["continuous", "Continuous"], ["discrete", "Discrete"]], p.mode)),
+        field("Ends", select("item:extend", [["neither", "Square"], ["both", "Pointed, both"], ["min", "Pointed, min"], ["max", "Pointed, max"]], p.extend)));
+      if (p.mode === "discrete") h += field("Classes", num("item:classes", p.classes, 2, 20, 1));
+      h += pair(field("Orientation", select("item:orientation", [["horizontal", "Horizontal"], ["vertical", "Vertical"]], p.orientation)), field("Title", text("item:title", p.title)));
+      h += pair(field("Length", num("item:length", p.length, 40, 900, 1)), field("Thickness", num("item:thickness", p.thickness, 4, 60, 1)));
+      h += pair(field("Ticks", num("item:ticks", p.ticks, 2, 12, 1)), field("Decimals", select("item:decimals", [[-1, "Auto"], [0, "0"], [1, "1"], [2, "2"], [3, "3"]], p.decimals)));
+      h += pair(field("Font size", num("item:fontSize", p.fontSize, 6, 30, 1)), field("Color", color("item:color", p.color)));
+      h += check("item:frame", p.frame, "Background frame");
     } else if (o.gisItem === "inset") {
       h += field("Basemap", select("item:basemap", GIS.BASEMAPS.map(function (b) { return [b.id, b.label]; }), p.basemap));
       h += pair(field("Zoom offset", num("item:zoomOffset", p.zoomOffset, -12, 0, 1)), field("Extent color", color("item:extentColor", p.extentColor)));
@@ -302,7 +316,7 @@
     return el.value;
   }
 
-  var RASTER_REPAINT = { mode: 1, band: 1, ramp: 1, reverse: 1, auto: 1, min: 1, max: 1 };
+  var RASTER_REPAINT = { mode: 1, band: 1, ramp: 1, reverse: 1, auto: 1, min: 1, max: 1, classMode: 1, classes: 1 };
 
   function onBind(el) {
     var b = el.dataset.bind.split(":"), scope = b[0], key = b[1], v = parse(el), l = GIS.active();
@@ -329,7 +343,8 @@
       if (typeof historyNotifyChange === "function") historyNotifyChange();
     } else if (scope === "item") {
       var o = selectedItem();
-      if (o) { var patch = {}; patch[key] = v; GIS.items.update(o, patch); }
+      if (key === "decimals") v = +v;
+      if (o) { var patch = {}; patch[key] = v; GIS.items.update(o, patch); if (/^(mode|layerId)$/.test(key)) setTimeout(renderItemProps, 0); }
     }
   }
 

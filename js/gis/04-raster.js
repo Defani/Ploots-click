@@ -99,14 +99,22 @@
       var lo = r.auto ? s.p2 : r.min, hi = r.auto ? s.p98 : r.max;
       r.min = lo; r.max = hi; r.dataMin = s.min; r.dataMax = s.max;
       var colors = GIS.sym.rampColors(r.ramp, r.reverse), interp = d3.interpolateRgbBasis(colors), lut = [];
-      for (var k = 0; k < 256; k++) { var cc = d3.rgb(interp(k / 255)); lut.push([cc.r, cc.g, cc.b]); }
+      // Discrete: N equal classes between min and max, one ramp colour each
+      // (like matplotlib's BoundaryNorm); values outside take the end class.
+      var nCls = r.classMode === "discrete" ? Math.max(2, Math.min(20, r.classes | 0 || 6)) : 0;
+      var classColors = nCls ? d3.range(nCls).map(function (i) { return d3.color(interp(i / (nCls - 1))).formatHex(); }) : null;
+      for (var k = 0; k < 256; k++) {
+        var cc = d3.rgb(nCls ? classColors[Math.min(nCls - 1, Math.floor(k / 256 * nCls))] : interp(k / 255));
+        lut.push([cc.r, cc.g, cc.b]);
+      }
       for (var j = 0; j < W * H; j++) {
         var val = band[j];
         if (!isFinite(val) || val === nd) { px[j * 4 + 3] = 0; continue; }
-        var t = Math.max(0, Math.min(255, Math.round((val - lo) / ((hi - lo) || 1) * 255))), col = lut[t];
+        var t = Math.max(0, Math.min(255, Math.floor((val - lo) / ((hi - lo) || 1) * 256))), col = lut[t];
         px[j * 4] = col[0]; px[j * 4 + 1] = col[1]; px[j * 4 + 2] = col[2]; px[j * 4 + 3] = 255;
       }
-      r.legend = { colors: colors, min: lo, max: hi };
+      r.legend = { colors: colors, min: lo, max: hi, classColors: classColors,
+        breaks: nCls ? d3.range(nCls + 1).map(function (i) { return lo + (hi - lo) * i / nCls; }) : null };
     }
     var cv = document.createElement("canvas");
     cv.width = W; cv.height = H;
@@ -145,6 +153,7 @@
             kind: pr.kind, epsg: epsg || 4326, north: corners[0][1], south: corners[3][1],
             mode: bands.length >= 3 ? "rgb" : "single", rgb: [0, 1, 2], band: 0,
             ramp: bands.length >= 3 ? "Grayscale" : "Terrain", reverse: false, auto: true, min: 0, max: 1,
+            classMode: "continuous", classes: 6,
             coordinates: corners, resampling: "linear", sourceSize: [w0, h0]
           };
           paint(r);

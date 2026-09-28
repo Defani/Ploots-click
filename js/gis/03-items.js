@@ -24,7 +24,8 @@
     legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true },
     scalebar: { style: "single", segments: 4, units: "auto", width: 170, height: 6, fontSize: 10, frame: false, color: INK, labels: "all" },
     north: { style: "arrow", size: 56, color: INK, followMap: true },
-    inset: { basemap: "positron", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 }
+    inset: { basemap: "positron", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 },
+    colorbar: { layerId: null, mode: "auto", classes: 6, orientation: "horizontal", length: 220, thickness: 12, extend: "neither", ticks: 5, decimals: -1, title: "", fontSize: 10, frame: true, color: INK }
   };
   GIS.ITEM_DEFAULTS = DEFAULTS;
 
@@ -212,6 +213,16 @@
         var hdr = text(l.name, pad, y, fs, { fontWeight: "bold" });
         parts.push(hdr); maxW = Math.max(maxW, hdr.width); y += row;
       }
+      if (l.kind === "raster" && l.raster.legend && l.raster.legend.classColors) {
+        var dl = l.raster.legend;
+        dl.classColors.slice().reverse().forEach(function (c, ri) {
+          var i = dl.classColors.length - 1 - ri, cy2 = y + row / 2 - 2;
+          parts.push(new fabric.Rect({ left: pad, top: cy2 - 6, width: sw, height: 12, fill: c, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false }));
+          var tl = text(numFmt(dl.breaks[i]) + " – " + numFmt(dl.breaks[i + 1]), pad + sw + 8, cy2 - fs * 0.62, fs);
+          parts.push(tl); maxW = Math.max(maxW, sw + 8 + tl.width); y += row;
+        });
+        return;
+      }
       if (l.kind === "raster" && l.raster.legend) {
         var lg = l.raster.legend, gw = 14, gh = Math.max(60, fs * 6);
         var grad = new fabric.Rect({ left: pad, top: y, width: gw, height: gh, selectable: false, evented: false, stroke: "#9a978c", strokeWidth: 0.6 });
@@ -237,6 +248,104 @@
     }
     if (!layers.length) { var e0 = text("No layers", pad, y, fs, { fill: "#8a8a8a" }); parts.push(e0); maxW = e0.width; y += row; }
     bg.set({ width: maxW + pad * 2, height: y + pad - 4 });
+    return parts;
+  }
+
+  /* --------------------------------------------------------- color bar */
+
+  // Like matplotlib's colorbar: a continuous gradient or discrete blocks,
+  // square ends or pointed "extend" ends (both / min / max), horizontal or
+  // vertical, with ticks and a title. Its source is a raster layer or a
+  // graduated vector layer (the chosen one, else the first that fits).
+  function colorbarSource(o) {
+    function fits(l) { return l && ((l.kind === "raster" && l.raster.legend) || (l.kind === "vector" && l.style.symbology === "graduated" && l.style.field)); }
+    var layer = GIS.get(o.layerId);
+    if (!fits(layer)) layer = GIS.layers.filter(fits)[0];
+    if (!layer) return null;
+    if (layer.kind === "raster") {
+      var lg = layer.raster.legend;
+      return { layer: layer, min: lg.min, max: lg.max, ramp: lg.colors, classes: lg.classColors, breaks: lg.breaks };
+    }
+    var cls = GIS.sym.classes(layer);
+    if (!cls.colors.length) return null;
+    return { layer: layer, min: cls.lo, max: cls.hi, ramp: cls.colors, classes: cls.colors, breaks: [cls.lo].concat(cls.breaks).concat([cls.hi]) };
+  }
+
+  function buildColorbar(o) {
+    var src = colorbarSource(o), fs = o.fontSize, c = o.color, parts = [];
+    if (!src) return [text("Color bar: add a raster or a graduated layer", 0, 0, fs, { fill: "#8a8a8a" })];
+    var L = o.length, T = o.thickness, vert = o.orientation === "vertical", span = (src.max - src.min) || 1;
+    var tri = Math.max(6, T * 1.15);
+    var e0 = o.extend === "both" || o.extend === "min" ? tri : 0, e1 = o.extend === "both" || o.extend === "max" ? tri : 0;
+    // (a along the bar from min, b across it) -> local x, y; vertical bars
+    // run bottom (min) to top (max).
+    function P(a, b) { return vert ? [b, e1 + L - a] : [e0 + a, b]; }
+    function poly(pts, fill, stroke) {
+      return new fabric.Polygon(pts.map(function (p) { return { x: p[0], y: p[1] }; }), { fill: fill, stroke: stroke || null, strokeWidth: stroke ? 0.8 : 0, selectable: false, evented: false, objectCaching: false });
+    }
+
+    var discrete = o.mode === "discrete" || (o.mode === "auto" && !!src.classes);
+    var blocks, bounds;
+    if (discrete) {
+      if (src.classes && o.mode === "auto") { blocks = src.classes; bounds = src.breaks; }
+      else {
+        var n = Math.max(2, Math.min(20, o.classes | 0 || 6)), it = d3.interpolateRgbBasis(src.ramp);
+        blocks = d3.range(n).map(function (i) { return d3.color(it(i / (n - 1))).formatHex(); });
+        bounds = d3.range(n + 1).map(function (i) { return src.min + span * i / n; });
+      }
+      // Equal-sized blocks (matplotlib's uniform spacing) with boundary ticks.
+      blocks.forEach(function (col, i) {
+        var a0 = L * i / blocks.length, a1 = L * (i + 1) / blocks.length;
+        parts.push(poly([P(a0, 0), P(a1, 0), P(a1, T), P(a0, T)], col));
+      });
+    } else {
+      var p0 = P(0, 0), p1 = P(L, T);
+      var r = new fabric.Rect({ left: Math.min(p0[0], p1[0]), top: Math.min(p0[1], p1[1]), width: vert ? T : L, height: vert ? L : T, selectable: false, evented: false });
+      var stops = src.ramp.map(function (col, i) { return { offset: i / (src.ramp.length - 1 || 1), color: col }; });
+      r.set("fill", new fabric.Gradient({ type: "linear", coords: vert ? { x1: 0, y1: L, x2: 0, y2: 0 } : { x1: 0, y1: 0, x2: L, y2: 0 }, colorStops: stops }));
+      parts.push(r);
+    }
+    var first = discrete ? blocks[0] : src.ramp[0], last = discrete ? blocks[blocks.length - 1] : src.ramp[src.ramp.length - 1];
+    if (e0) parts.push(poly([P(0, 0), P(0, T), P(-e0, T / 2)], first));
+    if (e1) parts.push(poly([P(L, 0), P(L, T), P(L + e1, T / 2)], last));
+    var outline = [P(0, 0), P(L, 0)];
+    if (e1) outline.push(P(L + e1, T / 2));
+    outline.push(P(L, T), P(0, T));
+    if (e0) outline.push(P(-e0, T / 2));
+    parts.push(poly(outline, "rgba(0,0,0,0)", c));
+    if (discrete) for (var k = 1; k < blocks.length; k++) {
+      var d0 = P(L * k / blocks.length, 0), d1 = P(L * k / blocks.length, T);
+      parts.push(new fabric.Line([d0[0], d0[1], d1[0], d1[1]], { stroke: c, strokeWidth: 0.5, selectable: false, evented: false }));
+    }
+
+    // Ticks and labels on the outer side (below / right).
+    var values = discrete ? bounds.slice() : d3.ticks(src.min, src.max, Math.max(2, o.ticks | 0)).filter(function (v) { return v >= src.min - 1e-9 && v <= src.max + 1e-9; });
+    if (discrete && values.length > 2) {
+      var perTick = L / (values.length - 1), wmax = d3.max(values, function (v) { return text(fmtTick(v), 0, 0, fs).width; });
+      if (!vert && perTick < wmax + 4) { var step = Math.ceil((wmax + 4) / perTick); values = values.filter(function (v, i) { return i % step === 0 || i === values.length - 1; }); }
+      if (vert && perTick < fs + 2) { var step2 = Math.ceil((fs + 2) / perTick); values = values.filter(function (v, i) { return i % step2 === 0 || i === values.length - 1; }); }
+    }
+    function fmtTick(v) { return o.decimals >= 0 ? (+v).toFixed(o.decimals) : numFmt(v); }
+    function posOf(v, i) { return discrete ? L * bounds.indexOf(v) / blocks.length : (v - src.min) / span * L; }
+    var maxLabel = 0;
+    values.forEach(function (v, i) {
+      var a = posOf(v, i), t0 = P(a, T), t1 = P(a, T + 4);
+      parts.push(new fabric.Line([t0[0], t0[1], t1[0], t1[1]], { stroke: c, strokeWidth: 0.8, selectable: false, evented: false }));
+      var lp = P(a, T + 6), lbl = text(fmtTick(v), lp[0], lp[1], fs, { fill: c });
+      if (vert) lbl.set({ originY: "center" }); else lbl.set({ originX: "center" });
+      maxLabel = Math.max(maxLabel, vert ? lbl.width : lbl.height);
+      parts.push(lbl);
+    });
+    if (o.title) {
+      if (vert) parts.push(text(o.title, T + 6 + maxLabel + 6 + fs * 0.6, e1 + L / 2, fs + 1, { originX: "center", originY: "center", angle: -90, fill: c }));
+      else parts.push(text(o.title, e0 + L / 2, -fs - 8, fs + 1, { originX: "center", fill: c }));
+    }
+    if (o.frame) {
+      var tmp = new fabric.Group(parts), pad = 8;
+      var bx = tmp.left, by = tmp.top, bw = tmp.width, bh = tmp.height;
+      tmp.destroy();
+      parts.unshift(rect(bx - pad, by - pad, bw + pad * 2, bh + pad * 2, "#ffffff", "#9a978c", 0.8));
+    }
     return parts;
   }
 
@@ -316,7 +425,7 @@
   }
 
   function makeGroup(type, opts) {
-    var parts = type === "legend" ? buildLegend(opts) : type === "scalebar" ? buildScale(opts) : buildNorth(opts);
+    var parts = type === "legend" ? buildLegend(opts) : type === "scalebar" ? buildScale(opts) : type === "colorbar" ? buildColorbar(opts) : buildNorth(opts);
     return new fabric.Group(parts, { subTargetCheck: false });
   }
 
@@ -324,7 +433,7 @@
     var canvas = fc();
     obj.gisItem = type;
     obj.gisOpts = like ? like.gisOpts : obj.gisOpts;
-    obj.layerName = { legend: "Legend", scalebar: "Scale bar", north: "North arrow", inset: "Inset map" }[type];
+    obj.layerName = { legend: "Legend", scalebar: "Scale bar", north: "North arrow", inset: "Inset map", colorbar: "Color bar" }[type];
     if (like) {
       obj.set({ left: like.left, top: like.top, scaleX: like.scaleX, scaleY: like.scaleY, angle: like.angle, originX: like.originX, originY: like.originY });
       if (like.lockMovementX) obj.set({ lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true });
@@ -378,7 +487,7 @@
     var g = makeGroup(type, o);
     g.gisOpts = o;
     var w = g.width, h = g.height;
-    var pos = type === "legend" ? [b.x + b.w - w - m, b.y + b.h - h - m] : type === "scalebar" ? [b.x + m + 8, b.y + b.h - h - m - 6] : [b.x + b.w - w - m, b.y + m];
+    var pos = type === "colorbar" ? [b.x + (b.w - w) / 2, b.y + b.h - h - m - 10] : type === "legend" ? [b.x + b.w - w - m, b.y + b.h - h - m] : type === "scalebar" ? [b.x + m + 8, b.y + b.h - h - m - 6] : [b.x + b.w - w - m, b.y + m];
     g.set({ left: pos[0], top: pos[1] });
     place(g, null, type);
     canvas.setActiveObject(g);
@@ -404,7 +513,7 @@
   });
   GIS.on("*", function (arg, evt) {
     if (evt === "selection" || evt === "interactive" || evt === "active") return;
-    items().forEach(function (o) { if (o.gisItem === "legend" || (o.gisItem === "inset" && o.gisOpts.showLayers)) rebuild(o); });
+    items().forEach(function (o) { if (o.gisItem === "legend" || o.gisItem === "colorbar" || (o.gisItem === "inset" && o.gisOpts.showLayers)) rebuild(o); });
   });
 
   // Resizing an inset re-renders it at the new size instead of stretching.

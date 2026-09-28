@@ -80,8 +80,8 @@
       desc: 'Coordinate grid (graticule) with frame labels.',
       kw: 'map grid graticule coordinates latitude longitude dms' },
     { title: 'Layout items', panel: 'panel-map', section: 'gisItemsSec', icon: 'dashboard_customize',
-      desc: 'Legend, scale bar, north arrow and inset map as movable page items.',
-      kw: 'map legend scale bar north arrow inset overview layout' },
+      desc: 'Legend, scale bar, north arrow, inset map and color bar as movable page items.',
+      kw: 'map legend scale bar north arrow inset overview layout color bar colorbar colormap extend' },
     { title: 'Attribute table', panel: 'panel-map', section: 'gisLayers', icon: 'table',
       desc: 'View, edit, select and export features of a vector layer.',
       kw: 'attribute table features select edit export csv geojson' }
