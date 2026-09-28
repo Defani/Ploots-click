@@ -73,16 +73,23 @@
     var legendW = showLegend ? Math.min(200, Math.max(120, w * 0.24)) : 0;
     var plotW = w - legendW;
     var cx = plotW / 2, cy = h / 2;
-    var maxRadius = Math.max(20, Math.min(plotW, h) * 0.36);
+    var fontFam = state.fontBody;
+    var bodySize = state.bodyFontSize || 12;
+    var fmt = function (v) { return typeof formatValue === "function" ? formatValue(v, state.valueFormat || "auto") : String(Math.round(v * 10) / 10); };
+    var labelSize = Math.max(bodySize - 1, 9);
+    var labelTexts = cats.map(function (c, ci) { return String(c == null ? "" : c) + (state.showValues ? "  " + fmt(avg[ci]) + "%" : ""); });
+    var measure = document.createElement("canvas").getContext("2d");
+    measure.font = labelSize + "px " + fontFam;
+    var maxLabelW = d3.max(labelTexts, function (s) { return measure.measureText(s).width; }) || 0;
+    // Leave room for the outside labels: the widest one sideways, one line
+    // above and below.
+    var maxRadius = Math.max(20, Math.min(plotW / 2 - maxLabelW - 20, h / 2 - labelSize - 16, Math.min(plotW, h) * 0.42));
     var innerHole = maxRadius * 0.22;
     var nRings = seriesAll.length;
     var ringGap = 1.4;
     var ringBand = (maxRadius - innerHole) / nRings;
     var ringThickness = Math.max(ringBand - ringGap, 1);
     var gapDeg = cats.length > 1 ? 1.6 : 0;
-    var fontFam = state.fontBody;
-    var bodySize = state.bodyFontSize || 12;
-    var fmt = function (v) { return typeof formatValue === "function" ? formatValue(v, state.valueFormat || "auto") : String(Math.round(v * 10) / 10); };
 
     function pt(r, deg) {
       var rad = (deg - 90) * Math.PI / 180;
@@ -117,6 +124,7 @@
     var idBandInner = maxRadius + 1, idBandOuter = maxRadius + 4;
     var labelR = maxRadius + 11;
     var outlineOn = !!state.outlineMarker;
+    var labels = [];
 
     cats.forEach(function (c, ci) {
       var A = catAngles[ci];
@@ -138,15 +146,32 @@
         svg.push('<path d="' + arcPath(rInner, rOuter, a0, a1) + '" fill="' + fillC + '" stroke="' + (outlineOn ? "#ffffff" : "none") + '" stroke-width="0.5"/>');
       }
 
-      var mid = A.mid;
-      var g0 = pt(idBandOuter + 1, mid), g1 = pt(labelR - 2, mid);
-      svg.push('<line x1="' + g0[0].toFixed(2) + '" y1="' + g0[1].toFixed(2) + '" x2="' + g1[0].toFixed(2) + '" y2="' + g1[1].toFixed(2) + '" stroke="#9a9587" stroke-width="0.7" stroke-dasharray="2,2"/>');
+      labels.push({ ci: ci, mid: A.mid });
+    });
 
-      var lp = pt(labelR, mid);
-      var norm = ((mid % 360) + 360) % 360;
-      var anchor = (norm > 90 && norm < 270) ? "end" : "start";
-      var labelText = esc(c) + (state.showValues ? "  " + fmt(avg[ci]) + "%" : "");
-      svg.push('<text x="' + lp[0].toFixed(2) + '" y="' + lp[1].toFixed(2) + '" text-anchor="' + anchor + '" dominant-baseline="middle" font-size="' + Math.max(bodySize - 1, 9) + '" fill="#1a1a1a">' + labelText + "</text>");
+    // Outside labels. Angles run clockwise from 12 o'clock, so 0-180 is the
+    // right half (text grows rightwards) and 180-360 the left half. On each
+    // side labels are pushed apart vertically so small neighbouring sectors
+    // don't overprint, with a leader line bending to the moved label.
+    var lineH = labelSize + 3;
+    [true, false].forEach(function (rightSide) {
+      var side = labels.filter(function (l) { var n = ((l.mid % 360) + 360) % 360; return (n < 180) === rightSide; });
+      side.forEach(function (l) { var p = pt(labelR, l.mid); l.x = p[0]; l.y = p[1]; });
+      side.sort(function (a, b) { return a.y - b.y; });
+      for (var i = 0; i < side.length; i++) {
+        var minY = i ? side[i - 1].y + lineH : lineH / 2;
+        if (side[i].y < minY) side[i].y = minY;
+      }
+      for (var j = side.length - 1; j >= 0; j--) {
+        var maxY = j === side.length - 1 ? h - lineH / 2 : side[j + 1].y - lineH;
+        if (side[j].y > maxY) side[j].y = maxY;
+      }
+      side.forEach(function (l) {
+        var g0 = pt(idBandOuter + 1, l.mid), g1 = pt(labelR - 2, l.mid);
+        var tx = l.x + (rightSide ? 3 : -3);
+        svg.push('<polyline points="' + g0[0].toFixed(2) + "," + g0[1].toFixed(2) + " " + g1[0].toFixed(2) + "," + g1[1].toFixed(2) + " " + (tx + (rightSide ? -2 : 2)).toFixed(2) + "," + l.y.toFixed(2) + '" fill="none" stroke="#9a9587" stroke-width="0.7" stroke-dasharray="2,2"/>');
+        svg.push('<text x="' + tx.toFixed(2) + '" y="' + l.y.toFixed(2) + '" text-anchor="' + (rightSide ? "start" : "end") + '" dominant-baseline="middle" font-size="' + labelSize + '" fill="#1a1a1a">' + esc(labelTexts[l.ci]) + "</text>");
+      });
     });
 
     if (showLegend) {

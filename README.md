@@ -9,12 +9,10 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?logo=d3dotjs&logoColor=white)
 ![Fabric.js](https://img.shields.io/badge/Fabric.js-5.3.0-4A9C9C)
 ![MathJax](https://img.shields.io/badge/MathJax_(LaTeX)-1B3E6F?logo=latex&logoColor=white)
-![KaTeX](https://img.shields.io/badge/KaTeX-1B3E6F?logo=latex&logoColor=white)
 ![math.js](https://img.shields.io/badge/Math_Engine-math.js-FF6600)
 ![Papa Parse](https://img.shields.io/badge/CSV%2FTSV_Parsing-Papa_Parse-00A98F)
 ![SheetJS](https://img.shields.io/badge/Excel_Import-SheetJS-217346?logo=microsoftexcel&logoColor=white)
 ![AG Grid](https://img.shields.io/badge/Data_View-AG_Grid-13B5EA)
-![jStat](https://img.shields.io/badge/Statistics-jStat-6E4B9E)
 ![Google Fonts](https://img.shields.io/badge/Google_Fonts-4285F4?logo=googlefonts&logoColor=white)
 ![Material Symbols](https://img.shields.io/badge/Icons-Material_Symbols-4285F4?logo=googlefonts&logoColor=white)
 ![Iconify](https://img.shields.io/badge/Icon_Reserve-Iconify-1769AA?logo=iconify&logoColor=white)
@@ -35,7 +33,9 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 - [Interface](#interface)
 - [Features](#features)
   - [Charts](#charts)
-  - [Function Plot Studio (standalone)](#function-plot-studio-standalone)
+  - [Chart gallery](#chart-gallery)
+  - [Data View](#data-view)
+  - [Editor: toolbars, Design panel & layers](#editor-toolbars-design-panel--layers)
   - [Page layout & annotation](#page-layout--annotation)
   - [Export](#export)
 - [Architecture](#architecture)
@@ -67,8 +67,15 @@ Ploots Click is a **client-side-only web app**: open the page (or visit the GitH
 
 ## Interface
 
-<img width="1916" height="979" alt="Screenshot 2026-08-14 171801" src="https://github.com/user-attachments/assets/799ff517-8705-44a7-9a25-f1c1d5514c44" />
+<p align="center">
+  <img src="assets/screenshots/editor-light.png" alt="Ploots Click editor: chart type gallery on the left, a grouped bar chart on an A4 page, Design panel on the right" width="100%">
+</p>
 
+The editor has three columns: the **left sidebar** (Data, Canvas, Chart, Axis, Legend, Shapes, Style, LaTeX, Export), the **page canvas** in the middle with rulers and a zoom slider, and the **right panel** with the Figma-style **Design** and **Layers** tabs. A dark theme is one click away (moon icon, top right):
+
+<p align="center">
+  <img src="assets/screenshots/editor-dark.png" alt="The same editor in dark theme" width="100%">
+</p>
 
 Live app: **[defani.github.io/Ploots-click](https://defani.github.io/Ploots-click/)**
 
@@ -77,65 +84,157 @@ Live app: **[defani.github.io/Ploots-click](https://defani.github.io/Ploots-clic
 ## Features
 
 ### Charts
-- **18 chart types**: single bar, grouped bar, stacked bar, lollipop, line, area, scatter, pie, donut, histogram, box plot, violin plot, heatmap, waterfall, funnel, treemap, choropleth map, radial rings (multi-track)
-- **Lollipop**: thin stem (baseline → value) with a marker head, single or grouped side-by-side per category, both orientations, drawn by the same D3 engine as every other chart type
-- **Choropleth map**: one value per country (ISO-3 code or country name), colored on a light-to-dark scale from the active palette (continuous or classed); drawn with d3-geo from base maps served locally from `vendor/topojson/`, so maps work offline
-- **Radial rings (multi-track)**: circular category plot in the style of multi-genome COG/functional-category figures — categories become angular sectors (width ∝ average share), each series becomes a concentric track (bar length ∝ that series' share of the category), with outside labels and a leader line per sector. Drawn as its own SVG and exported through the same SVG/PNG path as every other chart type
-- **Data input**: paste tab- or comma-separated data, or import a file directly — **CSV/TSV/TXT** (parsed with Papa Parse, so quoted fields, embedded commas, and escaped quotes are all handled correctly), **Excel** (`.xlsx`/`.xls`, including multi-sheet workbooks, via SheetJS), or **JSON** (array-of-objects or 2D array), as well as pasted CSV/TSV or JSON text
-- **Dedicated Data tab**: work on a table separate from the applied chart data — transpose rows/columns, switch between **wide** (assign each column a role: X, Y, Text, Number, or Skip) and **long/tidy** shape (pick the X, Series, and Value columns), with numeric columns auto-detected, before applying the result to the chart
-- **Per-series controls**: toggle visibility, pick a custom color, rename the series label, choose a fill pattern, and send any series to a **secondary Y-axis** (bar/line/area/scatter)
-- **Visual style modes**: Color, Color + Pattern, or Pattern (grayscale), backed by 8 hatch/fill patterns, so figures stay readable in print or black-and-white
-- **49 built-in color palettes**: Matplotlib (tab10/20/20b/20c), ColorBrewer (Set1-3, Paired, Dark2, Accent, Pastel1-2, Spectral), perceptual scales (Viridis, Plasma, Inferno, Magma, Cividis, Coolwarm), Seaborn (Deep, Muted, Bright, Pastel, Colorblind), popular editor themes (Nord, Dracula, Solarized, Material Design, Flat UI), plus a set of custom earth-tone, jewel-tone, and gradient palettes
+- **25 chart types, all drawn by one D3.js engine** (`js/d3-engine/`), so axes, ticks, legends, titles, patterns and export behave the same on every chart:
 
- 
-- **Typography**: a curated set of 5 fonts (Cambria, Times New Roman, Arial, Poppins, Cambria Math — served via Google Fonts) with separate controls for the title/subtitle and for the chart body/axes/legend
-- **Title & subtitle**: independent font, size, bold/italic, and alignment controls, plus an adjustable spacing gap between the title and subtitle
-- **Axis range control**: auto (fit to data) or custom min/max, independently for X and Y, plus a dedicated label for the secondary axis
-- **Legend controls**: show/hide, 7 position presets (top-left/center/right, bottom-center, left/right-middle, inside top-right), 1 to 4 columns, an optional legend title, adjustable font size, and an optional border box
-- **Line thickness controls**: independently adjustable chart frame border width and axis line width
-- **Outline controls**: marker/bar outline toggle, plus an optional full frame border around the chart
-- **Bar spacing controls**: bar gap, bar-group gap, and bar width, in a collapsible panel
-- **Value labels**: show or hide data values directly on the chart, with formatting options (auto, integer, 1 or 2 decimals, thousands separator, percent, currency)
-- **Error bars**: percent-of-value or fixed-amount error bars, applied uniformly across all visible series on bar/line/area/scatter charts
-- **Custom dimensions**: set the exact chart width and height in pixels
+  | Group | Chart types |
+  |---|---|
+  | Bar | single bar, grouped bar, stacked bar (incl. 100%), lollipop, dumbbell / slope |
+  | Line & Area | line, area, scatter, bubble |
+  | Circular | pie, donut, radial rings (multi-track), sunburst |
+  | Distribution | histogram, box plot, violin plot, ridge plot |
+  | Other | heatmap, waterfall, funnel, treemap, sankey, scatter matrix |
+  | Map | choropleth map, bubble map |
 
-### Function Plot Studio (standalone)
-A third, fully independent view (alongside Layout and Data) for plotting
-math functions on their own - not tied to the chart's data/series at all.
-Toggle it from the calculator icon in the left nav.
-- **5 function kinds**: explicit `y = f(x)`, parametric `x(t), y(t)`, polar
-  `r(\theta)`, implicit `f(x,y) = g(x,y)` (rendered as a zero-level contour),
-  and piecewise (multiple formula/condition pairs, tried top to bottom)
-- **Live KaTeX preview** of the formula as you type it, above the add button
-- **Own canvas, own axis range** (auto-fit or manual min/max per axis),
-  gridline toggle, and an equal-aspect-ratio (1:1) toggle for geometrically
-  accurate circles/implicit curves
-- **Own PNG/SVG export**, independent of the main chart's export settings
-- Multiple functions at once, each with its own color, visibility toggle,
-  and delete button - same list-based UI as the chart-linked Function Plot
-  panel below
-- Reuses the same LaTeX-ish input and math.js evaluation engine as the
-  chart-linked panel, so `\frac`, `\sqrt`, `\sin/\cos/...`, `^`, `\pi`,
-  `\theta`, `\cdot`, `\ln`/`\log`, and implicit multiplication all work
-  the same way in both places
+- **Maps** (choropleth and bubble map) are drawn with d3-geo from Natural Earth base maps served locally from `vendor/topojson/`, so they work offline. Choropleth takes ISO-3 codes or country names, a continuous or classed colour scale, several scopes (world, continents, USA) and projections, a fixed value range for comparing maps, or your own **custom GeoJSON** (e.g. Indonesian provinces).
+- **Radial rings (multi-track)**: circular category plot in the style of multi-genome COG/functional-category figures. Categories become angular sectors (width ∝ average share), each series a concentric track, with outside labels that are spread apart and joined to their sector by leader lines.
+- **Sunburst**: slash-delimited paths (`Vegetasi/Mangrove/Rapat`) become a hierarchy; click a segment to zoom in, click the centre to zoom back out.
+- **Sankey**: rows written as `Source -> Target` become flows between nodes, with links drawn as filled ribbons.
+- **Format Axis**: click an axis on the chart to open a per-axis panel: range (auto or fixed), logarithmic scale, major/minor tick spacing, tick marks and their position, number format, line width and colour.
+- **Data input**: paste tab- or comma-separated data, or import **CSV/TSV/TXT** (Papa Parse, so quoted fields and embedded commas are handled), **Excel** `.xlsx`/`.xls` (SheetJS, multi-sheet), or **JSON** (array of objects or 2D array).
+- **Per-series controls**: visibility, colour, label, fill pattern, marker shape, and a **secondary Y-axis** (bar/line/area/scatter).
+- **Visual style modes**: Color, Color + Pattern, or Pattern (grayscale), backed by 8 hatch/fill patterns, so figures stay readable in print or black-and-white.
+- **106 built-in colour palettes**, see [Color Palettes](#color-palettes--sources--licensing).
+- **Typography**: 5 fonts (Cambria, Times New Roman, Arial, Poppins, Cambria Math) with separate controls for the title/subtitle and for the chart body, axes and legend.
+- **Legend**: show/hide, 7 position presets, 1 to 4 columns, title, font size, border, drag it anywhere on the chart, or **detach** it into a free object on the page (pie, donut, funnel and treemap legends list their categories).
+- **Value labels** with formatting (auto, integer, 1 or 2 decimals, thousands separator, percent, currency), **error bars** (percent or fixed), bar gap/width controls, outline and frame toggles.
+
+### Chart gallery
+
+Every chart type, rendered by the D3 engine from its built-in sample data (click an image to open it full size):
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/bar-single.png" width="260"><br><sub>Bar – single</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/bar-group.png" width="260"><br><sub>Bar – grouped</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/bar-stack.png" width="260"><br><sub>Bar – stacked</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/lollipop.png" width="260"><br><sub>Lollipop</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/dumbbell.png" width="260"><br><sub>Dumbbell / slope</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/line.png" width="260"><br><sub>Line</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/area.png" width="260"><br><sub>Area</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/scatter.png" width="260"><br><sub>Scatter</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/bubble.png" width="260"><br><sub>Bubble</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/pie.png" width="260"><br><sub>Pie</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/donut.png" width="260"><br><sub>Donut</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/radial-rings.png" width="260"><br><sub>Radial rings</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/sunburst.png" width="260"><br><sub>Sunburst</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/histogram.png" width="260"><br><sub>Histogram</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/box.png" width="260"><br><sub>Box plot</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/violin.png" width="260"><br><sub>Violin plot</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/ridge-plot.png" width="260"><br><sub>Ridge plot</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/heatmap.png" width="260"><br><sub>Heatmap</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/waterfall.png" width="260"><br><sub>Waterfall</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/funnel.png" width="260"><br><sub>Funnel</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/treemap.png" width="260"><br><sub>Treemap</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/sankey.png" width="260"><br><sub>Sankey</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/scatter-matrix.png" width="260"><br><sub>Scatter matrix</sub></td>
+    <td align="center"><img src="assets/screenshots/charts/choropleth.png" width="260"><br><sub>Choropleth map</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/charts/bubble-map.png" width="260"><br><sub>Bubble map</sub></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="assets/screenshots/map-choropleth.png" alt="Choropleth map scoped to Europe, with the map settings panel open in the sidebar" width="100%">
+  <br><sub>Map settings: base map (world or custom GeoJSON), scope, projection, continuous or classed colour, value range.</sub>
+</p>
+
+### Data View
+
+<p align="center">
+  <img src="assets/screenshots/data-view.png" alt="Data View: chart mapping shelves on the left, editable data table on the right" width="100%">
+</p>
+
+- A spreadsheet-style table (AG Grid), separate from the applied chart data: edit cells, rename columns, add rows/columns, paste from Excel or Sheets, sort and search.
+- **Chart mapping shelves**: drag fields onto the X and Y axes to decide what the chart plots; fields left off both shelves are listed as unused.
+- **Wide ↔ long/tidy** reshaping, **transpose**, spreadsheet **formulas** (`=SUM(A1:A5)`, `=AVERAGE(...)`, cell references) and per-column **Statistics**, with a Σ summary row.
+- **Revert** discards the edits; **Apply to chart** sends the table to the chart.
+
+### Editor: toolbars, Design panel & layers
+
+**Canva-style floating toolbar.** Selecting text shows its format bar above the canvas (font, size, colour, bold/italic/underline/strike, case, alignment, lists, super/subscript, line spacing, opacity, effects, position), plus a small action bar next to the object (duplicate, lock, delete, more):
+
+<p align="center">
+  <img src="assets/screenshots/text-toolbar.png" alt="Selected text annotation with the floating text toolbar and the Design panel" width="100%">
+</p>
+
+**Shapes and other objects** get the same kind of floating bar (fill, stroke, dash, opacity, position). A Figma-style **size badge** (`W × H`) sits under the selection, with dashed **distance guides** to the page's left and top edges. The **Design** tab edits position, alignment to the page, rotation and flips, size (with a proportion lock), opacity, corner radius, fill, stroke and drop shadow:
+
+<p align="center">
+  <img src="assets/screenshots/object-design-panel.png" alt="Highlight rectangle selected, showing the floating object bar and the Design panel" width="100%">
+</p>
+
+**Advanced colour picker** with **solid or gradient** fills (linear/radial, angle, draggable colour stops), HSV area, hue and alpha sliders, Hex/RGB/HSL input, an eyedropper, saved swatches and the colours already used on the page:
+
+<p align="center">
+  <img src="assets/screenshots/color-picker-gradient.png" alt="Colour picker in gradient mode" width="100%">
+</p>
+
+**Layers** lists every object on the page (with thumbnails, type and font details): drag to reorder, rename, hide, lock, and group/ungroup. The chart itself always stays at the back:
+
+<p align="center">
+  <img src="assets/screenshots/layers-panel.png" alt="Layers panel with two text objects, a rectangle and the chart" width="100%">
+</p>
+
+**Sidebar panels** for the axes, style and legend:
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/axis-panel.png" width="400"><br><sub>Axis</sub></td>
+    <td align="center"><img src="assets/screenshots/color-style-panel.png" width="400"><br><sub>Color &amp; style</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/legend-panel.png" width="400"><br><sub>Legend</sub></td>
+    <td align="center"><img src="assets/screenshots/export-panel.png" width="400"><br><sub>Export</sub></td>
+  </tr>
+</table>
 
 ### Page layout & annotation
-- **Full-page canvas**, separate from the chart block itself — position and resize the chart anywhere on the page
-- **10 built-in page templates** (A4/Letter/Legal landscape & portrait, 16:9 and 4:3 presentation, Instagram Story, social square) plus fully custom width/height in px, mm, or cm
-- **Drafting-style rulers** on all four sides of the canvas, unit-aware and zoom-aware, that also double as a source for **draggable guide lines**
-- **Layout objects** on top of the chart, built with Fabric.js: text boxes, rectangles, ellipses, and lines, each with its own format bar (color, fill, stroke, alignment), plus lock, duplicate, delete, and a right-click context menu
-- **LaTeX & symbol tool**: type formulas in `$...$` and see them rendered live, straight onto the canvas, via MathJax (e.g. `$R^2 = 0.95$`, `$CO_2$`), with adjustable color, size, and font, a history of recent formulas, ready-made templates, and a built-in Ω symbol/unit catalog (area & volume, rate/flux, mass & concentration, temperature & misc, stats & chemistry) usable from any text field, including axis labels
+- **Full-page canvas**, separate from the chart block: position and resize the chart anywhere on the page.
+- **10 built-in page templates** (A4/Letter/Legal landscape & portrait, 16:9 and 4:3 presentation, Instagram Story, social square) plus custom width/height in px, mm or cm, and a page background colour.
+- **Zoom** with the slider at the bottom right, Ctrl + and Ctrl − (Ctrl 0 for 100%), or Ctrl + mouse wheel. Custom **pan scrollbars**.
+- **Drafting-style rulers** on the canvas edges, unit- and zoom-aware, that also act as a source for **draggable guide lines**.
+- **Layout objects** on top of the chart (Fabric.js): text boxes, 30 shapes, images and freehand drawing (pen, highlighter, marker, eraser), with lock, duplicate, delete, grouping and a right-click menu.
+- **LaTeX & symbol tool**: type formulas in `$...$` and see them rendered live on the canvas with MathJax (e.g. `$R^2 = 0.95$`, `$CO_2$`), with colour, size and font controls, recent formulas, ready-made templates, and a searchable symbol/unit catalog that also works in axis labels.
+- **Undo/redo** for chart settings and canvas objects alike, and a **help search** (question-mark icon) that finds any menu or setting by name.
 
 ### Export
-- **PNG** at 150, 300, or 500 DPI — a full-page composite of the background, the chart, and every layout object, exactly as shown in the editor
-- **SVG** export of the chart itself
-- **Zero install for users**: D3.js is bundled locally; Fabric.js, MathJax, KaTeX, math.js, Papa Parse, SheetJS, AG Grid, jStat, marked, Google Fonts, and Material Symbols all load from CDN — no build step, no server, no signup required
+- **PNG, JPG, SVG or PDF** from the Export panel, at **75, 100, 300 or 600 DPI**.
+- PNG/JPG/PDF are a **full-page composite** of the background, the chart and every layout object, exactly as shown in the editor. PDF can be **vector** (via svg2pdf) or flattened.
+- Background: follow the canvas colour, force white, or transparent (PNG).
+- **Zero install**: D3.js is bundled locally; everything else loads from a CDN only when a feature first needs it. No build step, no server, no signup.
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
 ## Architecture
 
-Everything below happens in a single browser tab — there's no backend, no build step, and no network call other than fetching static assets from a CDN.
+Everything below happens in a single browser tab — there's no backend, no build step, and no network call other than fetching static assets (libraries from a CDN on first use, base maps from this repo).
 
 **High-level data flow**, from raw input to exported file:
 
@@ -153,11 +252,11 @@ flowchart LR
     A3 -- SheetJS --> B
     A4 --> B
 
-    B[Data tab<br/>wide/long shape, transpose] --> C[Chart state<br/>state.series]
+    B[Data View<br/>shelves, wide/long, transpose] --> C[Chart state<br/>state.series]
     C --> D[Chart Builder<br/>render via D3.js]
     D --> E[Layout canvas<br/>Fabric.js overlay:<br/>text, shapes, LaTeX]
     E --> F{Export}
-    F -- PNG 150/300/500 DPI --> G1[Full-page composite<br/>chart + layout objects]
+    F -- PNG / JPG / PDF, 75-600 DPI --> G1[Full-page composite<br/>chart + layout objects]
     F -- SVG --> G2[Chart only<br/>D3 SVG]
 ```
 
@@ -171,12 +270,12 @@ flowchart LR
 | Layout canvas / shapes / text | ![Fabric.js](https://img.shields.io/badge/-Fabric.js-4A9C9C) |
 | LaTeX formulas on canvas | ![MathJax](https://img.shields.io/badge/-MathJax-1B3E6F?logo=latex&logoColor=white) |
 
-**Data tab: wide ↔ long/tidy conversion**, the step between raw parsed rows and the chart's series:
+**Data View: wide ↔ long/tidy and field mapping**, the step between raw parsed rows and the chart's series:
 
 ```mermaid
 flowchart TD
     Raw[Raw parsed table] --> Shape{Shape}
-    Shape -- Wide --> Wide[Assign each column a role:<br/>X, Y, Text, Number, or Skip]
+    Shape -- Wide --> Wide[Drag fields onto the<br/>X axis and Y axis shelves]
     Shape -- Long/tidy --> Long[Pick X, Series, and Value columns]
     Wide --> Detect[Numeric columns<br/>auto-detected]
     Long --> Detect
@@ -190,55 +289,86 @@ flowchart TD
 
 ```
 .
-├── index.html                     # App shell, styling, CDN <script>/<link> tags, splash screen
+├── index.html                     # App shell, styling, <script>/<link> tags, splash screen
+├── sw.js                          # Service worker (network-first cache, so the app also opens offline)
+├── manifest.json                  # Web app manifest (installable PWA)
 ├── js/
-│   ├── chart-builder/             # Chart engine, split into 13 numbered load-order files
+│   ├── lazy-loader.js             # Loads CDN libraries on first use (Fabric, Papa Parse, SheetJS, AG Grid, jsPDF, ...)
+│   ├── chart-builder/             # Chart settings, data and export, in numbered load-order files
 │   │   ├── 01-config.js           #   static config: fonts, canvas templates, hatch/dash/marker defs
-│   │   ├── 02-state.js            #   shared mutable state object, sample dataset, default colors
+│   │   ├── 02-state.js            #   shared state object, chart type list, sample data per chart type
 │   │   ├── 03-ui-lists.js         #   populates font/template/unit pickers in the sidebar
-│   │   ├── 04-data.js             #   parses pasted/CSV data into state.series, renders series list UI
-│   │   ├── 05-style-helpers.js    #   legend layout, color/pattern modes, value formatting, error bars
-│   │   ├── 06-canvas-units.js     #   canvas size <-> unit conversion, style toggle visibility
-│   │   ├── 07-render.js           #   legacy Plotly render(); now a no-op, js/d3-engine/ draws every chart
-│   │   ├── 08-helpers-export.js   #   string/color helpers, PNG/SVG export
+│   │   ├── 04-data.js             #   parses pasted/imported data into series, series list UI
+│   │   ├── 05-style-helpers.js    #   colour/pattern modes, value formatting, error bars
+│   │   ├── 06-canvas-units.js     #   canvas size <-> unit conversion
+│   │   ├── 07-render.js           #   legacy render() entry point; js/d3-engine/ wraps it and draws every chart
+│   │   ├── 08-helpers-export.js   #   string/colour helpers, multi-format export panel (PNG/JPG/SVG/PDF)
 │   │   ├── 09-event-wiring.js     #   wires sidebar controls (style, axes, legend, ranges, export)
-│   │   ├── 10-view-switcher-init.js # Layout/Data/Function view switcher, boots the chart on load
-│   │   ├── 11-choropleth.js       #   Choropleth Map chart type: sample data + "Peta (Choropleth)" sidebar settings
-│   │   ├── 12-radial-rings.js     #   Radial Rings chart type; hand-drawn SVG + its own SVG/PNG export path
-│   │   └── 13-lollipop.js         #   Lollipop chart type registration + sample data (drawn in js/d3-engine/)
-│   ├── layout-editor/             # Fabric.js full-page canvas, split into 16 numbered files
-│   │   ├── 01-canvas-core.js      #   Fabric.js canvas setup, chart-proxy sync, stage resize
+│   │   ├── 10-view-switcher-init.js # Layout/Data view switcher, boots the chart on load
+│   │   ├── 11-choropleth.js       #   choropleth settings (state defaults + "Peta (Choropleth)" sidebar panel)
+│   │   ├── 12-radial-rings.js     #   Radial Rings registration + its SVG renderer
+│   │   ├── 13-lollipop.js … 20-dumbbell.js # chart type registration + sample data (lollipop, bubble,
+│   │   │                          #   sunburst, ridge plot, sankey, scatter matrix, bubble map, dumbbell)
+│   ├── d3-engine/                 # The chart engine (see D3-MIGRATION.md)
+│   │   ├── 00-core.js             #   PlootsD3 namespace, renderer registry, rich text, patterns, mount
+│   │   ├── 01-frame.js            #   shared cartesian frame: scales, axes, ticks, gridlines, titles, legend
+│   │   ├── 02-cartesian.js        #   bar (single/grouped/stacked), line, area, scatter
+│   │   ├── 03-stats.js            #   pie, donut, histogram, box, violin, heatmap
+│   │   ├── 04-flow.js             #   waterfall, funnel, treemap
+│   │   ├── 05-special.js          #   lollipop, dumbbell, bubble, scatter matrix, sankey, ridge plot, radial rings, sunburst
+│   │   ├── 06-geo.js              #   choropleth and bubble map (d3-geo, local topojson)
+│   │   ├── geo-country-regex.js   #   country name -> ISO-3 matching
+│   │   └── 99-integration.js      #   hooks the engine into render(), export and the Format Axis panel
+│   ├── layout-editor/             # Fabric.js full-page canvas and editor UI, in numbered files
+│   │   ├── 01-canvas-core.js      #   canvas setup, chart-proxy sync, stage resize
 │   │   ├── 02-toolbar-text.js     #   main toolbar wiring, "Add text" tool
-│   │   ├── 03-shapes.js           #   shape picker and shape geometry helpers
-│   │   ├── 04-images.js           #   "Add image" tool (drop a raster image onto the canvas)
+│   │   ├── 03-shapes.js           #   shape picker and the 30 shape geometries
+│   │   ├── 04-images.js           #   "Add image" tool
 │   │   ├── 05-object-actions.js   #   lock/unlock, duplicate, delete
-│   │   ├── 06-context-menu.js     #   right-click context menu
-│   │   ├── 07-selection.js        #   selection events, object-type checks, format-bar show/hide
-│   │   ├── 08-format-bars.js      #   wires topbar format bars (text/shape/math) to the active object
-│   │   ├── 09-panels-helpers.js   #   color-swatch helpers, side-panel sync
+│   │   ├── 06-context-menu.js     #   right-click menu
+│   │   ├── 07-selection.js        #   selection events, which format bar to show
+│   │   ├── 08-format-bars.js      #   format bars (text/shape/image/formula) wired to the active object
+│   │   ├── 09-panels-helpers.js   #   colour-swatch helpers, side-panel sync
 │   │   ├── 10-export-overlay.js   #   flattens all Fabric objects to a transparent PNG for export
-│   │   ├── 11-sidebar-nav.js      #   left sidebar panel open/close/switch logic
-│   │   ├── 12-theme-init.js       #   dark/light theme toggle, final boot calls
-│   │   ├── 13-axis-title-detach.js #  detach X/Y axis titles into free-floating Fabric text
-│   │   ├── 14-legend-hover.js     #   drag the chart legend without unlocking layout elements first
-│   │   ├── 15-legend-detach.js    #   detach the legend into a free-floating Fabric.js group
-│   │   └── 16-draw-tool.js        #   freehand Draw tool (Pen / Highlighter / Marker / Eraser)
-│   ├── undo_redo.js               # Global undo/redo history stack for the whole app
-│   ├── canvas_ruler.js            # Drafting-style rulers on all 4 sides + draggable guide lines
-│   ├── color_picker.js            # Reusable HSV/RGB/HEX color picker used throughout the sidebar
-│   ├── palettes.js                # Built-in color palette catalog, grid, and search
-│   ├── function_plot.js           # Chart-linked Function Plot sidebar panel (y = f(x) over the chart)
-│   ├── standalone_function_plot.js # Function Plot Studio: standalone explicit/parametric/polar/implicit/piecewise plotter + KaTeX preview
-│   ├── latex_symbols.js           # LaTeX (MathJax) formulas on canvas + the Ω symbol/unit catalog
-│   ├── data_view.js               # Data tab: wide/long shape, transpose, column-role assignment
-│   └── data_stats.js              # Data View column statistics (powered by jStat)
+│   │   ├── 11-sidebar-nav.js      #   left sidebar panel switching
+│   │   ├── 12-theme-init.js       #   dark/light theme, final boot calls
+│   │   ├── 13-axis-title-detach.js #  detach X/Y axis titles into free text
+│   │   ├── 14-legend-hover.js     #   drag the chart legend on the canvas
+│   │   ├── 15-legend-detach.js    #   detach the legend into a free-floating group
+│   │   ├── 16-draw-tool.js        #   freehand Draw tool (pen / highlighter / marker / eraser)
+│   │   ├── 17-textbox-resize.js   #   text boxes resize their width instead of stretching the text
+│   │   ├── 18-chart-quickbar.js   #   floating quick controls when the chart is selected
+│   │   ├── 19-axis-tick-float.js  #   "Axis Tick Line" block in the Axis tab
+│   │   ├── 20-canvas-zoom.js      #   zoom slider, Ctrl +/−/0 and Ctrl+wheel zoom
+│   │   ├── 21-layers-panel.js     #   Layers tab (reorder, rename, hide, lock, group)
+│   │   ├── 22-axis-format-panel.js #  click an axis to open its Format Axis panel
+│   │   ├── 23-canvas-pan-scrollbars.js # themed pan scrollbars
+│   │   ├── 24-text-float-bar.js   #   Canva-style floating format bars above the canvas
+│   │   ├── 25-design-panel.js     #   Figma-style Design tab (position, size, fill/gradient, stroke, shadow)
+│   │   ├── 26-selection-hud.js    #   W × H badge and distance guides for the selection
+│   │   ├── 27-object-float-bar.js #   floating bars for shapes, images, formulas, groups
+│   │   └── 28-axis-controls-sync.js # keeps the Axis tab's controls and the Format Axis panel in sync
+│   ├── data_view.js               # Data View: AG Grid table, wide/long reshape, transpose
+│   ├── dv_shelves.js              # Data View chart-mapping shelves (drag fields onto X / Y)
+│   ├── data_formulas.js           # Data View spreadsheet formulas (=SUM, =AVERAGE, ...)
+│   ├── data_stats.js              # Data View column statistics (plain JS)
+│   ├── color_picker.js            # Colour picker: solid/gradient, HSV, eyedropper, swatches
+│   ├── palettes.js                # Built-in palette catalog, grid and search
+│   ├── canvas_background.js       # Page background colour
+│   ├── canvas_ruler.js            # Rulers on the canvas edges + draggable guide lines
+│   ├── latex_symbols.js           # LaTeX (MathJax) formulas on canvas + the symbol/unit catalog
+│   ├── help_search.js             # Help search: find a menu or setting by name
+│   ├── ui_sections.js             # Collapsible sidebar sections
+│   └── undo_redo.js               # Global undo/redo history
 ├── vendor/
-│   ├── d3-7.9.0.min.js            # D3.js 7.9.0: the chart engine (see js/d3-engine/ and D3-MIGRATION.md)
-│   └── topojson/                  # Local Natural Earth base maps (*_110m.json) for the map chart types
+│   ├── d3-7.9.0.min.js            # D3.js 7.9.0, bundled locally
+│   └── topojson/                  # Natural Earth base maps (*_110m.json) for the map chart types
 ├── assets/
-│   ├── logo_light.png             # Light-topbar logo mark
-│   ├── logo_dark.png              # Dark-topbar logo mark
-│   └── palettes.png               # Palette catalog preview image (used in this README)
+│   ├── logo_light.png, logo_dark.png # Topbar logo marks
+│   ├── palettes.png               # Palette catalog image (used in this README)
+│   └── screenshots/               # README screenshots; charts/ holds one image per chart type
+├── D3-MIGRATION.md                # How the Plotly -> D3 migration was done, stage by stage
+├── BUGFIXES.md                    # Notes on notable bug fixes
 ├── LICENSE                        # MIT license
 ├── THIRD-PARTY-NOTICES.md         # Notices for bundled D3.js, country-regex and the topojson base maps
 └── README.md
@@ -390,14 +520,14 @@ The formula box (`$...$`) is rendered live via **MathJax**, so any valid LaTeX m
 
 ### Color Palettes — sources & licensing
 
-**99 built-in palettes** (originally 49, expanded with 50 more — the rest of
-the ColorBrewer diverging/sequential families, common Matplotlib scientific
-colormaps, and the Okabe-Ito colorblind-safe set). All colors are hard-coded
-hex arrays baked into `palettes.js` — no palette library is bundled or loaded
-at runtime.
+**106 built-in palettes**: the original 49, 50 more (the rest of the
+ColorBrewer diverging/sequential families, common Matplotlib scientific
+colormaps, and the Okabe-Ito colorblind-safe set) and 7 extra custom sets.
+All colors are hard-coded hex arrays baked into `palettes.js` — no palette
+library is bundled or loaded at runtime.
 
 <p align="center">
-  <img src="assets/palettes.png" alt="All 99 built-in color palettes" width="800">
+  <img src="assets/palettes.png" alt="All 106 built-in color palettes" width="800">
 </p>
 
 Two names from the original 49 were corrected to match their real source
@@ -420,7 +550,7 @@ values in the process).
 | Material Design | [Google Material Design](https://m2.material.io/design/color/) color system | CC BY 4.0 |
 | Flat UI | [Flat UI Colors](https://flatuicolors.com/) | Free to use |
 | Okabe-Ito | Okabe & Ito (2008), "Color Universal Design" colorblind-safe palette | Public domain / free to use |
-| Mangrove (default), Forest Canopy, Ocean Depth, Sunset Clay, Autumn Harvest, Grayscale, Earth Tones, Pastel Rainbow, Neon Bright, Sunset Gradient, Ice Blues, Berry Mix, Copper & Rust, Royal Jewel Tones, Retro 80s, Monochrome Blue, Corporate Navy & Gold, Slate & Steel | Original combinations created for this project — not derived from an external named scale | — |
+| Mangrove (default), Forest Canopy, Ocean Depth, Sunset Clay, Autumn Harvest, Grayscale, Earth Tones, Pastel Rainbow, Neon Bright, Sunset Gradient, Ice Blues, Berry Mix, Copper & Rust, Royal Jewel Tones, Retro 80s, Monochrome Blue, Corporate Navy & Gold, Slate & Steel, Custom Palette 1–7 | Original combinations created for this project — not derived from an external named scale | — |
 
 ### Fonts — sources & licensing
 
@@ -447,16 +577,17 @@ fallback (or their browser/OS default serif or sans-serif) instead.
 ### Icons — sources & licensing
 
 Icons across the topbar, sidebar, and Data View ribbon come from a webfont
-icon set plus a small number of hand-drawn inline SVGs for marks the webfont
-doesn't cover. Nothing here is bundled as a font/icon file in the repo —
-Material Symbols loads live from Google Fonts, and the custom SVGs are
-written directly in `index.html`.
+icon set, Iconify web components, and a few hand-drawn inline SVGs. Nothing
+here is bundled as a font/icon file in the repo — Material Symbols loads live
+from Google Fonts, Iconify icons are fetched on demand by the
+`iconify-icon` component, and the custom SVGs are written directly in
+`index.html`.
 
 | Icon set | Used for | Source | License |
 |---|---|---|---|
-| Material Symbols (Outlined) | The large majority of toolbar, sidebar, and ribbon icons | [Google Fonts Icons](https://fonts.google.com/icons), loaded live via CDN `<link>` | Apache License 2.0 |
+| Material Symbols (Rounded) | The large majority of toolbar, sidebar, and ribbon icons | [Google Fonts Icons](https://fonts.google.com/icons), loaded live via CDN `<link>` | Apache License 2.0 |
 | Custom inline SVG | Chart-type thumbnails, draw-tool shape picker, sidebar nav marks, and export-format icons not covered by Material Symbols | Original artwork drawn for this project | Project license ([MIT](./LICENSE)) |
-| Iconify — Phosphor, Solar, Tabler, Fluent System Icons | Reserve set for any future icon not available in Material Symbols; not yet used in the current build | [Iconify](https://iconify.design/) (aggregator — [icon-sets.iconify.design](https://icon-sets.iconify.design/)) | MIT (Phosphor, Tabler, Solar, Fluent System Icons) — confirm per-icon before adding |
+| Iconify — Material Design Icons (`mdi:`) | Chart-type tiles in the Chart panel (loaded via the `iconify-icon` web component) | [Iconify](https://iconify.design/) (aggregator — [icon-sets.iconify.design](https://icon-sets.iconify.design/)) | Apache License 2.0 (Material Design Icons); confirm per set before adding others |
 
 ### Page templates
 
@@ -477,15 +608,15 @@ Custom width/height is also available in px, mm, or cm, independent of the templ
 
 ### Fill patterns, dash styles & data-point markers
 
-**8 fill/hatch patterns** (the same shapes Plotly offered, drawn as SVG patterns — used whenever a series' style includes patterns): solid, `/` diagonal, `\` diagonal, `x` cross, `-` horizontal lines, `|` vertical lines, `+` cross, `.` dots.
+**8 fill/hatch patterns** (drawn as SVG patterns by the D3 engine — used whenever a series' style includes patterns): solid, `/` diagonal, `\` diagonal, `x` cross, `-` horizontal lines, `|` vertical lines, `+` cross, `.` dots.
 
 **6 line dash styles**: solid, dot, dash, longdash, dashdot, longdashdot.
 
-**19 data-point marker shapes** for line, area, and scatter charts (drives both the plotted marker and its legend icon): Circle, Square, Diamond, Triangle up, Triangle down, Plus (+), X, Star, Star diamond, Star triangle, Hexagram, Pentagon, Hexagon, Hourglass, Bowtie, Diamond tall, Diamond wide, Asterisk (*), Hash (#), Arrow, Y. Hourglass, Bowtie, and Diamond wide are the closest built-in Plotly stand-ins for a trapezoid, bowtie, and wide diamond — Plotly's marker set doesn't support custom SVG shapes.
+**21 data-point marker shapes** for line, area, and scatter charts (drives both the plotted marker and its legend icon): Circle, Square, Diamond, Triangle up, Triangle down, Pentagon, Hexagon, Star, Star diamond, Star triangle, Hexagram, Plus (+), X, Hash (#), Asterisk (*), Arrow, Y, Hourglass, Bowtie, Diamond tall, Diamond wide.
 
 ### Layout shape library
 
-Beyond text boxes, the Layout canvas's Shapes panel offers **30 drawable shapes** across four groups, each editable with the same color/fill/stroke format bar as any other layout object:
+Beyond text boxes, the Layout canvas's Shapes panel offers **30 drawable shapes** across four groups, each editable from its floating bar and the Design panel (fill or gradient, stroke, corner radius, shadow):
 
 - **Basic shapes (14):** square, rectangle, rounded rectangle, circle, ellipse, triangle, inverted triangle, right triangle, diamond, parallelogram, trapezoid, pentagon, hexagon, octagon
 - **Lines & arrows (8):** line, dashed line, arrow right, arrow left, arrow up, arrow down, double arrow, chevron
@@ -494,9 +625,10 @@ Beyond text boxes, the Layout canvas's Shapes panel offers **30 drawable shapes*
 
 ### Export details
 
-- **PNG** is rendered from the chart's SVG, scaled from a 96 DPI baseline — 150/300/500 DPI map to a `scale` factor of `dpi / 96` (≈1.56×, 3.125×, 5.2×) applied to the full-page canvas size, so a 1920×1080 px page exports at roughly 3000×1688 (150 DPI), 6000×3375 (300 DPI), or 10000×5625 (500 DPI). The output filename is `layout_<dpi>dpi.png`.
-- The PNG export is a **full-page composite**: background, chart, and every layout object (text, shapes, LaTeX formulas) are flattened together exactly as shown in the editor.
+- **PNG/JPG** are rendered from the chart's SVG, scaled from a 96 DPI baseline — 75/100/300/600 DPI map to a `scale` factor of `dpi / 96` (≈0.78×, 1.04×, 3.125×, 6.25×) applied to the full-page canvas size, so a 1920×1080 px page exports at 6000×3375 at 300 DPI. The file name is set in the Export panel (default `layout`).
+- PNG, JPG and PDF are a **full-page composite**: background, chart, and every layout object (text, shapes, images, drawings, LaTeX formulas) flattened together exactly as shown in the editor. **Vector PDF** keeps the chart as vector graphics (jsPDF + svg2pdf); the flattened mode embeds a raster image.
 - **SVG** export covers the **chart only** (the chart's own D3 SVG) — it does not include layout objects, text, or LaTeX formulas sitting on the canvas around it.
+- Background: *Canvas color*, *White*, or *Transparent* (JPG has no alpha channel, so transparent becomes white).
 
 ### Value label formatting
 
@@ -520,7 +652,16 @@ Cap width and line thickness are independently adjustable, and the error bar col
 
 ### Keyboard shortcuts
 
-The only keyboard shortcut in the app: with a layout object selected (and the canvas unlocked), **Delete** or **Backspace** removes it. Duplicate and delete are otherwise available from the right-click context menu on any selected object.
+| Shortcut | Action |
+|---|---|
+| Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) | Undo / redo |
+| Ctrl + / Ctrl − / Ctrl 0 | Zoom in / zoom out / zoom to 100% |
+| Ctrl + mouse wheel | Zoom around the pointer |
+| Ctrl+B / Ctrl+I / Ctrl+U | Bold / italic / underline (text selected) |
+| Delete or Backspace | Remove the selected layout object |
+| Ctrl+C (Data View) | Copy the selected cells |
+
+Duplicate, lock, arrange and delete are also on the floating object bar and the right-click menu.
 
 ### Libraries & versions
 
@@ -529,13 +670,14 @@ The only keyboard shortcut in the app: with a layout object selected (and the ca
 | D3.js | bundled (v7.9.0, ISC) | local file (`vendor/d3-7.9.0.min.js`), not CDN |
 | Fabric.js | 5.3.0 | cdnjs |
 | MathJax | 3.2.2 (`es5/tex-svg.js`) | cdnjs |
-| KaTeX | 0.16.11 | cdnjs |
-| math.js | 12.4.3 | cdnjs — numeric expression evaluator for the Function Plot panels |
+| math.js | 12.4.3 | cdnjs — expression evaluation in Data View formulas |
 | Papa Parse | 5.4.1 | cdnjs |
 | SheetJS (xlsx) | 0.18.5 | cdnjs — Excel `.xlsx`/`.xls` import |
 | AG Grid Community | 35.3.0 | cdnjs |
-| jStat | 1.9.6 | cdnjs — Data View column statistics |
 | marked | 16.3.0 | cdnjs — renders this README as HTML on the splash screen |
+| jsPDF | 2.5.1 | cdnjs — PDF export |
+| svg2pdf.js | 2.2.3 | cdnjs — vector charts in PDF export |
+| iconify-icon | 2.1.0 | code.iconify.design — chart-type icons |
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
@@ -557,10 +699,10 @@ The only keyboard shortcut in the app: with a layout object selected (and the ca
 > SVG export is chart-only — see [Export details](#export-details).
 
 > [!NOTE]
-> Radial rings charts don't support the secondary Y-axis toggle (it's a single-axis polar layout), and the choropleth map's first render has a brief "Memuat peta…" placeholder while its base-map topojson is fetched (then cached).
+> Radial rings charts don't support the secondary Y-axis toggle (it's a single-axis polar layout), and a map's first render shows a brief "Memuat peta…" placeholder while its base-map topojson loads from `vendor/topojson/` (then cached).
 
 > [!TIP]
-> All 18 chart types are fully functional and ready to use.
+> All 25 chart types are fully functional and ready to use.
 
 </details>
 
@@ -573,16 +715,15 @@ This project only exists because of the following open-source libraries and free
 - **[D3.js](https://d3js.org/)** — the charting engine behind every chart type (scales, axes, shapes, layouts, d3-geo maps) and the SVG/PNG rendering itself
 - **[Fabric.js](http://fabricjs.com/)** — powers the full-page layout editor: draggable/resizable text, shapes, and the LaTeX objects that sit on top of the chart
 - **[MathJax](https://www.mathjax.org/)** — renders LaTeX (`$...$`) typed into the formula tool as real typeset math, live, on the canvas
-- **[KaTeX](https://katex.org/)** — fast, synchronous LaTeX preview for the standalone Function Plot Studio
-- **[math.js](https://mathjs.org/)** — evaluates the typed formulas in both Function Plot panels
+- **[math.js](https://mathjs.org/)** — evaluates expressions in Data View formulas
 - **[Papa Parse](https://www.papaparse.com/)** — makes CSV/TSV import reliable, even with messy real-world data (quoted fields, embedded commas, escaped quotes)
 - **[SheetJS](https://sheetjs.com/)** — reads Excel `.xlsx`/`.xls` files (including multi-sheet workbooks) directly in the browser
 - **[AG Grid](https://www.ag-grid.com/)** (Community edition) — the editable spreadsheet-style table behind the Data View
-- **[jStat](https://jstat.github.io/)** — powers the column statistics in the Data View
 - **[marked](https://marked.js.org/)** — renders this README as HTML on the app's splash screen
+- **[jsPDF](https://github.com/parallax/jsPDF)** and **[svg2pdf.js](https://github.com/yWorks/svg2pdf.js)** — PDF export, with the chart kept as vector graphics
 - **[Google Fonts](https://fonts.google.com/)** — serves the typography options used throughout the app
 - **[Material Symbols](https://fonts.google.com/icons)** — the icon set used across the toolbar and sidebar
-- **[Iconify](https://iconify.design/)** — reserve icon source (Phosphor, Solar, Tabler, Fluent System Icons) for anything Material Symbols doesn't cover
+- **[Iconify](https://iconify.design/)** — the chart-type icons (Material Design Icons)
 - **[GitHub Pages](https://pages.github.com/)** — hosts this app for free, straight from the repository, with no server to maintain
 - **[cdnjs / Cloudflare](https://cdnjs.com/)** — serves every CDN-loaded library above reliably to every visitor
 - **[Shields.io](https://shields.io/)** — the badges at the top of this README

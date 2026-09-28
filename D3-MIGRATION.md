@@ -110,13 +110,21 @@ membuka Format Axis, detach/reattach legend, dan export (SVG → PNG) semua tipe
 
 - **Sankey** memakai layout sendiri (kolom = jalur terpanjang dari sumber,
   tinggi = throughput, 8 putaran relaksasi) karena modul d3-sankey tidak
-  termasuk dalam bundel D3.
+  termasuk dalam bundel D3. Link digambar sebagai pita berisi (dua kurva
+  tepi), bukan stroke tebal: stroke yang lebih lebar dari jarak antarkolom
+  melipat di tikungan dan muncul "sayap" aneh. Semua label ada di kanan
+  node, dengan margin kanan untuk label kolom terakhir, supaya label kolom
+  tengah tidak saling tumpuk.
 - **Ridge plot** sekarang memakai frame, jadi Format Axis, grid, tick, font,
   dan format angka berlaku di sumbu nilainya (SVG lama mengabaikan semuanya).
   Baris teratas diberi ruang agar puncak ridge tidak terpotong.
 - **Scatter matrix** menuliskan nama variabel di panel diagonal (dulu kosong).
 - **Radial rings** dan **sunburst** tetap memakai SVG buatannya sendiri, tapi
   sekarang lewat jalur render/export yang sama dengan tipe D3 lain.
+  Label luar radial rings sekarang memakai sisi yang benar (sudut diukur
+  searah jarum jam dari jam 12, jadi 0–180° = kanan), jari-jari menyusut
+  agar label terlebar muat, dan label yang berdekatan didorong terpisah
+  dengan garis penunjuk.
 - Frame: band axis menerima `align` (letak padding luar).
 
 ## Tahap 4 — peta, dan Plotly dihapus

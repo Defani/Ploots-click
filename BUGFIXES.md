@@ -37,9 +37,9 @@ chart types survive repeated switching, 0 console errors from app code.
 8. Minor: empty data now clears the canvas for every custom chart type;
    duplicate `borderColor` key in the Data View grid theme removed.
 
-Not changed: `js/function_plot.js` and `js/standalone_function_plot.js` are
-still present but not loaded by index.html (the Function Plot panel is
-empty) — left as-is pending a decision to restore or delete that feature.
+`js/function_plot.js` and `js/standalone_function_plot.js` were not loaded
+by index.html (the Function Plot panel was empty) and still targeted Plotly;
+they have since been deleted along with the feature.
 
 ## Follow-up — axis line thickness
 

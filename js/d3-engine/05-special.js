@@ -337,25 +337,31 @@
   function renderSankey(gd) {
     var C = base(), st = C.st, data = sankeyData(st, C.vis);
     if (!data) return PD.renderBlank(gd);
-    var W = st.chartBox.w, H = st.chartBox.h, m = { t: 20, r: 20, b: 20, l: 20 }, nodeW = 16, pad = 14;
+    // Every label sits to the right of its node, so each gap holds one label;
+    // the right margin makes room for the last column's (the sinks') labels.
+    var sinkLabelW = d3.max(data.nodes, function (n) { return n.outs.length ? 0 : PD.richSize(n.name, C.size, C.font).w; }) || 0;
+    var W = st.chartBox.w, H = st.chartBox.h, m = { t: 20, r: 20 + sinkLabelW + 6, b: 20, l: 20 }, nodeW = 16, pad = 14;
     var iw = W - m.l - m.r, ih = H - m.t - m.b;
     layoutSankey(data, iw, ih, nodeW, pad);
     var svg = PD.mount(gd, W, H, C.bg);
     gd._plootsD3 = null;
     var g = svg.append("g").attr("class", "sankey").attr("transform", "translate(" + m.l + "," + m.t + ")");
     var nodeColor = data.nodes.map(function (n, i) { return C.gray ? grayForIndex(i) : C.palette[i % C.palette.length]; });
-    var lg = g.append("g").attr("class", "links").attr("fill", "none");
+    // Links are filled ribbons (top and bottom edge curves), not thick strokes:
+    // a stroke wider than the column gap folds over itself on the curve.
+    var lg = g.append("g").attr("class", "links");
     data.links.forEach(function (l) {
-      var s = data.nodes[l.s], t = data.nodes[l.t], x0 = s.x1, x1 = t.x0, xm = (x0 + x1) / 2;
-      lg.append("path").attr("d", "M" + x0 + "," + l.y0 + "C" + xm + "," + l.y0 + " " + xm + "," + l.y1 + " " + x1 + "," + l.y1)
-        .attr("stroke", hexToRgba(nodeColor[l.s], 0.42)).attr("stroke-width", Math.max(1, l.w));
+      var s = data.nodes[l.s], t = data.nodes[l.t], x0 = s.x1, x1 = t.x0, xm = (x0 + x1) / 2, hw = Math.max(0.5, l.w / 2);
+      var a0 = l.y0 - hw, a1 = l.y1 - hw, b0 = l.y0 + hw, b1 = l.y1 + hw;
+      lg.append("path").attr("d", "M" + x0 + "," + a0 + "C" + xm + "," + a0 + " " + xm + "," + a1 + " " + x1 + "," + a1 +
+        "L" + x1 + "," + b1 + "C" + xm + "," + b1 + " " + xm + "," + b0 + " " + x0 + "," + b0 + "Z")
+        .attr("fill", hexToRgba(nodeColor[l.s], 0.42));
     });
     var ng = g.append("g").attr("class", "nodes");
     data.nodes.forEach(function (n, i) {
       ng.append("rect").attr("x", n.x0).attr("y", n.y0).attr("width", nodeW).attr("height", Math.max(1, n.y1 - n.y0))
         .attr("fill", nodeColor[i]).attr("stroke", C.gray ? "#ffffff" : "#3a3a36").attr("stroke-width", 0.5);
-      var right = n.x0 < iw / 2;
-      PD.richText(ng, n.name, { x: right ? n.x1 + 6 : n.x0 - 6, y: (n.y0 + n.y1) / 2, size: C.size, family: C.font, color: "#1a1a1a", anchor: right ? "start" : "end", valign: "middle", halo: halo(C), haloW: 3 });
+      PD.richText(ng, n.name, { x: n.x1 + 6, y: (n.y0 + n.y1) / 2, size: C.size, family: C.font, color: "#1a1a1a", anchor: "start", valign: "middle", halo: halo(C), haloW: 3 });
     });
   }
 
