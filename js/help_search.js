@@ -82,6 +82,9 @@
     { title: 'Layout items', panel: 'panel-map', section: 'gisItemsSec', icon: 'dashboard_customize',
       desc: 'Legend, scale bar, north arrow, inset map and color bar as movable page items.',
       kw: 'map legend scale bar north arrow inset overview layout color bar colorbar colormap extend' },
+    { title: 'Data catalog', panel: 'panel-catalog', section: null, icon: 'travel_explore',
+      desc: 'Government (Kemenhut/KLHK, BNPB, BIG) and GFW layers, GBIF and iNaturalist species records.',
+      kw: 'catalog data gfw global forest watch klhk kemenhut kehutanan bnpb big government gbif inaturalist species occurrence download' },
     { title: 'Attribute table', panel: 'panel-map', section: 'gisLayers', icon: 'table',
       desc: 'View, edit, select and export features of a vector layer.',
       kw: 'attribute table features select edit export csv geojson' }

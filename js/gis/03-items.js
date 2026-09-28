@@ -299,7 +299,7 @@
       if (sizes) { y += 4; drawSizes(null); }
     });
     function drawSwatch(color, l, kind, x, cy) {
-      var s = l.style;
+      var s = l.style || { fillOpacity: 0.45, strokeWidth: 0.8, strokeColor: "#9a978c", lineWidth: 1, pointRadius: 4, renderer: "simple" };
       if (s && s.renderer === "proportional") kind = "point";
       if (kind === "line") add(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), selectable: false, evented: false }));
       else if (kind === "point") add(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeColor, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));

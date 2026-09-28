@@ -993,6 +993,45 @@ body.gis-mode .tb-chart,body:not(.gis-mode) .tb-map{display:none!important}
 .tb-tile.checked iconify-icon{color:var(--accent)}
 .tb-export{display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:9px;font-weight:600;font-size:13px;white-space:nowrap}
 .tb-export .material-symbols-outlined{font-size:18px}
+/* Data catalog (js/gis/08-catalog.js) */
+body:not(.gis-mode) .nav-catalog{display:none}
+.cat-body{padding:0 20px 10px}
+.cat-tabs{margin:4px 0 12px}
+.cat-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.cat-row input[type=search]{flex:1;min-width:0}
+.cat-check{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--ink-soft);white-space:nowrap}
+.cat-check input{margin:0}
+.cat-crumbs{font-size:11.5px;color:var(--ink-soft);margin:10px 0 6px;line-height:1.5;word-break:break-word}
+.cat-crumbs a{color:var(--accent);cursor:pointer}
+.cat-crumbs b{color:var(--ink);font-weight:600}
+.cat-list{display:flex;flex-direction:column;gap:3px;max-height:calc(100vh - 330px);overflow:auto}
+.cat-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 8px;cursor:pointer;color:var(--ink);font-size:12px;min-width:0}
+.cat-item:hover{border-color:var(--accent)}
+.cat-item .material-symbols-outlined{font-size:18px;color:var(--ink-soft);flex:none}
+.cat-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;display:flex;flex-direction:column}
+.cat-name small{color:var(--ink-soft);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-year{font-style:normal;font-size:10px;font-weight:600;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:1px 6px;flex:none}
+.cat-types{font-size:10px;color:var(--ink-soft);flex:none}
+.cat-back{display:flex;align-items:center;gap:4px;border:none;background:none;color:var(--accent);cursor:pointer;padding:2px 0 6px;font-size:12px}
+.cat-desc{font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.45}
+.cat-sub{font:600 10.5px Inter,'Segoe UI',Arial,sans-serif;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);margin:10px 0 4px}
+.cat-layer{display:flex;align-items:center;gap:6px;padding:5px 4px;border-bottom:1px solid var(--line);font-size:12px}
+.cat-add{border:1px solid var(--line-strong);background:var(--panel);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--ink);flex:none}
+.cat-add:hover{border-color:var(--accent);color:var(--accent)}
+.cat-add.wide{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:7px}
+.cat-add:disabled{opacity:.5}
+.cat-ac{position:relative}
+.cat-ac-list{position:absolute;left:0;right:0;top:100%;z-index:40;background:var(--panel);border:1px solid var(--line-strong);border-radius:8px;box-shadow:0 8px 24px var(--shadow);max-height:260px;overflow:auto}
+.cat-ac-list:empty{display:none}
+.cat-ac-item{padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--line)}
+.cat-ac-item:hover{background:var(--panel-2)}
+.cat-ac-item em{color:var(--ink-soft);font-size:10.5px}
+.cat-ac-item small{display:block;color:var(--ink-soft);font-size:10.5px}
+.cat-picked{display:flex;align-items:center;gap:5px;font-size:12px;margin-top:6px;color:var(--ink)}
+.cat-picked:empty{display:none}
+.cat-picked .material-symbols-outlined{font-size:16px;color:#2e9d57}
+.cat-picked em{color:var(--ink-soft);font-size:11px}
+#catFetch,#catDensity{display:flex;align-items:center;justify-content:center;gap:6px}
 /* Each mode shows its own menus: charts hide Map, maps hide the chart menus. */
 body:not(.gis-mode) .nav-btn[data-panel="panel-map"]{display:none}
 body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-panel="panel-axis"],body.gis-mode .nav-btn[data-panel="panel-legend"],body.gis-mode .nav-btn[data-panel="panel-color"],body.gis-mode #navDataToggle,body.gis-mode .nav-sep-chart{display:none}
@@ -2444,6 +2483,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/05-attribute-table.js"></script>
 <script src="js/gis/06-panel.js"></script>
 <script src="js/gis/07-home.js"></script>
+<script src="js/gis/08-catalog.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>

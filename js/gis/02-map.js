@@ -36,20 +36,45 @@
   var GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
   var FONT = ["Noto Sans Regular"];
   var OSM = "© OpenStreetMap contributors";
+  var ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+  // Yesterday (UTC): the newest complete day of NASA's daily VIIRS mosaic.
+  var GIBS_DAY = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
   var BASEMAPS = [
-    { id: "positron", label: "OpenFreeMap Positron", style: "https://tiles.openfreemap.org/styles/positron", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
-    { id: "bright", label: "OpenFreeMap Bright", style: "https://tiles.openfreemap.org/styles/bright", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
-    { id: "liberty", label: "OpenFreeMap Liberty", style: "https://tiles.openfreemap.org/styles/liberty", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
-    { id: "dark", label: "OpenFreeMap Dark", style: "https://tiles.openfreemap.org/styles/dark", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
-    { id: "fiord", label: "OpenFreeMap Fiord", style: "https://tiles.openfreemap.org/styles/fiord", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
-    { id: "demotiles", label: "MapLibre Demo Tiles", style: "https://demotiles.maplibre.org/style.json", attr: "MapLibre" },
-    { id: "osm", label: "OpenStreetMap", tiles: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", attr: OSM, maxzoom: 19 },
-    { id: "carto-light", label: "CARTO Light", tiles: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
-    { id: "carto-dark", label: "CARTO Dark", tiles: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
-    { id: "esri-imagery", label: "Esri World Imagery", tiles: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr: "Esri, Maxar, Earthstar Geographics" },
-    { id: "esri-topo", label: "Esri World Topo", tiles: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", attr: "Esri" },
-    { id: "opentopomap", label: "OpenTopoMap", tiles: "https://tile.opentopomap.org/{z}/{x}/{y}.png", attr: "© OpenTopoMap (CC-BY-SA) " + OSM, maxzoom: 17 },
-    { id: "none", label: "None" }
+    { id: "positron", group: "Vector (OpenFreeMap)", label: "Positron", style: "https://tiles.openfreemap.org/styles/positron", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
+    { id: "bright", group: "Vector (OpenFreeMap)", label: "Bright", style: "https://tiles.openfreemap.org/styles/bright", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
+    { id: "liberty", group: "Vector (OpenFreeMap)", label: "Liberty", style: "https://tiles.openfreemap.org/styles/liberty", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
+    { id: "dark", group: "Vector (OpenFreeMap)", label: "Dark", style: "https://tiles.openfreemap.org/styles/dark", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
+    { id: "fiord", group: "Vector (OpenFreeMap)", label: "Fiord", style: "https://tiles.openfreemap.org/styles/fiord", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
+    { id: "demotiles", group: "Vector (OpenFreeMap)", label: "MapLibre Demo Tiles", style: "https://demotiles.maplibre.org/style.json", attr: "MapLibre" },
+    { id: "esri-imagery", group: "Imagery", label: "Esri World Imagery", tiles: ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", attr: "Esri, Maxar, Earthstar Geographics" },
+    { id: "s2cloudless-2024", group: "Imagery", label: "Sentinel-2 cloudless 2024 (EOX)", tiles: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg", attr: "Sentinel-2 cloudless by EOX IT Services (CC BY-NC-SA 4.0), contains Copernicus Sentinel data", maxzoom: 15 },
+    { id: "s2cloudless-2023", group: "Imagery", label: "Sentinel-2 cloudless 2023 (EOX)", tiles: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg", attr: "Sentinel-2 cloudless by EOX IT Services (CC BY-NC-SA 4.0), contains Copernicus Sentinel data", maxzoom: 15 },
+    { id: "viirs-daily", group: "Imagery", label: "NASA VIIRS true color (" + GIBS_DAY + ")", tiles: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/" + GIBS_DAY + "/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg", attr: "NASA EOSDIS GIBS", maxzoom: 9 },
+    { id: "bluemarble", group: "Imagery", label: "NASA Blue Marble", tiles: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg", attr: "NASA EOSDIS GIBS", maxzoom: 8 },
+    { id: "esri-topo", group: "Topographic", label: "Esri World Topo", tiles: ESRI + "World_Topo_Map/MapServer/tile/{z}/{y}/{x}", attr: "Esri" },
+    { id: "opentopomap", group: "Topographic", label: "OpenTopoMap", tiles: "https://tile.opentopomap.org/{z}/{x}/{y}.png", attr: "© OpenTopoMap (CC-BY-SA) " + OSM, maxzoom: 17 },
+    { id: "esri-terrain", group: "Topographic", label: "Esri World Terrain", tiles: ESRI + "World_Terrain_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri, USGS, NOAA", maxzoom: 13 },
+    { id: "esri-relief", group: "Topographic", label: "Esri Shaded Relief", tiles: ESRI + "World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}", attr: "Esri", maxzoom: 13 },
+    { id: "esri-physical", group: "Topographic", label: "Esri World Physical", tiles: ESRI + "World_Physical_Map/MapServer/tile/{z}/{y}/{x}", attr: "Esri, US National Park Service", maxzoom: 8 },
+    { id: "esri-natgeo", group: "Topographic", label: "Esri National Geographic", tiles: ESRI + "NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}", attr: "Esri, National Geographic", maxzoom: 16 },
+    { id: "esri-ocean", group: "Topographic", label: "Esri Ocean", tiles: ESRI + "Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri, GEBCO, NOAA", maxzoom: 13 },
+    { id: "osm", group: "Streets", label: "OpenStreetMap", tiles: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", attr: OSM, maxzoom: 19 },
+    { id: "osm-hot", group: "Streets", label: "OpenStreetMap Humanitarian", tiles: "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", attr: OSM + ", tiles by HOT / OSM France", maxzoom: 19 },
+    { id: "cyclosm", group: "Streets", label: "CyclOSM", tiles: "https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", attr: OSM + ", CyclOSM", maxzoom: 19 },
+    { id: "carto-voyager", group: "Streets", label: "CARTO Voyager", tiles: "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
+    { id: "esri-street", group: "Streets", label: "Esri World Street Map", tiles: ESRI + "World_Street_Map/MapServer/tile/{z}/{y}/{x}", attr: "Esri" },
+    { id: "carto-light", group: "Light & dark", label: "CARTO Light", tiles: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
+    { id: "carto-dark", group: "Light & dark", label: "CARTO Dark", tiles: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
+    { id: "esri-lightgray", group: "Light & dark", label: "Esri Light Gray", tiles: ESRI + "Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri", maxzoom: 16 },
+    { id: "esri-darkgray", group: "Light & dark", label: "Esri Dark Gray", tiles: ESRI + "Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri", maxzoom: 16 },
+    { id: "gbif-classic", group: "GBIF", label: "GBIF Classic", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-classic", attr: "GBIF, " + OSM },
+    { id: "gbif-light", group: "GBIF", label: "GBIF Light", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-light", attr: "GBIF, " + OSM },
+    { id: "gbif-dark", group: "GBIF", label: "GBIF Dark", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-dark", attr: "GBIF, " + OSM },
+    { id: "gbif-geyser", group: "GBIF", label: "GBIF Geyser", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-geyser", attr: "GBIF, " + OSM },
+    { id: "gbif-tuatara", group: "GBIF", label: "GBIF Tuatara", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-tuatara", attr: "GBIF, " + OSM },
+    { id: "gbif-middle", group: "GBIF", label: "GBIF Middle", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-middle", attr: "GBIF, " + OSM },
+    { id: "gbif-osm-bright", group: "GBIF", label: "GBIF OSM Bright", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=osm-bright", attr: "GBIF, " + OSM },
+    { id: "none", group: "None", label: "None" }
   ];
   GIS.BASEMAPS = BASEMAPS;
 
@@ -250,6 +275,14 @@
       if (l.kind === "xyz") {
         setSource(id, { type: "raster", tiles: [l.url], tileSize: 256 }, l.url);
         put(id + "-r", { type: "raster", source: id, layout: { visibility: vis }, paint: { "raster-opacity": l.opacity } });
+        return;
+      }
+      if (l.kind === "mvt") {
+        setSource(id, { type: "vector", tiles: [l.url], maxzoom: l.maxzoom || 14 }, l.url);
+        var sl = l.sourceLayer;
+        put(id + "-fill", { type: "fill", source: id, "source-layer": sl, filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false], layout: { visibility: vis }, paint: { "fill-color": l.color, "fill-opacity": 0.45 * l.opacity } });
+        put(id + "-line", { type: "line", source: id, "source-layer": sl, layout: { visibility: vis }, paint: { "line-color": l.color, "line-width": 0.8, "line-opacity": l.opacity } });
+        put(id + "-point", { type: "circle", source: id, "source-layer": sl, filter: ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false], layout: { visibility: vis }, paint: { "circle-color": l.color, "circle-radius": 4, "circle-opacity": l.opacity } });
         return;
       }
       if (l.kind === "raster") {
@@ -516,7 +549,7 @@
     var parts = [];
     var b = basemapDef(state.mapBasemap);
     if (b.attr) parts.push(b.attr);
-    GIS.layers.forEach(function (l) { if (l.kind === "xyz" && l.visible && l.attribution) parts.push(l.attribution); });
+    GIS.layers.forEach(function (l) { if ((l.kind === "xyz" || l.kind === "mvt" || l.kind === "vector") && l.visible && l.attribution && parts.indexOf(l.attribution) < 0) parts.push(l.attribution); });
     return parts.join(" · ");
   }
 
@@ -568,6 +601,14 @@
   function onMapClick(e) {
     if (!M || !M.interactive || M.boxDragged) return;
     var l = GIS.active();
+    if (l && l.kind === "mvt" && M.tool === "identify") {
+      var hm = M.map.queryRenderedFeatures(e.point, { layers: ["-fill", "-line", "-point"].map(function (x) { return "gis-" + l.id + x; }).filter(function (x) { return M.map.getLayer(x); }) });
+      if (!hm.length) return;
+      var pr = hm[0].properties;
+      new maplibregl.Popup({ maxWidth: "300px" }).setLngLat(e.lngLat).setHTML('<div class="gj-popup-title">' + esc(l.name) + '</div><table class="gj-popup">' +
+        Object.keys(pr).slice(0, 40).map(function (k) { return "<tr><th>" + esc(k) + "</th><td>" + esc(pr[k]) + "</td></tr>"; }).join("") + "</table>").addTo(M.map);
+      return;
+    }
     if (!l || l.kind !== "vector") return;
     var hit = M.map.queryRenderedFeatures(e.point, { layers: queryLayers(l) });
     if (M.tool === "select") {
