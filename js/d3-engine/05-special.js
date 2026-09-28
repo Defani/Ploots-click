@@ -69,7 +69,7 @@
   function renderStems(gd, kind) {
     var C = base(), st = C.st, vis = C.vis, c = C.vertical;
     if (kind === "dumbbell" && vis.length < 2) {
-      return PD.placeholder(gd, "Butuh minimal 2 seri visible (mis. \"sebelum\" & \"sesudah\") untuk Dumbbell chart.");
+      return PD.placeholder(gd, "A dumbbell chart needs at least 2 visible series (e.g. \"before\" and \"after\").");
     }
     if (!vis.length) return PD.renderBlank(gd);
     var catName = c ? "x" : "y", valName = c ? "y" : "x";
@@ -372,7 +372,7 @@
     var rows = C.vis.map(function (e) {
       return { e: e, label: st.seriesMeta[e].label || e, values: (st.seriesData[e] || []).filter(fin) };
     }).filter(function (r) { return r.values.length >= 2; });
-    if (!rows.length) return PD.placeholder(gd, "Butuh minimal 1 seri numerik (≥ 2 titik) untuk menghitung KDE.");
+    if (!rows.length) return PD.placeholder(gd, "A ridge plot needs at least 1 numeric series with 2 or more values.");
     var all = [];
     rows.forEach(function (r) { all = all.concat(r.values); });
     var lo = d3.min(all), hi = d3.max(all), pad = (hi - lo) * 0.15 || Math.abs(hi || 1) * 0.15 || 1;

@@ -10,7 +10,7 @@
    otherwise country names via the country-regex table (geo-country-regex.js).
 
    Behaviour kept from the Plotly version (11-choropleth.js, 19-bubble-map.js):
-     - every state.choropleth* setting from the "Peta (Choropleth)" sidebar
+     - every state.choropleth* setting from the "Choropleth map" sidebar
        section: world atlas (scope + projection) or custom GeoJSON with
        featureidkey and fit-to-bounds, continuous or classed (equal
        interval / quantile) colouring, manual z range, reversed scale,
@@ -97,7 +97,7 @@
         .catch(function (err) {
           loading[name] = null;
           var gd = document.getElementById("plotlyDiv");
-          if (gd) PD.placeholder(gd, "Gagal memuat peta dasar: " + err.message);
+          if (gd) PD.placeholder(gd, "Could not load the base map: " + err.message);
         });
     }
     return null;
@@ -252,11 +252,11 @@
     if (!C.series) return PD.renderBlank(gd);
     var custom = st.choroplethGeoMode === "custom";
     if (custom && !st.choroplethGeoJsonObj) {
-      return PD.placeholder(gd, "Tempel atau unggah GeoJSON kustom di panel \"Peta (Choropleth)\" pada sidebar untuk merender peta ini.");
+      return PD.placeholder(gd, "Add a custom GeoJSON in the Choropleth map panel.");
     }
     var scope = custom ? "world" : (st.choroplethScope || "world");
     var A = getAtlas(scope);
-    if (!A) return PD.placeholder(gd, "Memuat peta…");
+    if (!A) return PD.placeholder(gd, "Loading map…");
 
     var locs = st.categories, z = st.seriesData[C.series] || [];
     var label = st.seriesMeta[C.series].label || C.series;
@@ -352,7 +352,7 @@
     });
     if (!pts.length) return PD.renderBlank(gd);
     var A = getAtlas("world");
-    if (!A) return PD.placeholder(gd, "Memuat peta…");
+    if (!A) return PD.placeholder(gd, "Loading map…");
     var label = st.seriesMeta[C.series].label || C.series;
     var lo = d3.min(pts, function (p) { return p.v; }), hi = d3.max(pts, function (p) { return p.v; });
     if (hi <= lo) hi = lo + 1;

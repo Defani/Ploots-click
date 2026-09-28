@@ -952,6 +952,18 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 .home-actions button{flex:1;padding:8px 10px}
 .home-close{position:absolute;top:14px;right:14px;border:none;background:none;color:var(--ink-soft);cursor:pointer;padding:4px;min-width:0}
 @media (max-width:600px){.home-cards{grid-template-columns:1fr}}
+/* Panel docking (29-panel-dock.js): the Design/Layers panel is a column of
+   .app next to the sidebar, so nothing floats over the canvas. */
+.app>.layers-panel{position:relative;top:auto;right:auto;bottom:auto;left:auto;height:auto;flex:none;border-left:none;border-right:1px solid var(--line)}
+.canvas-vscroll{right:0}
+.canvas-hscroll{right:16px}
+.canvas-zoom-bar{right:28px}
+body.dock-right .app>.main{order:1}
+body.dock-right .app>.layers-panel{order:2;border-right:none;border-left:1px solid var(--line)}
+body.dock-right .sidebar-container{order:3;flex-direction:row-reverse;border-right:none;border-left:1px solid var(--line)}
+body.dock-right .sidebar-nav{border-right:none;border-left:1px solid var(--line)}
+body.rp-hidden .app>.layers-panel,body.data-view-active .app>.layers-panel{display:none}
+#rightPanelBtn.active{color:var(--accent);border-color:var(--accent)}
 /* Map mode: the chart-only rail buttons step aside. */
 body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-panel="panel-axis"],body.gis-mode .nav-btn[data-panel="panel-legend"],body.gis-mode .nav-btn[data-panel="panel-color"],body.gis-mode #navDataToggle{display:none}
 </style>
@@ -982,32 +994,18 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
         <button class="tool-btn" id="toolAddImage" title="Add image"><span class="material-symbols-outlined">image</span></button>
         <input type="file" id="imageFileInput" accept="image/*" style="display:none">
         <div class="draw-tool-wrap">
-          <button class="tool-btn" id="toolDraw" title="Pen tool (freehand drawing)"><span class="material-symbols-outlined">draw</span></button>
+          <button class="tool-btn" id="toolDraw" title="Pen tool"><span class="material-symbols-outlined">ink_pen</span></button>
           <div class="draw-popover" id="drawPopover">
-            <div class="draw-mode-row">
-              <button class="draw-mode-btn active" id="drawModePen" data-mode="pen" title="Pen">
-                <span class="material-symbols-outlined">edit</span>Pen
-              </button>
-              <button class="draw-mode-btn" id="drawModeHighlighter" data-mode="highlighter" title="Highlighter">
-                <span class="material-symbols-outlined">ink_highlighter</span>Highlighter
-              </button>
-              <button class="draw-mode-btn" id="drawModeMarker" data-mode="marker" title="Marker">
-                <span class="material-symbols-outlined">brush</span>Marker
-              </button>
-              <button class="draw-mode-btn" id="drawModeEraser" data-mode="eraser" title="Eraser (draws in canvas background)">
-                <span class="material-symbols-outlined">ink_eraser</span>Eraser
-              </button>
-            </div>
             <div class="draw-opt-row">
-              <label class="field-label" style="margin-top:0;">Color</label>
-              <button class="tool-btn color-tool-btn" id="drawColorBtn" title="Pen color">
+              <label class="field-label" style="margin-top:0;">Stroke</label>
+              <button class="tool-btn color-tool-btn" id="drawColorBtn" title="Stroke color">
                 <span class="material-symbols-outlined">palette</span>
                 <span class="cp-swatch-bar" id="drawColorSwatch"></span>
               </button>
             </div>
             <div class="draw-opt-row">
-              <label class="field-label" style="margin-top:0;">Thickness</label>
-              <input type="range" id="drawThickness" min="1" max="60" step="1">
+              <label class="field-label" style="margin-top:0;">Width</label>
+              <input type="range" id="drawThickness" min="0.5" max="30" step="0.5">
               <span class="draw-opt-val" id="drawThicknessVal"></span>
             </div>
             <div class="draw-opt-row">
@@ -1015,7 +1013,8 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
               <input type="range" id="drawOpacity" min="0.05" max="1" step="0.05">
               <span class="draw-opt-val" id="drawOpacityVal"></span>
             </div>
-            <button class="btn-primary" id="drawDoneBtn" style="margin-top:10px;">Done drawing</button>
+            <div class="check-row"><input type="checkbox" id="penFill"><label for="penFill">Fill closed shapes</label></div>
+            <button class="btn-primary" id="drawDoneBtn" style="margin-top:10px;">Done</button>
           </div>
         </div>
         </div>
@@ -1036,7 +1035,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
   </div>
 
   <div class="topbar-right">
-    <button class="theme-toggle-btn" id="helpSearchBtn" title="Cari menu (seperti Help di RStudio)" aria-label="Cari menu">
+    <button class="theme-toggle-btn" id="helpSearchBtn" title="Search menus" aria-label="Search menus">
       <span class="material-symbols-outlined">help</span>
     </button>
     <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle dark mode" aria-label="Toggle dark mode">
@@ -1116,7 +1115,6 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
             <button type="button" class="active" data-pdfmode="vector">Vector</button>
             <button type="button" data-pdfmode="flatten">Flatten</button>
           </div>
-          <p class="cp-hint">Vector keeps text and shapes editable in a PDF editor. Flatten rasterizes everything into a single image, like Canva's "Flatten to PDF".</p>
         </div>
 
         <div id="exportDpiWrap">
@@ -1196,7 +1194,6 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
               <button type="button" class="swatch-btn" data-bg="#0e2a1f" style="background:#0e2a1f" title="Forest"></button>
               <button type="button" class="swatch-btn" data-bg="transparent" style="background-image:linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);background-size:8px 8px;background-position:0 0,0 4px,4px -4px,-4px 0" title="Transparent"></button>
             </div>
-            <p class="cp-hint">Sets the page background behind your chart and layout objects. "Transparent" is included in PNG exports.</p>
           </div>
         </div>
       </div>
@@ -1276,7 +1273,6 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
           <div class="side-section-head"><span class="ss-lbl"><span class="material-symbols-outlined">tune</span>Display</span><span class="material-symbols-outlined ss-chev">expand_more</span></div>
           <div class="side-section-body">
           <div class="check-row" style="margin-top:0;"><input type="checkbox" id="outlineMarker" checked><label for="outlineMarker">Outline on markers</label></div>
-          <p class="cp-hint" style="margin-top:10px;">Value labels are toggled from the toolbar above the canvas when a chart is selected.</p>
           <label class="field-label" style="margin-top:14px;">Axis line</label><input type="number" id="axisLineWidth" value="1" min="0.2" max="10" step="0.2">
           <input type="checkbox" id="showValues" style="display:none">
           <label class="field-label">Value label format</label>
@@ -1662,7 +1658,6 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
           <button type="button" role="menuitem" data-zoom="50">50%</button>
           <button type="button" role="menuitem" data-zoom="100">100%<kbd>Ctrl 0</kbd></button>
           <button type="button" role="menuitem" data-zoom="200">200%</button>
-          <div class="cz-menu-hint">Scroll to pan &middot; Ctrl + scroll or pinch to zoom</div>
         </div>
       </div>
 
@@ -1698,7 +1693,6 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
               <button type="button" class="dp-chip" id="dpPageBgChip" title="Background color"><span></span></button>
               <input type="text" class="dp-hex" id="dpPageBgHex" spellcheck="false">
             </div>
-            <p class="dp-hint">Select an object on the canvas to edit its position, size, fill and stroke.</p>
           </section>
 
           <section class="dp-sec" id="dpSecPos">
@@ -2176,7 +2170,6 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
             <div class="dv-datapane-head">
               <span class="material-symbols-outlined">dataset</span>Chart mapping
             </div>
-            <div class="dv-datapane-hint">Drag fields onto the axes to decide what the chart plots.</div>
             <!-- Row/Column shelves — Tableau-style: drag a field pill here to
                  set what drives the chart's rows vs. columns (see dv_shelves.js). -->
             <div class="dv-shelves" id="dvShelves"></div>
@@ -2189,7 +2182,6 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
             <div class="dv-top-row">
               <div class="dv-title-block">
                 <div class="dv-title">Data <span class="dv-summary" id="dvSummary"></span></div>
-                <div class="dv-hint">Click a column name to rename it · click a cell to edit · paste from Excel or Sheets</div>
               </div>
               <div class="dv-top-controls">
                 <div class="dv-sort-select-wrap">
@@ -2332,12 +2324,12 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <div class="hs-backdrop" id="hsBackdrop"></div>
 <div class="hs-panel" id="hsPanel">
   <div class="hs-header">
-    <span class="hs-title"><span class="material-symbols-outlined">help</span>Cari Menu</span>
-    <button class="cp-close" id="hsClose" title="Tutup"><span class="material-symbols-outlined">close</span></button>
+    <span class="hs-title"><span class="material-symbols-outlined">help</span>Search menus</span>
+    <button class="cp-close" id="hsClose" title="Close"><span class="material-symbols-outlined">close</span></button>
   </div>
   <div class="hs-search-wrap">
     <span class="material-symbols-outlined hs-search-icon">search</span>
-    <input type="text" id="hsSearchInput" class="hs-search-input" placeholder="Cari menu… misal: legend, warna, tick, export" autocomplete="off">
+    <input type="text" id="hsSearchInput" class="hs-search-input" placeholder="Search… e.g. legend, color, tick, export, map" autocomplete="off">
   </div>
   <div class="hs-list" id="hsList"></div>
 </div>
@@ -2427,6 +2419,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
+<script src="js/layout-editor/29-panel-dock.js"></script>
 <script src="js/undo_redo.js"></script>
 <script>
 // Registers the offline/repeat-visit cache. Uses a relative path and scope

@@ -17,7 +17,7 @@
     CHART_TYPE_DEFS.push({ category: "Bar", value: DUMBBELL_TYPE, label: "Dumbbell / Slope", icon: "mdi:dumbbell" });
   }
   if (typeof SAMPLE_DATA_BY_TYPE !== "undefined") {
-    SAMPLE_DATA_BY_TYPE[DUMBBELL_TYPE] = "Provinsi\tLuas 2015 (ribu ha)\tLuas 2023 (ribu ha)\nKalimantan Barat\t980\t845\nKalimantan Tengah\t1240\t1080\nKalimantan Timur\t760\t690\nSumatra Selatan\t540\t410\nRiau\t620\t470\nJambi\t410\t355\nPapua\t2150\t2040";
+    SAMPLE_DATA_BY_TYPE[DUMBBELL_TYPE] = "Province\tArea 2015 (thousand ha)\tArea 2023 (thousand ha)\nWest Kalimantan\t980\t845\nCentral Kalimantan\t1240\t1080\nEast Kalimantan\t760\t690\nSouth Sumatra\t540\t410\nRiau\t620\t470\nJambi\t410\t355\nPapua\t2150\t2040";
   }
   if (typeof buildChartTypeGrid === "function") buildChartTypeGrid();
   if (typeof syncChartTypeGridActive === "function") syncChartTypeGridActive();

@@ -26,7 +26,7 @@
     CHART_TYPE_DEFS.push({ category: "Circular", value: SUNBURST_TYPE, label: "Sunburst", icon: "mdi:chart-arc" });
   }
   if (typeof SAMPLE_DATA_BY_TYPE !== "undefined") {
-    SAMPLE_DATA_BY_TYPE[SUNBURST_TYPE] = "Kelas\tLuas (ha)\nVegetasi/Mangrove/Rapat\t185.4\nVegetasi/Mangrove/Sedang\t122.7\nVegetasi/Mangrove/Jarang\t76.3\nVegetasi/Non-Mangrove/Hutan Sekunder\t64.8\nVegetasi/Non-Mangrove/Semak Belukar\t41.2\nNon-Vegetasi/Tambak\t98.5\nNon-Vegetasi/Lahan Terbuka\t53.1\nNon-Vegetasi/Tubuh Air\t37.9";
+    SAMPLE_DATA_BY_TYPE[SUNBURST_TYPE] = "Class\tArea (ha)\nVegetation/Mangrove/Dense\t185.4\nVegetation/Mangrove/Medium\t122.7\nVegetation/Mangrove/Sparse\t76.3\nVegetation/Non-Mangrove/Secondary Forest\t64.8\nVegetation/Non-Mangrove/Shrubland\t41.2\nNon-Vegetation/Aquaculture\t98.5\nNon-Vegetation/Open Land\t53.1\nNon-Vegetation/Water Body\t37.9";
   }
   if (typeof buildChartTypeGrid === "function") buildChartTypeGrid();
   if (typeof syncChartTypeGridActive === "function") syncChartTypeGridActive();
@@ -108,7 +108,7 @@
     if (!el) return;
 
     if (typeof d3 === "undefined" || !d3.hierarchy) {
-      showSunburstPlaceholder("Memuat D3\u2026");
+      showSunburstPlaceholder("Loading D3\u2026");
       PlootsLazy.ensureD3().then(function () {
         if (state.chartType === SUNBURST_TYPE) render();
       });

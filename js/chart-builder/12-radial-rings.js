@@ -19,7 +19,7 @@
     CHART_TYPE_DEFS.push({ category: "Circular", value: RADIAL_TYPE, label: "Radial Rings (multi-track)", icon: "mdi:chart-donut-variant" });
   }
   if (typeof SAMPLE_DATA_BY_TYPE !== "undefined") {
-    SAMPLE_DATA_BY_TYPE[RADIAL_TYPE] = "Kategori\tSpesies A\tSpesies B\tSpesies C\nMetabolisme energi\t8.1\t7.4\t8.6\nTranskripsi\t6.5\t7.0\t6.1\nTranslasi & ribosom\t8.0\t8.3\t7.7\nReplikasi & perbaikan\t3.6\t3.9\t3.3\nTransport membran\t6.7\t6.2\t7.1\nMotilitas sel\t3.5\t3.1\t3.8\nPertahanan sel\t3.2\t2.9\t3.4\nMetabolisme lipid\t4.2\t4.5\t3.9\nMetabolisme karbohidrat\t6.8\t6.3\t7.2\nFungsi tidak diketahui\t21.6\t20.8\t22.3\nTak terklasifikasi\t8.6\t9.0\t8.2";
+    SAMPLE_DATA_BY_TYPE[RADIAL_TYPE] = "Category\tSpecies A\tSpecies B\tSpecies C\nEnergy metabolism\t8.1\t7.4\t8.6\nTranscription\t6.5\t7.0\t6.1\nTranslation & ribosome\t8.0\t8.3\t7.7\nReplication & repair\t3.6\t3.9\t3.3\nMembrane transport\t6.7\t6.2\t7.1\nCell motility\t3.5\t3.1\t3.8\nCell defense\t3.2\t2.9\t3.4\nLipid metabolism\t4.2\t4.5\t3.9\nCarbohydrate metabolism\t6.8\t6.3\t7.2\nUnknown function\t21.6\t20.8\t22.3\nUnclassified\t8.6\t9.0\t8.2";
   }
   if (typeof buildChartTypeGrid === "function") buildChartTypeGrid();
   if (typeof syncChartTypeGridActive === "function") syncChartTypeGridActive();

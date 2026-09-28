@@ -122,8 +122,7 @@ function axisFormatBuildHtml(prefix) {
     '  <div><label class="field-label" style="margin-top:0;">Min</label><input type="number" step="any" id="afpMin" value="' + (state[P + 'AxisMin'] != null ? state[P + 'AxisMin'] : '') + '"></div>' +
     '  <div><label class="field-label" style="margin-top:0;">Max</label><input type="number" step="any" id="afpMax" value="' + (state[P + 'AxisMax'] != null ? state[P + 'AxisMax'] : '') + '"></div>' +
     '</div>' +
-    '<div class="check-row" style="margin-top:12px;"><input type="checkbox" id="afpLog"' + (log ? ' checked' : '') + '><label for="afpLog">Logarithmic scale</label></div>' +
-    '<p class="afp-note">Only applies to numeric axes — has no effect on category axes.</p>';
+    '<div class="check-row" style="margin-top:12px;"><input type="checkbox" id="afpLog"' + (log ? ' checked' : '') + '><label for="afpLog">Logarithmic scale</label></div>';
 
   var tickMarksBody =
     '<div class="check-row" style="margin-top:0;"><input type="checkbox" id="afpTicksShow"' + (ticksShow ? ' checked' : '') + '><label for="afpTicksShow">Show major ticks</label></div>' +
@@ -139,8 +138,7 @@ function axisFormatBuildHtml(prefix) {
     '<div class="check-row" style="margin-top:10px;"><input type="checkbox" id="afpMinorShow"' + (minorShow ? ' checked' : '') + '><label for="afpMinorShow">Show minor ticks</label></div>';
 
   var labelsBody =
-    '<div class="check-row" style="margin-top:0;"><input type="checkbox" id="afpLabelsShow"' + (labelsShow ? ' checked' : '') + '><label for="afpLabelsShow">Show tick labels</label></div>' +
-    '<p class="afp-note">Turn off to hide the numbers/categories along this axis while keeping the tick marks and line.</p>';
+    '<div class="check-row" style="margin-top:0;"><input type="checkbox" id="afpLabelsShow"' + (labelsShow ? ' checked' : '') + '><label for="afpLabelsShow">Show tick labels</label></div>';
 
   var numberBody =
     '<label class="field-label" style="margin-top:0;">Format</label>' +
@@ -158,8 +156,7 @@ function axisFormatBuildHtml(prefix) {
     '<label class="field-label" style="margin-top:0;">Line color</label>' +
     '<input type="color" id="afpLineColor" value="' + lineColor + '" style="width:100%; height:34px; padding:2px; border:1px solid var(--line-strong); border-radius:0; cursor:pointer;">' +
     '<label class="field-label">Line width (X + Y)</label>' +
-    '<input type="number" id="afpLineWidth" value="' + lineWidth + '" min="0.2" max="10" step="0.2">' +
-    '<p class="afp-note">Dashed axis lines aren\'t supported by the chart engine, only the color and thickness here.</p>';
+    '<input type="number" id="afpLineWidth" value="' + lineWidth + '" min="0.2" max="10" step="0.2">';
 
   return '' +
     axisFormatSectionHtml('afp-axis-options', 'straighten', 'Axis Options', axisOptionsBody, true) +
@@ -319,6 +316,7 @@ function bindAxisLegendInteractions() {
 
   document.addEventListener('mousedown', function (e) {
     if (elementsLocked) return;
+    if (typeof pen !== 'undefined' && pen.active) return; // the Pen tool owns the canvas
     if (e.target.closest && e.target.closest('#axisFormatPanel')) return;
     // If the chart block is already selected in fabric (resize/move handles
     // visible), let those handles work as normal instead of stealing the

@@ -280,17 +280,13 @@ function startRulerPan(e, axis, rulerEl) {
     else startRulerPan(e, 'v', rulerLeft);
   });
 
-  // Like Figma/Canva: the wheel (or two-finger trackpad swipe) pans the
-  // canvas, Shift+wheel pans sideways, and Ctrl/Cmd+wheel or a trackpad
-  // pinch (which browsers report as ctrlKey+wheel) zooms around the pointer.
+  // Like QGIS: the mouse wheel (and a trackpad pinch, which browsers report
+  // as ctrlKey+wheel) zooms around the pointer. Shift+wheel pans sideways,
+  // Alt+wheel pans up/down, and a sideways trackpad swipe pans freely.
   if (scroller) scroller.addEventListener('wheel', function (e) {
-    if (!(e.ctrlKey || e.metaKey)) {
-      if (e.shiftKey && !e.deltaX) {
-        e.preventDefault();
-        scroller.scrollLeft += e.deltaY;
-      }
-      return;
-    }
+    if (e.shiftKey && !e.deltaX) { e.preventDefault(); scroller.scrollLeft += e.deltaY; return; }
+    if (e.altKey) { e.preventDefault(); scroller.scrollTop += e.deltaY; return; }
+    if (e.deltaX && !(e.ctrlKey || e.metaKey)) { e.preventDefault(); scroller.scrollLeft += e.deltaX; scroller.scrollTop += e.deltaY; return; }
     e.preventDefault();
     if (typeof window.getCanvasZoomPct !== 'function' || typeof window.setCanvasZoomPct !== 'function') return;
     // deltaMode 1 = lines (classic mouse wheels); normalise to pixels.

@@ -18,7 +18,7 @@
     CHART_TYPE_DEFS.push({ category: "Map", value: BUBBLE_MAP_TYPE, label: "Bubble Map", icon: "mdi:map-marker-radius" });
   }
   if (typeof SAMPLE_DATA_BY_TYPE !== "undefined") {
-    SAMPLE_DATA_BY_TYPE[BUBBLE_MAP_TYPE] = "Titik\tLuas Terdampak (ha)\nTitik Api A|-2.50,113.90\t45\nTitik Api B|-1.80,111.40\t28\nTitik Api C|-3.20,114.60\t62\nTitik Api D|-0.90,109.80\t15\nTitik Api E|-2.10,116.20\t37\nTitik Api F|-1.40,101.30\t53\nTitik Api G|-2.80,104.70\t20\nTitik Api H|-0.50,117.10\t41";
+    SAMPLE_DATA_BY_TYPE[BUBBLE_MAP_TYPE] = "Point\tBurned Area (ha)\nHotspot A|-2.50,113.90\t45\nHotspot B|-1.80,111.40\t28\nHotspot C|-3.20,114.60\t62\nHotspot D|-0.90,109.80\t15\nHotspot E|-2.10,116.20\t37\nHotspot F|-1.40,101.30\t53\nHotspot G|-2.80,104.70\t20\nHotspot H|-0.50,117.10\t41";
   }
   if (typeof buildChartTypeGrid === "function") buildChartTypeGrid();
   if (typeof syncChartTypeGridActive === "function") syncChartTypeGridActive();
