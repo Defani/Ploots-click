@@ -113,39 +113,118 @@
     return ["case", ["==", ["typeof", ["get", "__v"]], "number"], step, s.missingColor];
   }
 
+  // Per-feature value as the colour expression expects it (__v).
+  function symValues(layer) {
+    var graduated = layer.style.symbology === "graduated";
+    return values(layer).map(function (v) { return v == null ? null : graduated ? (isFinite(Number(v)) ? Number(v) : null) : String(v); });
+  }
+
+  // Label text: a template with {field} placeholders, or a single field.
+  function labelText(layer, f) {
+    var s = layer.style, p = f.properties;
+    if (s.labelTemplate) {
+      var out = s.labelTemplate.replace(/\{([^}]+)\}/g, function (m, k) {
+        var v = p[k.trim()];
+        return v == null ? "" : typeof v === "number" ? fmt(v) : String(v);
+      });
+      return out.trim() ? out : null;
+    }
+    if (!s.labelField) return null;
+    var v = p[s.labelField];
+    return v == null || v === "" ? null : typeof v === "number" ? fmt(v) : String(v);
+  }
+  function hasLabels(layer) { return !!(layer.style.labelTemplate || layer.style.labelField); }
+
+  // Anchor point of a feature: the point itself, a line's middle vertex, or
+  // the centroid of a polygon's largest part.
+  function anchor(f) {
+    var g = f.geometry;
+    if (g.type === "Point") return g.coordinates;
+    if (g.type === "MultiPoint") return g.coordinates[0];
+    if (g.type === "LineString" || g.type === "MultiLineString") {
+      var line = g.type === "LineString" ? g.coordinates : g.coordinates.reduce(function (a, c) { return c.length > a.length ? c : a; }, []);
+      return line[Math.floor(line.length / 2)];
+    }
+    if (g.type === "Polygon" || g.type === "MultiPolygon") {
+      var polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+      var best = polys.reduce(function (a, pp) { var ar = Math.abs(d3.polygonArea(pp[0])); return ar > a.ar ? { ar: ar, ring: pp[0] } : a; }, { ar: -1, ring: null });
+      return best.ring ? d3.polygonCentroid(best.ring) : null;
+    }
+    return null;
+  }
+  function isLine(f) { return /LineString$/.test(f.geometry.type); }
+  // Line labels follow the line unless placement is set to "point".
+  function linesFollow(layer) { return layer.style.labelPlacement !== "point"; }
+
   function styledData(layer) {
-    var graduated = layer.style.symbology === "graduated", vals = values(layer);
+    var vals = symValues(layer), follow = linesFollow(layer), lab = hasLabels(layer);
     return {
       type: "FeatureCollection",
       features: layer.data.features.map(function (f, i) {
-        var v = vals[i];
-        if (v != null) v = graduated ? (isFinite(Number(v)) ? Number(v) : null) : String(v);
-        return { type: "Feature", id: i, geometry: f.geometry, properties: Object.assign({}, f.properties, { __v: v, __i: i }) };
+        var extra = { __v: vals[i], __i: i };
+        if (lab && follow && isLine(f)) extra.__label = labelText(layer, f) || "";
+        return { type: "Feature", id: i, geometry: f.geometry, properties: Object.assign({}, f.properties, extra) };
       })
     };
   }
 
-  // One label point per feature: centroid of a polygon's largest part, a
-  // line's middle vertex, or the point itself.
+  // Label points (lines that follow their geometry are labelled from the
+  // main source instead).
   function labelData(layer) {
-    var field = layer.style.labelField, feats = [];
-    if (field) layer.data.features.forEach(function (f) {
-      var t = f.properties[field];
-      if (t == null || t === "") return;
-      var g = f.geometry, pt = null;
-      if (g.type === "Point") pt = g.coordinates;
-      else if (g.type === "MultiPoint") pt = g.coordinates[0];
-      else if (g.type === "LineString" || g.type === "MultiLineString") {
-        var line = g.type === "LineString" ? g.coordinates : g.coordinates.reduce(function (a, b) { return b.length > a.length ? b : a; }, []);
-        pt = line[Math.floor(line.length / 2)];
-      } else if (g.type === "Polygon" || g.type === "MultiPolygon") {
-        var polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
-        var best = polys.reduce(function (a, p) { var ar = Math.abs(d3.polygonArea(p[0])); return ar > a.ar ? { ar: ar, ring: p[0] } : a; }, { ar: -1, ring: null });
-        if (best.ring) pt = d3.polygonCentroid(best.ring);
-      }
-      if (pt) feats.push({ type: "Feature", geometry: { type: "Point", coordinates: pt }, properties: { t: String(t) } });
+    var feats = [], follow = linesFollow(layer);
+    if (hasLabels(layer)) layer.data.features.forEach(function (f) {
+      if (follow && isLine(f)) return;
+      var txt = labelText(layer, f), pt = txt && anchor(f);
+      if (pt) feats.push({ type: "Feature", geometry: { type: "Point", coordinates: pt }, properties: { t: txt } });
     });
     return { type: "FeatureCollection", features: feats };
+  }
+
+  /* ---------------------------------------- proportional size & heatmap */
+
+  function numbersOf(layer, field) {
+    return layer.data.features.map(function (f) { var v = Number(f.properties[field]); return f.properties[field] == null || f.properties[field] === "" || !isFinite(v) ? null : v; });
+  }
+  // Radius for a value: "sqrt" keeps circle AREA proportional to the value
+  // (true proportional symbols, from zero); "linear" spreads min..max over
+  // the size range.
+  function sizeScale(layer) {
+    var s = layer.style, vals = numbersOf(layer, s.sizeField).filter(fin);
+    var lo = d3.min(vals), hi = d3.max(vals);
+    if (!vals.length) return null;
+    function r(v) {
+      if (!fin(v)) return 0;
+      if (s.sizeScale === "linear") return s.sizeMin + (s.sizeMax - s.sizeMin) * ((v - lo) / ((hi - lo) || 1));
+      return Math.max(s.sizeMin, s.sizeMax * Math.sqrt(Math.max(0, v) / (Math.max(Math.abs(hi), 1e-12))));
+    }
+    return { r: r, min: lo, max: hi };
+  }
+
+  // One point per feature carrying colour value, radius and heat weight.
+  function pointData(layer) {
+    var s = layer.style, vals = symValues(layer), sc = s.renderer === "proportional" && s.sizeField ? sizeScale(layer) : null;
+    var sizes = sc ? numbersOf(layer, s.sizeField) : null, heat = s.renderer === "heatmap" && s.heatField ? numbersOf(layer, s.heatField) : null;
+    var hmax = heat ? d3.max(heat.filter(fin)) || 1 : 1, feats = [];
+    layer.data.features.forEach(function (f, i) {
+      var pt = anchor(f);
+      if (!pt) return;
+      var p = { __v: vals[i], __i: i, __r: sc ? sc.r(sizes[i]) : s.pointRadius, __w: heat ? (fin(heat[i]) ? Math.max(0, heat[i] / hmax) : 0) : 1 };
+      if (sc && !fin(sizes[i])) return;
+      feats.push({ type: "Feature", id: i, geometry: { type: "Point", coordinates: pt }, properties: p });
+    });
+    // Big circles first so small ones stay visible on top.
+    if (sc) feats.sort(function (a, b) { return b.properties.__r - a.properties.__r; });
+    return { type: "FeatureCollection", features: feats };
+  }
+
+  // Three nested reference circles for the legend (max, middle, small).
+  function sizeLegend(layer) {
+    var sc = sizeScale(layer);
+    if (!sc) return null;
+    var hi = sc.max, vals = [hi, hi / 2, hi / 8].map(function (v) { var p = Math.pow(10, Math.floor(Math.log10(Math.abs(v) || 1))); return Math.round(v / p * 2) / 2 * p; });
+    if (layer.style.sizeScale === "linear") vals = [sc.max, (sc.max + sc.min) / 2, sc.min];
+    vals = Array.from(new Set(vals.filter(function (v) { return v > 0 || layer.style.sizeScale === "linear"; })));
+    return vals.map(function (v) { return { value: v, r: sc.r(v) }; });
   }
 
   // Legend rows for one layer: [{ color, label }] (color null = note row).
@@ -165,6 +244,7 @@
   GIS.sym = {
     palette: palette, rampColors: rampColors, categories: categories, classes: classes,
     colorExpression: colorExpression, styledData: styledData, labelData: labelData, legendEntries: legendEntries,
+    pointData: pointData, sizeLegend: sizeLegend, labelText: labelText, hasLabels: hasLabels,
     RAMPS: ["YlGn", "Greens", "Blues", "YlGnBu", "GnBu", "BuPu", "OrRd", "YlOrRd", "Reds", "Purples", "Grayscale", "Viridis", "Magma", "Cividis", "Turbo", "RdYlGn", "Spectral", "BrBG", "Terrain"]
   };
 })();

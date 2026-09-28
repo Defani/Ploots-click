@@ -197,7 +197,23 @@
       box.innerHTML = h;
       return;
     }
-    var s = l.style, f = GIS.fields(l);
+    GIS.ensureStyle(l);
+    var s = l.style, f = GIS.fields(l), ren = s.renderer || "simple";
+    var numList = f.numeric.map(function (k) { return [k, k]; });
+    h += field("Renderer", select("layer:renderer", [["simple", "Features"], ["proportional", "Proportional symbols"], ["heatmap", "Heatmap"]], ren));
+    if (ren === "heatmap") {
+      h += field("Weight", '<select data-bind="layer:heatField">' + opt("", "Equal weight", !s.heatField) + options(numList, s.heatField) + "</select>");
+      h += pair(field("Radius (px)", num("layer:heatRadius", s.heatRadius, 2, 150, 1)), field("Intensity", num("layer:heatIntensity", s.heatIntensity, 0.1, 10, 0.1)));
+      h += field("Color ramp", select("layer:heatRamp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), s.heatRamp));
+      h += field("Opacity", range("layer:heatOpacity", s.heatOpacity, 0, 1, 0.05));
+      box.innerHTML = h;
+      return;
+    }
+    if (ren === "proportional") {
+      h += field("Size by", '<select data-bind="layer:sizeField">' + opt("", "— Select field —", !s.sizeField) + options(numList, s.sizeField) + "</select>");
+      h += pair(field("Min size (px)", num("layer:sizeMin", s.sizeMin, 0, 80, 0.5)), field("Max size (px)", num("layer:sizeMax", s.sizeMax, 2, 150, 0.5)));
+      h += field("Scaling", select("layer:sizeScale", [["sqrt", "Area (proportional)"], ["linear", "Linear (min–max)"]], s.sizeScale));
+    }
     h += '<div class="toggle-group" style="margin-top:10px;">' + SYMS.map(function (x) { return '<button data-sym="' + x[0] + '"' + (s.symbology === x[0] ? ' class="active"' : "") + ">" + x[1] + "</button>"; }).join("") + "</div>";
     if (s.symbology === "single") h += field("Color", color("layer:singleColor", s.singleColor));
     else {
@@ -227,7 +243,14 @@
     if (kind === "point") h += field("Point size", num("layer:pointRadius", s.pointRadius, 1, 50, 0.5));
     if (kind === "line") h += field("Line width", num("layer:lineWidth", s.lineWidth, 0.2, 30, 0.2));
     h += field("Labels", '<select data-bind="layer:labelField">' + opt("", "No labels", !s.labelField) + options(f.all.map(function (k) { return [k, k]; }), s.labelField) + "</select>");
-    if (s.labelField) h += pair(field("Size", num("layer:labelSize", s.labelSize, 6, 48, 1)), field("Color", color("layer:labelColor", s.labelColor)));
+    h += field("Label template", text("layer:labelTemplate", s.labelTemplate, "{name} ({value})"));
+    if (s.labelField || s.labelTemplate) {
+      h += pair(field("Size", num("layer:labelSize", s.labelSize, 6, 48, 1)), field("Font", select("layer:labelFont", [["regular", "Regular"], ["bold", "Bold"], ["italic", "Italic"]], s.labelFont)));
+      h += pair(field("Color", color("layer:labelColor", s.labelColor)), field("Halo", color("layer:labelHaloColor", s.labelHaloColor)));
+      h += field("Halo width", num("layer:labelHaloWidth", s.labelHaloWidth, 0, 8, 0.1));
+      if (kind === "line") h += field("Placement", select("layer:labelPlacement", [["auto", "Along the line"], ["point", "At the middle"]], s.labelPlacement));
+      h += check("layer:labelOverlap", s.labelOverlap, "Show all labels (allow overlap)");
+    }
     box.innerHTML = h;
   }
 
@@ -244,8 +267,16 @@
     var g = $("gisGrid");
     if (g) g.innerHTML =
       check("map:mapGrid", state.mapGrid, "Show grid") +
-      pair(field("Interval (°)", num("map:mapGridInterval", state.mapGridInterval, 0, 90, "any")), field("Style", select("map:mapGridStyle", [["lines", "Lines"], ["crosses", "Crosses"]], state.mapGridStyle))) +
-      pair(field("Labels", select("map:mapGridLabels", [["lb", "Left & bottom"], ["all", "All sides"], ["none", "None"]], state.mapGridLabels)), field("Format", select("map:mapGridFormat", [["dms", "Degrees, minutes"], ["decimal", "Decimal degrees"]], state.mapGridFormat))) +
+      pair(field("Type", select("map:mapGridType", [["geographic", "Geographic (°)"], ["utm", "UTM (m)"]], state.mapGridType)),
+        field(state.mapGridType === "utm" ? "Interval (m)" : "Interval (°)", num("map:mapGridInterval", state.mapGridInterval, 0, state.mapGridType === "utm" ? 1000000 : 90, "any"))) +
+      (state.mapGridType === "utm"
+        ? pair(field("UTM zone", select("map:mapGridUtmZone", [[0, "Auto (map center)"]].concat(d3.range(1, 61).map(function (z) { return [z, "Zone " + z]; })), state.mapGridUtmZone)),
+            field("Units", select("map:mapGridUnits", [["m", "Meters"], ["km", "Kilometers"]], state.mapGridUnits)))
+        : field("Format", select("map:mapGridFormat", [["dms", "Degrees, minutes"], ["decimal", "Decimal degrees"]], state.mapGridFormat))) +
+      pair(field("Labels", select("map:mapGridLabels", [["lb", "Left & bottom"], ["all", "All sides"], ["none", "None"]], state.mapGridLabels)),
+        field("Label position", select("map:mapGridLabelPos", [["inside", "Inside frame"], ["outside", "Outside frame"]], state.mapGridLabelPos))) +
+      field("Style", select("map:mapGridStyle", [["lines", "Lines"], ["crosses", "Crosses"]], state.mapGridStyle)) +
+      '<p class="status error" id="gisGridNote" style="display:none;"></p>' +
       pair(field("Color", color("map:mapGridColor", state.mapGridColor)), field("Width", num("map:mapGridWidth", state.mapGridWidth, 0.1, 5, 0.1))) +
       field("Label size", num("map:mapGridFontSize", state.mapGridFontSize, 6, 24, 1));
     var fr = $("gisFrame");
@@ -254,6 +285,8 @@
   }
 
   function syncViewInputs() {
+    var gn = $("gisGridNote");
+    if (gn) { gn.textContent = state.mapGrid && state.mapGridType === "utm" ? GIS.gridNote || "" : ""; gn.style.display = gn.textContent ? "" : "none"; }
     var sc = $("gisScale"), ro = $("gisRotation"), bm = $("gisBasemap");
     if (bm && bm.value !== state.mapBasemap) bm.value = state.mapBasemap;
     if (sc && document.activeElement !== sc) { var n = GIS.getScale ? GIS.getScale() : 0; sc.value = n ? Math.round(n) : ""; }
@@ -321,10 +354,11 @@
   function onBind(el) {
     var b = el.dataset.bind.split(":"), scope = b[0], key = b[1], v = parse(el), l = GIS.active();
     if (scope === "layer" && l) {
+      var prevTemplate = l.style.labelTemplate;
       if (key === "field" || key === "joinField") l.style.catColors = {};
       l.style[key] = v;
       GIS.emit("style");
-      if (/^(field|joinField|classes|method|ramp|reverse|labelField)$/.test(key)) renderStyle();
+      if (/^(field|joinField|classes|method|ramp|reverse|labelField|renderer|sizeField)$/.test(key) || (key === "labelTemplate" && !!v !== !!prevTemplate)) renderStyle();
     } else if (scope === "layerTop" && l) {
       l[key] = v;
       GIS.emit(key === "url" ? "layers" : "style");
@@ -338,7 +372,10 @@
       GIS.raster.restyle(l);
     } else if (scope === "map") {
       state[key] = v;
+      if (key === "mapGridUtmZone") state[key] = +v;
+      if (key === "mapGridType") state.mapGridInterval = 0; // degrees vs metres
       if (key === "mapLock") { if (v && GIS.mapActions) GIS.mapActions.setInteractive(false); renderView(); }
+      if (key === "mapGridType") renderView();
       if (typeof render === "function" && state.chartType === TYPE) render();
       if (typeof historyNotifyChange === "function") historyNotifyChange();
     } else if (scope === "item") {
