@@ -36,6 +36,7 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
   - [Chart gallery](#chart-gallery)
   - [Data View](#data-view)
   - [Editor: toolbars, Design panel & layers](#editor-toolbars-design-panel--layers)
+  - [Map workspace (GIS)](#map-workspace-gis)
   - [Page layout & annotation](#page-layout--annotation)
   - [Export](#export)
 - [Architecture](#architecture)
@@ -61,17 +62,23 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 
 ## What is this?
 
-Ploots Click is a **client-side-only web app**: open the page (or visit the GitHub Pages link below) and everything — data parsing, chart rendering, page layout, and export — happens locally in your browser tab. Nothing you paste or upload is ever sent to a server, because there is no server. The app is just static HTML, CSS, and JavaScript, deployed straight from this repository via GitHub Pages, which is why it costs nothing to run and needs zero setup.
+Ploots Click is a **client-side-only web app**: open the page (or visit the GitHub Pages link below) and everything — data parsing, chart rendering, maps, page layout, and export — happens locally in your browser tab (maps fetch their basemap tiles online). Nothing you paste or upload is ever sent to a server, because there is no server. The app is just static HTML, CSS, and JavaScript, deployed straight from this repository via GitHub Pages, which is why it costs nothing to run and needs zero setup.
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
 ## Interface
 
+The app opens on a **Home** screen: make a **Chart** from tabular data or a **Map** from spatial data, blank or from a sample.
+
+<p align="center">
+  <img src="assets/screenshots/home.png" alt="Home screen with the Chart and Map starts" width="100%">
+</p>
+
 <p align="center">
   <img src="assets/screenshots/editor-light.png" alt="Ploots Click editor: chart type gallery on the left, a grouped bar chart on an A4 page, Design panel on the right" width="100%">
 </p>
 
-The editor has three columns: the **left sidebar** (Data, Canvas, Chart, Axis, Legend, Shapes, Style, LaTeX, Export), the **page canvas** in the middle with rulers and a zoom slider, and the **right panel** with the Figma-style **Design** and **Layers** tabs. A dark theme is one click away (moon icon, top right):
+All panels sit on **one side** of the window so the page gets the most room: the rail and sidebar (Home, Data, Map, Canvas, Chart, Axis, Legend, Shapes, Style, LaTeX, Export) with the Figma-style **Design** and **Layers** panel next to them. Two buttons at the top right move the panels to the **left or right** and hide the Design/Layers panel. The page canvas has rulers, the mouse wheel zooms, and a dark theme is one click away (moon icon):
 
 <p align="center">
   <img src="assets/screenshots/editor-dark.png" alt="The same editor in dark theme" width="100%">
@@ -215,12 +222,37 @@ Every chart type, rendered by the D3 engine from its built-in sample data (click
   </tr>
 </table>
 
+### Map workspace (GIS)
+
+Pick **Map** on the Home screen (or the **Map** button in the rail) and the page's chart block becomes a **MapLibre GL** map frame, driven by its own **Map** panel. It works like a small QGIS print layout:
+
+<p align="center">
+  <img src="assets/screenshots/map-workspace.png" alt="Map workspace: ASEAN countries in graduated colors with a legend, scale bar, north arrow, inset map and coordinate grid on an A4 page" width="100%">
+</p>
+
+- **Layers**: any number of **vector** layers (GeoJSON or TopoJSON from a file, a URL or pasted text), **raster** layers (**GeoTIFF**: EPSG:4326, EPSG:3857 and WGS 84 / UTM zones; single-band on a color ramp or RGB) and **XYZ tile** layers. Reorder by drag or arrows, hide, rename, zoom to a layer.
+- **Symbology** per layer, as in QGIS: **Single symbol**, **Categorized** (a color per value, each editable) and **Graduated** (natural breaks / Jenks, quantile or equal interval on a color ramp). Values come from a feature property or are **joined from the Data table**. Labels, fill opacity, stroke, point size and line width.
+- **Basemaps**: every OpenFreeMap style (Positron, Bright, Liberty, Dark, Fiord), MapLibre demo tiles, OpenStreetMap, CARTO Light/Dark, Esri World Imagery and World Topo, OpenTopoMap, or none.
+- **Map view**: set the **scale (1:n)** and **rotation** directly, **lock** the map, or **move the content** inside the frame (double-click the map) with **Pan**, **Select** (click or drag a box) and **Identify** tools. The mouse wheel zooms the map while moving content.
+- **Coordinate grid** (graticule) with frame labels in degrees-minutes or decimal degrees, and a configurable map **frame**.
+- **Layout items**, free objects on the page that stay **linked to the map**: a **legend** built from the symbology, a **scale bar** (single box, double box, line ticks middle/down/up, stepped, hollow or numeric 1:n; units, segments, background frame), a **north arrow** (eight styles, follows the map rotation) and an **inset map** that shows the main map's extent. Move, resize and layer them like any shape; text, LaTeX and shapes from the usual tools sit alongside.
+
+<p align="center">
+  <img src="assets/screenshots/map-items.png" alt="Categorized map on Esri World Imagery with the scale bar selected and its properties in the Map panel" width="100%">
+</p>
+
+- **Attribute table** (a dock under the map): view and **edit** values, **select** features (rows and map stay in sync, selections shown in yellow), show selected only, search, add a field, delete features, and **export GeoJSON or CSV** of all features or only the selected ones.
+
+<p align="center">
+  <img src="assets/screenshots/map-attribute-table.png" alt="Attribute table under the map with two features selected, and the map tool bar with the Select tool active" width="100%">
+</p>
+
 ### Page layout & annotation
 - **Full-page canvas**, separate from the chart block: position and resize the chart anywhere on the page.
 - **10 built-in page templates** (A4/Letter/Legal landscape & portrait, 16:9 and 4:3 presentation, Instagram Story, social square) plus custom width/height in px, mm or cm, and a page background colour.
-- **Zoom** with the slider at the bottom right, Ctrl + and Ctrl − (Ctrl 0 for 100%), or Ctrl + mouse wheel. Custom **pan scrollbars**.
+- **Zoom** with the mouse wheel (around the pointer), the slider at the bottom right, or Ctrl + and Ctrl − (Ctrl 0 for 100%). Shift + wheel pans sideways; custom **pan scrollbars**.
 - **Drafting-style rulers** on the canvas edges, unit- and zoom-aware, that also act as a source for **draggable guide lines**.
-- **Layout objects** on top of the chart (Fabric.js): text boxes, 30 shapes, images and freehand drawing (pen, highlighter, marker, eraser), with lock, duplicate, delete, grouping and a right-click menu.
+- **Layout objects** on top of the chart (Fabric.js): text boxes, 30 shapes, images and a vector **Pen tool** (click for corners, drag for curves, click the first point to close), with lock, duplicate, delete, grouping and a right-click menu.
 - **LaTeX & symbol tool**: type formulas in `$...$` and see them rendered live on the canvas with MathJax (e.g. `$R^2 = 0.95$`, `$CO_2$`), with colour, size and font controls, recent formulas, ready-made templates, and a searchable symbol/unit catalog that also works in axis labels.
 - **Undo/redo** for chart settings and canvas objects alike, and a **help search** (question-mark icon) that finds any menu or setting by name.
 
@@ -335,7 +367,7 @@ flowchart TD
 │   │   ├── 13-axis-title-detach.js #  detach X/Y axis titles into free text
 │   │   ├── 14-legend-hover.js     #   drag the chart legend on the canvas
 │   │   ├── 15-legend-detach.js    #   detach the legend into a free-floating group
-│   │   ├── 16-draw-tool.js        #   freehand Draw tool (pen / highlighter / marker / eraser)
+│   │   ├── 16-draw-tool.js        #   Pen tool: vector paths with corner and curve anchors
 │   │   ├── 17-textbox-resize.js   #   text boxes resize their width instead of stretching the text
 │   │   ├── 18-chart-quickbar.js   #   floating quick controls when the chart is selected
 │   │   ├── 19-axis-tick-float.js  #   "Axis Tick Line" block in the Axis tab
@@ -347,7 +379,17 @@ flowchart TD
 │   │   ├── 25-design-panel.js     #   Figma-style Design tab (position, size, fill/gradient, stroke, shadow)
 │   │   ├── 26-selection-hud.js    #   W × H badge and distance guides for the selection
 │   │   ├── 27-object-float-bar.js #   floating bars for shapes, images, formulas, groups
-│   │   └── 28-axis-controls-sync.js # keeps the Axis tab's controls and the Format Axis panel in sync
+│   │   ├── 28-axis-controls-sync.js # keeps the Axis tab's controls and the Format Axis panel in sync
+│   │   └── 29-panel-dock.js       #   panels on one side (left/right), hide the Design/Layers panel
+│   ├── gis/                       # Map workspace (MapLibre GL)
+│   │   ├── 00-store.js            #   layers (vector / raster / XYZ), selection, export GeoJSON/CSV
+│   │   ├── 01-symbology.js        #   single / categorized / graduated (Jenks, quantile, equal)
+│   │   ├── 02-map.js              #   the map frame: basemaps, layers, grid, frame, scale, rotation, tools
+│   │   ├── 03-items.js            #   legend, scale bar, north arrow, inset map as page items
+│   │   ├── 04-raster.js           #   GeoTIFF reading and rendering (geotiff.js)
+│   │   ├── 05-attribute-table.js  #   attribute table dock
+│   │   ├── 06-panel.js            #   the Map panel
+│   │   └── 07-home.js             #   Home screen
 │   ├── data_view.js               # Data View: AG Grid table, wide/long reshape, transpose
 │   ├── dv_shelves.js              # Data View chart-mapping shelves (drag fields onto X / Y)
 │   ├── data_formulas.js           # Data View spreadsheet formulas (=SUM, =AVERAGE, ...)
@@ -656,10 +698,13 @@ Cap width and line thickness are independently adjustable, and the error bar col
 |---|---|
 | Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) | Undo / redo |
 | Ctrl + / Ctrl − / Ctrl 0 | Zoom in / zoom out / zoom to 100% |
-| Ctrl + mouse wheel | Zoom around the pointer |
+| Mouse wheel | Zoom around the pointer (Shift: pan sideways, Alt: pan up/down) |
 | Ctrl+B / Ctrl+I / Ctrl+U | Bold / italic / underline (text selected) |
 | Delete or Backspace | Remove the selected layout object |
 | Ctrl+C (Data View) | Copy the selected cells |
+| Enter / double-click (Pen tool) | Finish the path; Backspace removes the last point, Esc leaves the tool |
+| Double-click the map | Move the map content (Pan / Select / Identify); Esc or Done to leave |
+| Shift + click (map Select tool) | Add to or remove from the selection |
 
 Duplicate, lock, arrange and delete are also on the floating object bar and the right-click menu.
 
@@ -678,13 +723,15 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 | jsPDF | 2.5.1 | cdnjs — PDF export |
 | svg2pdf.js | 2.2.3 | cdnjs — vector charts in PDF export |
 | iconify-icon | 2.1.0 | code.iconify.design — chart-type icons |
+| MapLibre GL JS | 5.9.0 | cdnjs — the map workspace (loaded when a map is opened) |
+| geotiff.js | 2.1.3 | jsDelivr — GeoTIFF raster layers (loaded on first raster) |
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
 ## Known limitations
 
 <details>
-<summary>Click to expand — 5 known limitations</summary>
+<summary>Click to expand — 6 known limitations</summary>
 
 > [!NOTE]
 > Everything runs in the browser tab — there's no server-side processing, so very large datasets or very high-DPI exports can be slow or memory-heavy depending on the device.
@@ -700,6 +747,9 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 
 > [!NOTE]
 > Radial rings charts don't support the secondary Y-axis toggle (it's a single-axis polar layout), and a map's first render shows a brief "Memuat peta…" placeholder while its base-map topojson loads from `vendor/topojson/` (then cached).
+
+> [!NOTE]
+> Maps need an internet connection for MapLibre GL and the basemap tiles. GeoTIFFs are read in EPSG:4326, EPSG:3857 or WGS 84 / UTM and downsampled to 1600 px on the long side; other projections should be reprojected first (e.g. in QGIS).
 
 > [!TIP]
 > All 25 chart types are fully functional and ready to use.
@@ -718,6 +768,9 @@ This project only exists because of the following open-source libraries and free
 - **[math.js](https://mathjs.org/)** — evaluates expressions in Data View formulas
 - **[Papa Parse](https://www.papaparse.com/)** — makes CSV/TSV import reliable, even with messy real-world data (quoted fields, embedded commas, escaped quotes)
 - **[SheetJS](https://sheetjs.com/)** — reads Excel `.xlsx`/`.xls` files (including multi-sheet workbooks) directly in the browser
+- **[MapLibre GL JS](https://maplibre.org/)** — renders the map workspace: vector and raster layers, basemaps, rotation and export
+- **[geotiff.js](https://geotiffjs.github.io/)** — reads GeoTIFF rasters in the browser
+- **[OpenFreeMap](https://openfreemap.org/)**, **[OpenStreetMap](https://www.openstreetmap.org/copyright)**, **[CARTO](https://carto.com/basemaps)**, **[Esri](https://www.esri.com/)** and **[OpenTopoMap](https://opentopomap.org/)** — basemap tiles (attribution is drawn on every map)
 - **[AG Grid](https://www.ag-grid.com/)** (Community edition) — the editable spreadsheet-style table behind the Data View
 - **[marked](https://marked.js.org/)** — renders this README as HTML on the app's splash screen
 - **[jsPDF](https://github.com/parallax/jsPDF)** and **[svg2pdf.js](https://github.com/yWorks/svg2pdf.js)** — PDF export, with the chart kept as vector graphics

@@ -251,7 +251,8 @@
   }
 
   function syncViewInputs() {
-    var sc = $("gisScale"), ro = $("gisRotation");
+    var sc = $("gisScale"), ro = $("gisRotation"), bm = $("gisBasemap");
+    if (bm && bm.value !== state.mapBasemap) bm.value = state.mapBasemap;
     if (sc && document.activeElement !== sc) { var n = GIS.getScale ? GIS.getScale() : 0; sc.value = n ? Math.round(n) : ""; }
     if (ro && document.activeElement !== ro) ro.value = GIS.getRotation ? Math.round(GIS.getRotation() * 10) / 10 : 0;
   }
