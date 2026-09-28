@@ -201,8 +201,44 @@
     var layers = GIS.layers.filter(function (l) { return l.visible && l.kind !== "xyz"; });
     layers.forEach(function (l) {
       var entries = GIS.sym.legendEntries(l), kind = l.kind === "vector" ? GIS.geometryKind(l) : "raster";
+      var ren = l.kind === "vector" ? l.style.renderer || "simple" : "simple";
+      // Heatmap: the layer name and a Low -> High ramp.
+      if (ren === "heatmap") {
+        var hh = text(l.name, pad, y, fs, { fontWeight: "bold" });
+        parts.push(hh); maxW = Math.max(maxW, hh.width); y += row;
+        var hw = Math.max(100, fs * 10), hc = GIS.sym.rampColors(l.style.heatRamp, false);
+        var hb = new fabric.Rect({ left: pad, top: y, width: hw, height: 10, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false });
+        hb.set("fill", new fabric.Gradient({ type: "linear", coords: { x1: 0, y1: 0, x2: hw, y2: 0 },
+          colorStops: [{ offset: 0, color: "rgba(255,255,255,0)" }].concat(hc.map(function (c, i) { return { offset: 0.08 + 0.92 * i / (hc.length - 1 || 1), color: c }; })) }));
+        parts.push(hb, text("Low", pad, y + 13, fs - 1, { fill: "#4a4a46" }), text("High", pad + hw, y + 13, fs - 1, { originX: "right", fill: "#4a4a46" }));
+        maxW = Math.max(maxW, hw); y += 13 + fs + 8;
+        return;
+      }
+      var sizes = ren === "proportional" && l.style.sizeField ? GIS.sym.sizeLegend(l) : null;
+      // Proportional circles: nested reference circles with leader lines.
+      function drawSizes(fill) {
+        if (!sizes || !sizes.length) return;
+        var rMax = sizes[0].r, cx = pad + rMax, base = y + 2 * rMax, lx = pad + 2 * rMax + 10;
+        var st = text(l.style.sizeField, pad, y, fs - 1, { fill: "#4a4a46", fontStyle: "italic" });
+        parts.push(st); y += st.height + 4; base = y + 2 * rMax;
+        sizes.forEach(function (sr) {
+          parts.push(new fabric.Circle({ left: cx, top: base - sr.r, radius: sr.r, originX: "center", originY: "center", fill: fill || "rgba(0,0,0,0)",
+            opacity: fill ? Math.max(0.15, l.style.fillOpacity) : 1, stroke: INK, strokeWidth: 0.8, selectable: false, evented: false }));
+          var ty = base - 2 * sr.r;
+          parts.push(new fabric.Line([cx, ty, lx - 3, ty], { stroke: "#8a8a8a", strokeWidth: 0.6, strokeDashArray: [2, 2], selectable: false, evented: false }));
+          var tv = text(numFmt(sr.value), lx, ty - fs * 0.62, fs);
+          parts.push(tv); maxW = Math.max(maxW, lx - pad + tv.width);
+        });
+        y = base + 10;
+      }
       // Single symbol: one row, swatch + layer name. Otherwise an optional
       // bold layer heading, then one row per class/category.
+      if (sizes && entries.length === 1 && !entries[0].label) {
+        var ph = text(l.name, pad, y, fs, { fontWeight: "bold" });
+        parts.push(ph); maxW = Math.max(maxW, ph.width); y += row;
+        drawSizes(entries[0].color);
+        return;
+      }
       if (entries.length === 1 && !entries[0].label) {
         var one = text(l.name, pad + sw + 8, y + row / 2 - 2 - fs * 0.62, fs);
         drawSwatch(entries[0].color, l, kind, pad, y + row / 2 - 2);
@@ -239,9 +275,11 @@
         var t2 = text(e.label || l.name, pad + (e.color ? sw + 8 : 0), cy - fs * 0.62, fs);
         parts.push(t2); maxW = Math.max(maxW, (e.color ? sw + 8 : 0) + t2.width); y += row;
       });
+      if (sizes) { y += 4; drawSizes(null); }
     });
     function drawSwatch(color, l, kind, x, cy) {
       var s = l.style;
+      if (s && s.renderer === "proportional") kind = "point";
       if (kind === "line") parts.push(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), selectable: false, evented: false }));
       else if (kind === "point") parts.push(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeColor, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));
       else parts.push(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: color, opacity: Math.max(0.15, s.fillOpacity), stroke: s.strokeWidth > 0 ? (/^#?f{3,6}$/i.test(s.strokeColor) ? "#9a978c" : s.strokeColor) : null, strokeWidth: 0.8, selectable: false, evented: false }));

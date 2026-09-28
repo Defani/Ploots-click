@@ -39,21 +39,8 @@
   function merc2ll(x, y) { return [x / R * 180 / Math.PI, (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI]; }
   function lat2mercY(lat) { var r = lat * Math.PI / 180; return R * Math.log(Math.tan(Math.PI / 4 + r / 2)); }
 
-  // WGS 84 UTM -> lon/lat (Karney-free series, sub-metre over a zone).
-  function utm2ll(x, y, zone, south) {
-    var a = 6378137, f = 1 / 298.257223563, k0 = 0.9996, e2 = f * (2 - f), ep2 = e2 / (1 - e2);
-    x -= 500000; if (south) y -= 10000000;
-    var m = y / k0, mu = m / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256));
-    var e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
-    var p1 = mu + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu) + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu)
-      + (151 * Math.pow(e1, 3) / 96) * Math.sin(6 * mu) + (1097 * Math.pow(e1, 4) / 512) * Math.sin(8 * mu);
-    var n1 = a / Math.sqrt(1 - e2 * Math.sin(p1) * Math.sin(p1)), t1 = Math.tan(p1) * Math.tan(p1), c1 = ep2 * Math.cos(p1) * Math.cos(p1);
-    var r1 = a * (1 - e2) / Math.pow(1 - e2 * Math.sin(p1) * Math.sin(p1), 1.5), d = x / (n1 * k0);
-    var lat = p1 - (n1 * Math.tan(p1) / r1) * (d * d / 2 - (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * ep2) * Math.pow(d, 4) / 24
-      + (61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * ep2 - 3 * c1 * c1) * Math.pow(d, 6) / 720);
-    var lon = (d - (1 + 2 * t1 + c1) * Math.pow(d, 3) / 6 + (5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * ep2 + 24 * t1 * t1) * Math.pow(d, 5) / 120) / Math.cos(p1);
-    return [(zone - 1) * 6 - 180 + 3 + lon * 180 / Math.PI, lat * 180 / Math.PI];
-  }
+  // WGS 84 UTM -> lon/lat: shared with the map grid (02-map.js).
+  function utm2ll(x, y, zone, south) { return GIS.proj.utm2ll(x, y, zone, south); }
 
   function epsgOf(image) {
     var k = image.getGeoKeys ? image.getGeoKeys() || {} : {};

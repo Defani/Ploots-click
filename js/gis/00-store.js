@@ -31,6 +31,7 @@
     mapFrame: true, mapFrameWidth: 1, mapFrameColor: "#1a1a1a",
     mapGrid: false, mapGridInterval: 0, mapGridStyle: "lines", mapGridColor: "#6b6b66",
     mapGridWidth: 0.6, mapGridLabels: "lb", mapGridFormat: "dms", mapGridFontSize: 9,
+    mapGridType: "geographic", mapGridUtmZone: 0, mapGridLabelPos: "inside", mapGridUnits: "m",
     mapPanelSide: "left"
   };
 
@@ -38,7 +39,12 @@
     symbology: "single", field: "", joinField: "",
     singleColor: "#2f6360", catColors: {}, classes: 5, method: "jenks", ramp: "YlGn", reverse: false,
     fillOpacity: 0.8, strokeColor: "#ffffff", strokeWidth: 0.8, pointRadius: 6, lineWidth: 2,
-    missingColor: "#d9d6cc", labelField: "", labelSize: 12, labelColor: "#1a1a1a"
+    missingColor: "#d9d6cc", labelField: "", labelSize: 12, labelColor: "#1a1a1a",
+    // Labels: {field} template, halo, font, placement along lines, overlap.
+    labelTemplate: "", labelHaloColor: "#ffffff", labelHaloWidth: 1.4, labelFont: "regular", labelPlacement: "auto", labelOverlap: false,
+    // Renderer: simple features, proportional circles, or heatmap.
+    renderer: "simple", sizeField: "", sizeMin: 4, sizeMax: 28, sizeScale: "sqrt",
+    heatField: "", heatRadius: 25, heatIntensity: 1, heatRamp: "YlOrRd", heatOpacity: 0.85
   };
 
   function ensureState() {
@@ -64,6 +70,12 @@
     },
 
     get: function (id) { return GIS.layers.filter(function (l) { return l.id === id; })[0] || null; },
+    STYLE_DEFAULTS: STYLE_DEFAULTS,
+    // Fills in style keys added after a layer was created.
+    ensureStyle: function (l) {
+      if (!l || l.kind !== "vector") return;
+      Object.keys(STYLE_DEFAULTS).forEach(function (k) { if (l.style[k] === undefined) l.style[k] = JSON.parse(JSON.stringify(STYLE_DEFAULTS[k])); });
+    },
     active: function () { return GIS.get(GIS.activeId) || GIS.layers[0] || null; },
     setActive: function (id) { GIS.activeId = id; GIS.emit("active", id); },
     vectors: function () { return GIS.layers.filter(function (l) { return l.kind === "vector"; }); },

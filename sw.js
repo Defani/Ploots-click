@@ -100,6 +100,7 @@ const PRECACHE_URLS = [
   "./js/layout-editor/27-object-float-bar.js",
   "./js/layout-editor/28-axis-controls-sync.js",
   "./js/layout-editor/29-sidebar-design.js",
+  "./js/layout-editor/30-topbar.js",
   "./js/ui_sections.js",
   "./js/help_search.js",
   "./js/latex_symbols.js",

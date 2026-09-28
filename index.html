@@ -961,6 +961,38 @@ html[data-theme=dark]{ --dv-dim:#6f97e0; --dv-dim-soft:rgba(111,151,224,.14); --
 .canvas-vscroll{right:0}
 .canvas-hscroll{right:16px}
 .canvas-zoom-bar{right:28px}
+/* Top bar (30-topbar.js): labeled tools in groups, menus per workspace. */
+#mainTools{gap:8px}
+#mainTools .tool-group{border-radius:10px;padding:3px;gap:2px}
+.tb-btn{width:auto!important;height:34px!important;padding:0 10px 0 8px!important;gap:6px;border-color:transparent!important;border-radius:8px!important;color:var(--ink)!important;flex-direction:row}
+.tb-btn .material-symbols-outlined{font-size:19px;color:var(--ink-soft)}
+.tb-lbl{font:500 12.5px Inter,'Segoe UI',Arial,sans-serif;white-space:nowrap}
+.tb-btn:hover{background:var(--panel)!important}
+.tb-btn.active,.tb-btn.on{background:var(--accent-soft)!important;color:var(--accent)!important}
+.tb-btn.active .material-symbols-outlined,.tb-btn.on .material-symbols-outlined{color:var(--accent)}
+.tb-drop::after{content:"";border:4px solid transparent;border-top-color:currentColor;margin:4px 0 0 -1px;opacity:.55}
+body.gis-mode .tb-chart,body:not(.gis-mode) .tb-map{display:none!important}
+.tb-menu{position:fixed;z-index:2000;display:none;min-width:230px;max-height:72vh;overflow:auto;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.2);padding:6px}
+.tb-menu.open{display:block}
+.tb-menu.wide{width:540px}
+.tb-menu-head{font:600 10.5px Inter,'Segoe UI',Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);padding:9px 8px 5px}
+.tb-item{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;padding:7px 8px;border-radius:7px;color:var(--ink);cursor:pointer;text-align:left;font-size:12.5px;min-width:0}
+.tb-item:hover{background:var(--panel-2)}
+.tb-item-lbl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-item .material-symbols-outlined{font-size:18px;color:var(--ink-soft)}
+.tb-item .tb-check{color:var(--accent)}
+.tb-item.checked .tb-item-lbl{font-weight:600}
+.tb-strip{display:flex;border-radius:3px;overflow:hidden;flex:none}
+.tb-strip i{width:11px;height:14px;display:block}
+.tb-sep{height:1px;background:var(--line);margin:5px 4px}
+.tb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:0 4px 6px}
+.tb-tile{display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid var(--line);background:none;border-radius:9px;padding:9px 4px 7px;font-size:11px;line-height:1.2;color:var(--ink);cursor:pointer;text-align:center}
+.tb-tile iconify-icon{font-size:22px;color:var(--ink-soft)}
+.tb-tile:hover{border-color:var(--accent)}
+.tb-tile.checked{border-color:var(--accent);background:var(--accent-soft)}
+.tb-tile.checked iconify-icon{color:var(--accent)}
+.tb-export{display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:9px;font-weight:600;font-size:13px;white-space:nowrap}
+.tb-export .material-symbols-outlined{font-size:18px}
 /* Each mode shows its own menus: charts hide Map, maps hide the chart menus. */
 body:not(.gis-mode) .nav-btn[data-panel="panel-map"]{display:none}
 body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-panel="panel-axis"],body.gis-mode .nav-btn[data-panel="panel-legend"],body.gis-mode .nav-btn[data-panel="panel-color"],body.gis-mode #navDataToggle,body.gis-mode .nav-sep-chart{display:none}
@@ -2416,6 +2448,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
 <script src="js/layout-editor/29-sidebar-design.js"></script>
+<script src="js/layout-editor/30-topbar.js"></script>
 <script src="js/undo_redo.js"></script>
 <script>
 // Registers the offline/repeat-visit cache. Uses a relative path and scope
