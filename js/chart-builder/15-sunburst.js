@@ -23,7 +23,7 @@
   var SUNBURST_TYPE = "sunburst";
 
   if (typeof CHART_TYPE_DEFS !== "undefined") {
-    CHART_TYPE_DEFS.push({ category: "D3 Engine", value: SUNBURST_TYPE, label: "Sunburst", icon: "mdi:chart-arc" });
+    CHART_TYPE_DEFS.push({ category: "Circular", value: SUNBURST_TYPE, label: "Sunburst", icon: "mdi:chart-arc" });
   }
   if (typeof SAMPLE_DATA_BY_TYPE !== "undefined") {
     SAMPLE_DATA_BY_TYPE[SUNBURST_TYPE] = "Kelas\tLuas (ha)\nVegetasi/Mangrove/Rapat\t185.4\nVegetasi/Mangrove/Sedang\t122.7\nVegetasi/Mangrove/Jarang\t76.3\nVegetasi/Non-Mangrove/Hutan Sekunder\t64.8\nVegetasi/Non-Mangrove/Semak Belukar\t41.2\nNon-Vegetasi/Tambak\t98.5\nNon-Vegetasi/Lahan Terbuka\t53.1\nNon-Vegetasi/Tubuh Air\t37.9";

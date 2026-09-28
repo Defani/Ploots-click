@@ -51,10 +51,8 @@
     // instructions, so it must load strictly after jspdf itself.
     jspdf: "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
     svg2pdf: "https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js",
-    // D3 engine — separate rendering path from Plotly, for chart types
-    // Plotly has no trace for (hierarchical/relational charts: sunburst,
-    // and more to come). Loaded strictly on demand the first time a
-    // "D3 Engine" chart type is selected — see js/chart-builder/15-sunburst.js.
+    // D3 fallback: vendor/d3-7.9.0.min.js is loaded eagerly by index.html,
+    // so this CDN copy is only fetched if that local file failed to load.
     d3: "https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"
   };
 
@@ -106,13 +104,6 @@
         return (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.svg)
           ? Promise.resolve() : loadScript(CDN.svg2pdf);
       });
-    },
-    // Choropleth/scattergeo now ship inside vendor/plotly-ploots.min.js (a
-    // custom Plotly 3.7.0 build), so there is no second Plotly bundle to
-    // fetch and no global window.Plotly swap. Kept as an always-resolved
-    // promise so existing call sites keep working unchanged.
-    ensurePlotlyGeo: function () {
-      return Promise.resolve(window.Plotly);
     },
     ensureD3: function () {
       return (typeof d3 !== "undefined" && d3.hierarchy) ? Promise.resolve() : loadScript(CDN.d3);
