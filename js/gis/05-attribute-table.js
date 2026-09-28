@@ -35,8 +35,10 @@
         '<button data-a="clear" title="Clear selection"><span class="material-symbols-outlined">deselect</span></button>' +
         '<button data-a="zoom" title="Zoom map to selection"><span class="material-symbols-outlined">center_focus_strong</span></button>' +
         '<button data-a="only" title="Show selected features only"><span class="material-symbols-outlined">filter_alt</span></button>' +
+        '<button data-a="expr" title="Select by expression"><span class="material-symbols-outlined">rule</span></button>' +
         '<span class="gis-attr-sep"></span>' +
         '<button data-a="addfield" title="Add field"><span class="material-symbols-outlined">add_column_right</span></button>' +
+        '<button data-a="calc" title="Field calculator"><span class="material-symbols-outlined">calculate</span></button>' +
         '<button data-a="delete" title="Delete selected features"><span class="material-symbols-outlined">delete</span></button>' +
         '<span class="gis-attr-sep"></span>' +
         '<div class="gis-attr-export"><button data-a="export" title="Export"><span class="material-symbols-outlined">download</span>Export</button>' +
@@ -67,6 +69,8 @@
         case "zoom": if (GIS.mapActions) GIS.mapActions.zoomToSelection(); break;
         case "only": onlySelected = !onlySelected; b.classList.toggle("active", onlySelected); if (api) api.onFilterChanged(); break;
         case "addfield": addField(l); break;
+        case "expr": if (l) GIS.exprDialog(l, "select"); break;
+        case "calc": if (l) GIS.fieldCalculator(l); break;
         case "delete": deleteSelected(l); break;
       }
     });

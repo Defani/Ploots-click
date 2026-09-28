@@ -157,23 +157,22 @@
   function linesFollow(layer) { return layer.style.labelPlacement !== "point"; }
 
   function styledData(layer) {
-    var vals = symValues(layer), follow = linesFollow(layer), lab = hasLabels(layer);
-    return {
-      type: "FeatureCollection",
-      features: layer.data.features.map(function (f, i) {
-        var extra = { __v: vals[i], __i: i };
-        if (lab && follow && isLine(f)) extra.__label = labelText(layer, f) || "";
-        return { type: "Feature", id: i, geometry: f.geometry, properties: Object.assign({}, f.properties, extra) };
-      })
-    };
+    var vals = symValues(layer), follow = linesFollow(layer), lab = hasLabels(layer), keep = GIS.filterMask(layer), feats = [];
+    layer.data.features.forEach(function (f, i) {
+      if (keep && !keep[i]) return;
+      var extra = { __v: vals[i], __i: i };
+      if (lab && follow && isLine(f)) extra.__label = labelText(layer, f) || "";
+      feats.push({ type: "Feature", id: i, geometry: f.geometry, properties: Object.assign({}, f.properties, extra) });
+    });
+    return { type: "FeatureCollection", features: feats };
   }
 
   // Label points (lines that follow their geometry are labelled from the
   // main source instead).
   function labelData(layer) {
-    var feats = [], follow = linesFollow(layer);
-    if (hasLabels(layer)) layer.data.features.forEach(function (f) {
-      if (follow && isLine(f)) return;
+    var feats = [], follow = linesFollow(layer), keep = GIS.filterMask(layer);
+    if (hasLabels(layer)) layer.data.features.forEach(function (f, i) {
+      if ((follow && isLine(f)) || (keep && !keep[i])) return;
       var txt = labelText(layer, f), pt = txt && anchor(f);
       if (pt) feats.push({ type: "Feature", geometry: { type: "Point", coordinates: pt }, properties: { t: txt } });
     });
@@ -204,8 +203,9 @@
   function pointData(layer) {
     var s = layer.style, vals = symValues(layer), sc = s.renderer === "proportional" && s.sizeField ? sizeScale(layer) : null;
     var sizes = sc ? numbersOf(layer, s.sizeField) : null, heat = s.renderer === "heatmap" && s.heatField ? numbersOf(layer, s.heatField) : null;
-    var hmax = heat ? d3.max(heat.filter(fin)) || 1 : 1, feats = [];
+    var hmax = heat ? d3.max(heat.filter(fin)) || 1 : 1, feats = [], keep = GIS.filterMask(layer);
     layer.data.features.forEach(function (f, i) {
+      if (keep && !keep[i]) return;
       var pt = anchor(f);
       if (!pt) return;
       var p = { __v: vals[i], __i: i, __r: sc ? sc.r(sizes[i]) : s.pointRadius, __w: heat ? (fin(heat[i]) ? Math.max(0, heat[i] / hmax) : 0) : 1 };
