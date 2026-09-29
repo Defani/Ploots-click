@@ -1282,6 +1282,68 @@ body:not(.gis-mode):not(.kobo-dash-open) .pb-launch,body:not(.gis-mode):not(.kob
 .pb-compose button .material-symbols-outlined{font-size:20px}
 body.kobo-dash-open .pb-launch{bottom:24px}
 body.kobo-dash-open .pb-chat{bottom:82px}
+/* Intro and About (js/intro.js) */
+.intro{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 700px at 50% 38%,var(--panel),var(--bg));color:var(--ink);transition:opacity .45s ease,visibility .45s;cursor:default}
+.intro.out{opacity:0;visibility:hidden}
+.intro-about{background:rgba(10,12,16,.55);backdrop-filter:blur(4px)}
+.intro-card{position:relative;width:min(460px,calc(100vw - 32px));text-align:center;padding:34px 30px 22px}
+.intro-about .intro-card{background:var(--panel);border:1px solid var(--line-strong);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.intro-close{position:absolute;right:10px;top:10px;border:none;background:none;color:var(--ink-soft);width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer}
+.intro-close:hover{background:var(--panel-2);color:var(--ink)}
+.intro-logo img{width:210px;height:auto;animation:iPop .7s cubic-bezier(.2,.8,.2,1.15) both}
+.intro-tag{margin:6px 0 0;font-size:13.5px;color:var(--ink-soft);animation:iUp .6s .25s both}
+.intro-rule{width:44px;height:3px;border-radius:2px;margin:18px auto;background:linear-gradient(90deg,#8b55ff,#10c2e0);animation:iUp .6s .35s both}
+.intro-owner{margin:0;font-size:12px;letter-spacing:.3px;color:var(--ink-soft);text-transform:uppercase;animation:iUp .6s .45s both}
+.intro-owner b{display:block;margin-top:4px;font-size:17px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:650}
+.intro-privacy{display:inline-flex;align-items:center;gap:6px;margin:16px 0 0;padding:6px 12px;border-radius:20px;background:var(--panel-2);border:1px solid var(--line);font-size:12px;color:var(--ink-soft);animation:iUp .6s .55s both}
+.intro-privacy .material-symbols-outlined{font-size:16px;color:#16a34a}
+.intro-bar{width:160px;height:3px;border-radius:2px;background:var(--line);margin:22px auto 0;overflow:hidden}
+.intro-bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8b55ff,#10c2e0);transform-origin:left;animation:iBar 2.2s ease-in-out both}
+.intro-links{display:flex;justify-content:center;gap:8px;margin:18px 0 0;font-size:12.5px;color:var(--ink-soft)}
+.intro-links a{color:var(--accent);text-decoration:none}
+.intro-links a:hover{text-decoration:underline}
+.intro-ver{margin:14px 0 0;font-size:11px;color:var(--ink-soft);animation:iUp .6s .65s both}
+@keyframes iPop{from{opacity:0;transform:scale(.86) translateY(8px)}}
+@keyframes iUp{from{opacity:0;transform:translateY(8px)}}
+@keyframes iBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.intro *{animation:none!important}}
+.home-foot{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-soft)}
+.home-foot span{flex:1;text-align:center}
+.home-foot b{color:var(--ink);font-weight:600}
+.home-foot button{display:flex;align-items:center;gap:5px;border:none;background:none;color:var(--accent);font-size:11.5px;cursor:pointer;padding:4px 6px;border-radius:6px;width:auto}
+.home-foot button:hover{background:var(--accent-soft)}
+.home-foot .material-symbols-outlined{font-size:16px}
+/* Files panel (js/file-browser.js) */
+.fb-body{padding:0 12px 12px 16px;display:flex;flex-direction:column;gap:8px;height:calc(100vh - 130px)}
+.fb-connect{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;width:100%}
+.fb-connect .material-symbols-outlined{font-size:18px}
+.fb-tree{flex:1;min-height:120px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 0;font-size:12.5px}
+.fb-root{display:flex;align-items:center;gap:4px;padding:5px 6px;font-weight:600;border-bottom:1px solid var(--line);position:sticky;top:-4px;background:var(--panel);z-index:1}
+.fb-root.off{opacity:.7}
+.fb-root b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.fb-root em{font-style:normal;font-weight:400;font-size:10.5px;color:var(--ink-soft);border:1px solid var(--line-strong);border-radius:6px;padding:0 5px}
+.fb-root>.material-symbols-outlined{font-size:18px;color:#e0a526}
+#panel-files .fb-tw,#panel-files .fb-mini{border:none!important;background:none!important;padding:0!important;width:24px;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--ink-soft);cursor:pointer}
+#panel-files .fb-mini:hover,#panel-files .fb-tw:hover{background:var(--panel-2)!important;color:var(--ink)}
+#panel-files .fb-mini .material-symbols-outlined,#panel-files .fb-tw .material-symbols-outlined{font-size:17px}
+#panel-files .fb-ask{width:auto;padding:0 8px!important;font-size:11px;color:var(--accent);border:1px solid var(--accent)!important}
+.fb-row{display:flex;align-items:center;gap:4px;padding-top:3px;padding-bottom:3px;padding-right:6px;cursor:default;white-space:nowrap;border-radius:5px;margin:0 4px;outline:none}
+.fb-row span:last-child{overflow:hidden;text-overflow:ellipsis}
+.fb-row .material-symbols-outlined{font-size:17px;color:var(--ink-soft);flex:none}
+.fb-dir{cursor:pointer}
+.fb-dir .material-symbols-outlined+.material-symbols-outlined{color:#e0a526}
+.fb-row:hover{background:var(--panel-2)}
+.fb-row.sel,.fb-row:focus{background:var(--accent-soft)}
+.fb-row.sel .material-symbols-outlined{color:var(--accent)}
+.fb-row.unsupported{color:var(--ink-soft)}
+.fb-sp{width:17px;flex:none}
+.fb-err{padding:6px 10px;color:var(--danger);font-size:11.5px}
+.fb-info{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:12px;min-height:20px}
+.fb-info:empty{display:none}
+.fb-info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-info span{font-size:11px;color:var(--ink-soft)}
+.fb-info button{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:6px;padding:6px}
+.fb-info button .material-symbols-outlined{font-size:16px}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -1371,6 +1433,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 </style>
 </head>
 <body>
+<script src="js/intro.js"></script>
 <div class="topbar glass">
   <a class="brand brand-repo-link" href="https://github.com/Defani/Ploots-click" target="_blank" title="View on GitHub">
   <svg viewBox="0 0 16 16" fill="currentColor" class="brand-gh-icon">
@@ -2828,6 +2891,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/undo_redo.js"></script>
 <script src="js/desktop-shell.js"></script>
 <script src="js/plugins.js"></script>
+<script src="js/file-browser.js"></script>
 <script>
 // Registers the offline/repeat-visit cache. Uses a relative path and scope
 // so it works when hosted at a GitHub Pages project subpath (e.g.

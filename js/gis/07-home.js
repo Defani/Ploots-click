@@ -31,11 +31,15 @@
             '<div class="home-actions"><button data-go="map-blank">Blank</button><button data-go="map-sample" class="btn-primary">Sample map</button></div>' +
           "</div>" +
         "</div>" +
+        '<div class="home-foot"><button type="button" data-files><span class="material-symbols-outlined">folder_open</span>Open from a folder</button>' +
+          '<span>Personal software by <b>Defani Arman Alfitriansyah</b></span><button type="button" data-about>About</button></div>' +
         '<button class="home-close" title="Close"><span class="material-symbols-outlined">close</span></button>' +
       "</div>";
     document.body.appendChild(el);
     el.addEventListener("click", function (e) {
       if (e.target === el || e.target.closest(".home-close")) { hide(); return; }
+      if (e.target.closest("[data-about]")) { if (window.PlootsIntro) window.PlootsIntro.about(); return; }
+      if (e.target.closest("[data-files]")) { hide(); activateSidebarPanel("panel-files"); return; }
       var b = e.target.closest("[data-go]");
       if (b) go(b.dataset.go);
     });

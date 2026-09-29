@@ -39,6 +39,7 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
   - [Editor: toolbars, Design panel & layers](#editor-toolbars-design-panel--layers)
   - [Map workspace (GIS)](#map-workspace-gis)
   - [KoboToolbox monitoring](#kobotoolbox-monitoring)
+  - [Files (folder browser)](#files-folder-browser)
   - [Plugins](#plugins)
   - [Page layout & annotation](#page-layout--annotation)
   - [Export](#export)
@@ -312,6 +313,20 @@ The round **Claude** button opens a chat bubble. It connects Ploots Click to the
 
 The server keeps one app connection and the newest one wins, so a GeoLibre window with the bridge plugin and Ploots Click take turns. If another app takes over, the bubble shows it and does not reconnect by itself. Connecting by hand turns on auto-connect for your next visit.
 
+### Files (folder browser)
+
+Like the QGIS Browser panel: **Files** in the left rail connects one or more folders on your computer. They are remembered for the next session; the browser or the desktop app asks again for permission when needed. Browse them as a tree and filter by name, then double-click (or press Enter on) a file to open it:
+
+- **CSV / TSV / TXT, Excel, JSON tables** become chart data.
+- A **CSV with latitude / longitude columns**, opened in the map workspace, becomes a point layer. This works for Kobo or GPS exports, for example.
+- **GeoJSON / TopoJSON** become vector layers and **GeoTIFF** becomes a raster layer.
+- **Images** are placed on the page.
+- A **plugin .zip** is installed.
+
+Files are read from disk when opened; nothing is copied or uploaded. This uses the File System Access API (Chrome, Edge and the desktop app). In other browsers, a folder can be read for the current session only.
+
+When the app opens, a short intro shows what Ploots Click is and that it is Defani Arman Alfitriansyah's personal software. Click or press a key to skip it. **About** on the Home screen shows it again, with links to the repository, the license and the plugin guide.
+
 ### Plugins
 
 Add features without changing the app, the same way as GeoLibre plugins. **Plugins** in the left rail installs a plugin from a `.zip`, a folder or a `plugin.json` URL (a `.zip` can also be dropped on the panel). Each installed plugin can be enabled, disabled, reloaded, downloaded as a `.zip` or removed. Installed plugins are kept in the browser (or the desktop app) and load at startup.
@@ -409,6 +424,8 @@ flowchart TD
 │   ├── lazy-loader.js             # Loads CDN libraries on first use (Fabric, Papa Parse, SheetJS, AG Grid, jsPDF, ...)
 │   ├── desktop-shell.js           # Desktop app only: opens web links in the default browser
 │   ├── plugins.js                 # Plugin manager: install (.zip / folder / URL), enable, the app API, starter
+│   ├── file-browser.js            # Files panel: connected folders, tree, open files by type
+│   ├── intro.js                   # Launch intro and About screen
 │   ├── chart-builder/             # Chart settings, data and export, in numbered load-order files
 │   │   ├── 01-config.js           #   static config: fonts, canvas templates, hatch/dash/marker defs
 │   │   ├── 02-state.js            #   shared state object, chart type list, sample data per chart type
