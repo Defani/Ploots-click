@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v12";
+const CACHE_NAME = "ploots-click-v13";
 
 const PRECACHE_URLS = [
   "./",
@@ -105,6 +105,7 @@ const PRECACHE_URLS = [
   "./js/layout-editor/28-axis-controls-sync.js",
   "./js/layout-editor/29-sidebar-design.js",
   "./js/layout-editor/30-topbar.js",
+  "./js/layout-editor/31-shape-stroke.js",
   "./js/ui_sections.js",
   "./js/help_search.js",
   "./js/latex_symbols.js",
