@@ -32,7 +32,7 @@
           "</div>" +
         "</div>" +
         '<div class="home-foot"><button type="button" data-files><span class="material-symbols-outlined">folder_open</span>Open from a folder</button>' +
-          '<span>Personal software by <b>Defani Arman Alfitriansyah</b></span><button type="button" data-about>About</button></div>' +
+          '<span>Private tool of <b>Defani Arman Alfitriansyah</b></span><button type="button" data-about>About</button></div>' +
         '<button class="home-close" title="Close"><span class="material-symbols-outlined">close</span></button>' +
       "</div>";
     document.body.appendChild(el);

@@ -1,9 +1,9 @@
 /* ==========================================================================
    Intro — the launch screen, and the About screen.
 
-   Shown for a moment when Ploots Click opens: the logo, what the app does,
-   that it is Defani's personal software, the version and where the data
-   lives. A click or any key skips it. PlootsIntro.about() opens the same
+   Shown for a moment when Ploots Click opens: a welcome, what the app is
+   for, that it is Defani's private tool and not shared, the version and
+   where the data lives. A click or any key skips it. PlootsIntro.about() opens the same
    screen as an About dialog (from the Home screen), which stays until
    closed.
    ========================================================================== */
@@ -12,7 +12,6 @@
 
   var VERSION = window.PLOOTS_VERSION = "1.0.0";
   var OWNER = "Defani Arman Alfitriansyah";
-  var REPO = "https://github.com/Defani/Ploots-click";
   var DURATION = 2400;
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
@@ -27,14 +26,14 @@
       '<div class="intro-card">' +
         (about ? '<button type="button" class="intro-close" title="Close"><span class="material-symbols-outlined">close</span></button>' : "") +
         '<div class="intro-logo"><img class="brand-logo-light" src="assets/logo_mark_light.png" alt="Ploots Click"><img class="brand-logo-dark" src="assets/logo_mark_dark.png" alt="Ploots Click"></div>' +
-        '<p class="intro-tag">Charts, maps, page layout and field monitoring</p>' +
+        '<h1 class="intro-welcome">Welcome to Ploots Click</h1>' +
+        '<p class="intro-tag">Personal GIS, data analysis, visualization and field monitoring</p>' +
         '<div class="intro-rule"></div>' +
-        '<p class="intro-owner">Personal software by<b>' + esc(OWNER) + "</b></p>" +
+        '<p class="intro-owner">A private tool of<b>' + esc(OWNER) + "</b></p>" +
+        '<p class="intro-private"><span class="material-symbols-outlined">person</span>For personal use only. Not for distribution.</p>' +
         '<p class="intro-privacy"><span class="material-symbols-outlined">lock</span>' +
           (desktop ? "Runs on this computer. Your files are never uploaded." : "Runs in your browser. Your files are never uploaded.") + "</p>" +
-        (about
-          ? '<div class="intro-links"><a href="' + REPO + '" target="_blank" rel="noopener">GitHub</a><span>·</span><a href="' + REPO + '/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a><span>·</span><a href="' + REPO + '/blob/main/PLUGINS.md" target="_blank" rel="noopener">Plugins</a></div>'
-          : '<div class="intro-bar"><i></i></div>') +
+        (about ? "" : '<div class="intro-bar"><i></i></div>') +
         '<p class="intro-ver">Version ' + VERSION + (desktop ? " · Desktop" : " · Web") + " · © 2026 " + esc(OWNER) + "</p>" +
       "</div>";
     document.body.appendChild(el);

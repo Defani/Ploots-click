@@ -325,7 +325,7 @@ Like the QGIS Browser panel: **Files** in the left rail connects one or more fol
 
 Files are read from disk when opened; nothing is copied or uploaded. This uses the File System Access API (Chrome, Edge and the desktop app). In other browsers, a folder can be read for the current session only.
 
-When the app opens, a short intro shows what Ploots Click is and that it is Defani Arman Alfitriansyah's personal software. Click or press a key to skip it. **About** on the Home screen shows it again, with links to the repository, the license and the plugin guide.
+When the app opens, an intro says "Welcome to Ploots Click": personal GIS, data analysis, visualization and field monitoring, a private tool of Defani Arman Alfitriansyah, for personal use only and not for distribution. Click or press a key to skip it. **About** on the Home screen shows it again.
 
 ### Plugins
 
