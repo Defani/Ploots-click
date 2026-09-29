@@ -258,7 +258,7 @@ Pick **Map** on the Home screen (or the **Map** button in the rail) and the page
   <img src="assets/screenshots/map-workspace.png" alt="Map workspace: ASEAN countries in graduated colors with a legend, scale bar, north arrow, inset map and coordinate grid on an A4 page" width="100%">
 </p>
 
-- **Layers**: any number of **vector** layers (GeoJSON or TopoJSON from a file, a URL or pasted text), **raster** layers (**GeoTIFF**: EPSG:4326, EPSG:3857 and WGS 84 / UTM zones; single-band on a color ramp, continuous or in discrete classes, or RGB) and **XYZ tile** layers. The layer list works like the QGIS layer tree: drag to reorder, hide, expand a layer to see its classes, and optional feature counts.
+- **Layers**: any number of **vector** layers (GeoJSON, TopoJSON, **Shapefile**, **KML / KMZ** or **GPX** from a file, a zipped shapefile, a URL or pasted text), **raster** layers (**GeoTIFF**: EPSG:4326, EPSG:3857 and WGS 84 / UTM zones; single-band on a color ramp, continuous or in discrete classes, or RGB) and **XYZ tile** layers. The layer list works like the QGIS layer tree: drag to reorder, hide, expand a layer to see its classes, and optional feature counts.
 - **Layer menu** (right-click a layer or its ⋮ button), as in QGIS and ArcGIS: zoom to layer or selection, open the attribute table, layer styling, **filter** (definition query), **select by expression**, select all / invert / clear, **field calculator**, show in legend, show feature count, show labels, rename, duplicate, move to top or bottom, export GeoJSON / selected features / CSV, properties and remove. Double-click a layer for its **properties**: name, legend name, attribution, source information (features, geometry, fields, CRS, extent), opacity and **scale-dependent visibility** (minimum and maximum 1:n).
 - **Expressions** (filter, select by expression, field calculator) use QGIS syntax, e.g. `"population" > 50 AND "subregion" = 'Maritime'`, `name LIKE 'Ma%'`, `iso3 IN ('IDN', 'MYS')`, `"area" IS NOT NULL`, `"pop" / "area" * 1000`, with a field list, a value list and a live count of matching features.
 - **Symbology** per layer, as in QGIS: **Single symbol**, **Categorized** (a color per value, each editable) and **Graduated** (natural breaks / Jenks, quantile or equal interval on a color ramp). Values come from a feature property or are **joined from the Data table**. Fill opacity, stroke, point size and line width, and solid, dashed, dotted or dash-dot outlines and lines. Vector tile layers get fill, outline, opacity, line width and style, and point size.
@@ -320,6 +320,10 @@ Like the QGIS Browser panel: **Files** in the left rail connects one or more fol
 - **CSV / TSV / TXT, Excel, JSON tables** become chart data.
 - A **CSV with latitude / longitude columns**, opened in the map workspace, becomes a point layer. This works for Kobo or GPS exports, for example.
 - **GeoJSON / TopoJSON** become vector layers and **GeoTIFF** becomes a raster layer.
+- **Shapefiles** open as layers. Only the `.shp` is listed, as in QGIS; its `.dbf`, `.prj` and `.cpg` are read with it. Coordinates are converted from UTM, any Transverse Mercator (e.g. DGN95 / Indonesia TM-3) or Web Mercator to WGS 84, and polygon holes are kept.
+- **KML / KMZ** (Google Earth, Avenza, Kobo exports) open as layers, with names, descriptions, ExtendedData and folders as attributes.
+- **GPX** opens as waypoints, one line per track segment (with its length and start / end time) and routes.
+- A **zipped shapefile / KML / GPX** is added to the map.
 - **Images** are placed on the page.
 - A **plugin .zip** is installed.
 
@@ -437,6 +441,7 @@ flowchart TD
 │   ├── desktop-shell.js           # Desktop app only: opens web links in the default browser
 │   ├── plugins.js                 # Plugin manager: install (.zip / folder / URL), enable, the app API, starter
 │   ├── file-browser.js            # Files panel: connected folders, tree, open files by type
+│   ├── formats.js                 # Shapefile (+ .prj reprojection), KML / KMZ and GPX readers
 │   ├── intro.js                   # Launch intro, sign-in / account setup, About and Account dialogs
 │   ├── lock.js                    # Password lock: PBKDF2 hash, attempt delays, Lock button, auto-lock, reset
 │   ├── chart-builder/             # Chart settings, data and export, in numbered load-order files

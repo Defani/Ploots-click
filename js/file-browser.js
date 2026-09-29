@@ -11,9 +11,13 @@
      .xlsx .xls           chart data (sheet picker as usual)
      .json                GeoJSON / TopoJSON → map layer, otherwise chart data
      .geojson .topojson   map layer
+     .shp                 Shapefile layer (its .dbf / .prj / .cpg are read
+                          with it and hidden from the list, as in QGIS)
+     .kml .kmz .gpx       field layers (Google Earth / Avenza, GPS tracks)
      .tif .tiff           raster layer
      images               placed on the page
-     .zip                 installed as a plugin when it contains plugin.json
+     .zip                 a plugin is installed; a zipped shapefile, KML or
+                          GPX is added to the map
 
    Files are opened through the app's own file inputs, so they behave
    exactly as if picked from the usual Open buttons. Nothing is copied or
@@ -32,8 +36,11 @@
     json: ["data_object", "JSON"], geojson: ["polyline", "GeoJSON"], topojson: ["polyline", "TopoJSON"],
     tif: ["grid_on", "GeoTIFF"], tiff: ["grid_on", "GeoTIFF"],
     png: ["image", "Image"], jpg: ["image", "Image"], jpeg: ["image", "Image"], gif: ["image", "Image"], webp: ["image", "Image"], svg: ["image", "Image"],
-    zip: ["extension", "Plugin (.zip)"]
+    shp: ["polyline", "Shapefile"], kml: ["travel_explore", "KML"], kmz: ["travel_explore", "KMZ"], gpx: ["route", "GPX track"],
+    zip: ["folder_zip", "Zip (plugin or shapefile)"]
   };
+  // Shapefile sidecars, hidden when their .shp is in the same folder.
+  var SIDECAR = /\.(shx|dbf|prj|cpg|sbn|sbx|qix|fix|shp\.xml|qmd)$/i;
   var HIDDEN = /^(\.|~\$|Thumbs\.db$|desktop\.ini$|node_modules$|__pycache__$)/i;
 
   function $(id) { return document.getElementById(id); }
@@ -147,7 +154,13 @@
       })();
     }
     return p.then(function (list) {
-      list = list.filter(function (e) { return !HIDDEN.test(e.name); })
+      var stems = {};
+      list.forEach(function (e) { if (/\.shp$/i.test(e.name)) stems[e.name.slice(0, -4).toLowerCase()] = true; });
+      list = list.filter(function (e) {
+        if (HIDDEN.test(e.name)) return false;
+        var m = SIDECAR.exec(e.name);
+        return !(m && stems[e.name.slice(0, m.index).toLowerCase()]);
+      })
         .sort(function (a, b) { return a.kind !== b.kind ? (a.kind === "dir" ? -1 : 1) : a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }); });
       cache[key] = list;
       return list;
@@ -261,10 +274,44 @@
     });
   }
 
-  function openFile(file) {
+  // Files in the same folder whose name starts like `stem.` (shapefile parts).
+  function siblings(key) {
+    var id = key.split("/")[0], r = roots.filter(function (x) { return x.id === id; })[0];
+    var rel = key.slice(id.length + 1), dir = rel.slice(0, rel.lastIndexOf("/") + 1), stem = rel.slice(dir.length).replace(/\.[^.]+$/, "").toLowerCase();
+    // Read the folder directly: the tree listing hides the sidecar files.
+    return dirEntries(r, dir).then(function (all) {
+      return Promise.all(all.filter(function (e) { return e.kind === "file" && e.name.toLowerCase().indexOf(stem + ".") === 0; })
+        .map(function (e) { return e.file ? e.file : e.handle.getFile(); }));
+    });
+  }
+  function dirEntries(r, dir) {
+    if (r.session) {
+      var node = r.tree;
+      dir.split("/").filter(Boolean).forEach(function (p) { node = node && node.children[p]; });
+      return Promise.resolve(node ? Object.keys(node.children).map(function (k) { var c = node.children[k]; return { name: k, kind: c.kind, file: c.file }; }) : []);
+    }
+    var h = Promise.resolve(r.handle);
+    dir.split("/").filter(Boolean).forEach(function (p) { h = h.then(function (d) { return d.getDirectoryHandle(p); }); });
+    return h.then(async function (d) { var out = []; for await (var e of d.values()) out.push({ name: e.name, kind: e.kind === "directory" ? "dir" : "file", handle: e }); return out; });
+  }
+
+  function addLayers(files) {
+    return window.PlootsFormats.read(files).then(function (layers) {
+      window.PlootsGIS.enterMapMode();
+      layers.forEach(function (x) { window.PlootsGIS.addVector(x.geojson, x.name); });
+      var n = layers.reduce(function (s, x) { return s + x.geojson.features.length; }, 0);
+      toast(layers.map(function (x) { return x.name; }).join(", ") + ": " + n + " feature" + (n === 1 ? "" : "s") + (layers.some(function (x) { return x.note; }) ? ". " + layers.map(function (x) { return x.note; }).filter(Boolean)[0] : ""));
+    });
+  }
+
+  function openFile(file, key) {
     var ext = extOf(file.name);
     if (window.PlootsHome) window.PlootsHome.hide();
     switch (ext) {
+      case "shp":
+        return (key ? siblings(key) : Promise.resolve([file])).then(function (parts) { return addLayers(parts.length ? parts : [file]); });
+      case "kml": case "kmz": case "gpx":
+        return addLayers([file]);
       case "csv": case "tsv": case "txt":
         if (isMap() && ext !== "txt") return csvToPoints(file).then(function (done) { if (!done) { toChart(); feed("csvFile", file); } });
         toChart(); feed("csvFile", file); return;
@@ -279,8 +326,8 @@
       case "zip":
         if (!window.PlootsPlugins) throw new Error("Plugins are not loaded.");
         return file.arrayBuffer().then(window.PlootsPlugins.readZip).then(function (files) {
-          if (!Object.keys(files).some(function (n) { return /(^|\/)plugin\.json$/.test(n); })) throw new Error(file.name + " is not a plugin (.zip files other than plugins cannot be opened yet).");
-          return window.PlootsPlugins.installZip(file);
+          if (Object.keys(files).some(function (n) { return /(^|\/)plugin\.json$/.test(n); })) return window.PlootsPlugins.installZip(file);
+          return addLayers([file]);
         });
       default:
         throw new Error("Ploots Click cannot open ." + (ext || "this") + " files.");
@@ -288,7 +335,7 @@
   }
 
   function openKey(key) {
-    resolve(key).then(openFile).catch(function (e) { toast(e.message || String(e)); });
+    resolve(key).then(function (f) { return openFile(f, key); }).catch(function (e) { toast(e.message || String(e)); });
   }
 
   /* ------------------------------------------------------------- panel */

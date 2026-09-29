@@ -49,7 +49,7 @@
         '<span class="material-symbols-outlined">keyboard_double_arrow_left</span></button></div>' +
       section("gisLayers", "layers", "Layers",
         '<div class="gis-layer-actions">' +
-          '<button class="file-btn" title="Add vector layer (GeoJSON, TopoJSON)"><span class="material-symbols-outlined">polyline</span>Vector<input type="file" id="gisVectorFile" accept=".json,.geojson,.topojson,application/json,application/geo+json" multiple></button>' +
+          '<button class="file-btn" title="Add vector layer (GeoJSON, TopoJSON, Shapefile, KML/KMZ, GPX)"><span class="material-symbols-outlined">polyline</span>Vector<input type="file" id="gisVectorFile" accept=".json,.geojson,.topojson,.shp,.shx,.dbf,.prj,.cpg,.kml,.kmz,.gpx,.zip,application/json,application/geo+json" multiple></button>' +
           '<button class="file-btn" title="Add raster layer (GeoTIFF)"><span class="material-symbols-outlined">grid_on</span>Raster<input type="file" id="gisRasterFile" accept=".tif,.tiff,image/tiff"></button>' +
           '<button id="gisXyzBtn" title="Add XYZ tile layer"><span class="material-symbols-outlined">travel_explore</span>XYZ</button>' +
         "</div>" +
@@ -514,6 +514,17 @@
     $("gisVectorFile").addEventListener("change", function () {
       var files = Array.prototype.slice.call(this.files || []);
       this.value = "";
+      // Shapefile parts, KML / KMZ, GPX and zips go through PlootsFormats.
+      var other = files.filter(function (f) { return /\.(shp|shx|dbf|prj|cpg|kml|kmz|gpx|zip)$/i.test(f.name); });
+      files = files.filter(function (f) { return other.indexOf(f) < 0; });
+      if (other.length && window.PlootsFormats) {
+        setStatus("Reading " + other.length + " file" + (other.length === 1 ? "" : "s") + "…", true);
+        window.PlootsFormats.read(other).then(function (layers) {
+          enterMapMode();
+          layers.forEach(function (x) { GIS.addVector(x.geojson, x.name); });
+          setStatus(layers.map(function (x) { return x.note; }).filter(Boolean).join(" ") || "", true);
+        }).catch(function (err) { setStatus(err.message, false); });
+      }
       files.forEach(function (file) {
         var reader = new FileReader();
         reader.onload = function () {
