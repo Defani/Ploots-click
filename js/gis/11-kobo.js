@@ -22,7 +22,9 @@
    Why a proxy: the Kobo API only answers CORS requests from its own sites,
    so a browser page cannot read it directly. tools/kobo_proxy.py forwards
    read-only API calls with the token (see README). "Direct" works for a
-   self-hosted Kobo that allows this site's origin.
+   self-hosted Kobo that allows this site's origin. The desktop app has a
+   built-in access path (the kobo_get command in desktop/src-tauri), so it
+   needs no proxy.
 
    window.PlootsKobo.api mirrors the GeoLibre Kobo Connector data API
    (summary, fields, rows, aggregate, load), so Claude can answer from the
@@ -33,6 +35,7 @@
 
   var GIS = window.PlootsGIS;
   var PANEL_ID = "panel-kobo";
+  var DESKTOP = !!(window.__TAURI__ && window.__TAURI__.core);
   var STORE = "ploots-kobo";
   var SERVERS = [
     ["https://kf.kobotoolbox.org", "Global (kf.kobotoolbox.org)"],
@@ -111,6 +114,8 @@
     var c = { server: SERVERS[0][0], custom: "", access: "proxy", proxy: "http://127.0.0.1:8767", remember: false, refreshMin: 5,
       map: {}, minDur: 10, maxAcc: 20, assetUid: "" };
     try { Object.assign(c, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch (e) { }
+    if (DESKTOP && !c.accessChosen) c.access = "app";
+    if (!DESKTOP && c.access === "app") c.access = "proxy";
     return c;
   }
   function saveCfg() {
@@ -127,7 +132,18 @@
 
   function request(url) {
     var p;
-    if (K.cfg.access === "proxy") {
+    // Desktop app: the request is made natively (no CORS, no proxy). The
+    // demo form only exists in the Python proxy.
+    if (K.cfg.access === "app" && DESKTOP && !/\/\/demo\.kobo\.local\//.test(url)) {
+      return window.__TAURI__.core.invoke("kobo_get", { url: url, token: K.token || null }).then(function (r) {
+        var j = {};
+        try { j = JSON.parse(r.body || "{}"); } catch (e) { }
+        if (r.status === 401 || r.status === 403 && !j.detail) throw new Error("The server rejected the API token.");
+        if (r.status < 200 || r.status >= 300) throw new Error(j.detail || "HTTP " + r.status);
+        return j;
+      }, function (e) { throw new Error(String(e && e.message || e)); });
+    }
+    if (K.cfg.access === "proxy" || K.cfg.access === "app") {
       var base = K.cfg.proxy.replace(/\/+$/, "");
       p = fetch(base + "/kobo?url=" + encodeURIComponent(url), { headers: K.token ? { "X-Kobo-Token": K.token } : {} })
         .catch(function () { throw new Error("The Kobo proxy at " + base + " is not running. Start it with: python tools/kobo_proxy.py"); });
@@ -386,7 +402,7 @@
           '<input type="text" id="koboCustom" placeholder="https://kobo.example.org" value="' + esc(K.cfg.custom) + '" style="margin-top:6px;' + (K.cfg.server === "custom" ? "" : "display:none") + '">' +
           field("API token", '<input type="password" id="koboToken" autocomplete="off" spellcheck="false" value="' + esc(K.token) + '">') +
           '<label class="check-row kobo-check"><input type="checkbox" id="koboRemember"' + (K.cfg.remember ? " checked" : "") + "> Remember on this device</label>" +
-          '<div class="num-pair" style="margin-top:8px;"><div>' + field("Access", '<select id="koboAccess">' + opts([["proxy", "Local proxy"], ["direct", "Direct"]], K.cfg.access) + "</select>") + "</div>" +
+          '<div class="num-pair" style="margin-top:8px;"><div>' + field("Access", '<select id="koboAccess">' + opts((DESKTOP ? [["app", "Built-in"]] : []).concat([["proxy", "Local proxy"], ["direct", "Direct"]]), K.cfg.access) + "</select>") + "</div>" +
             '<div id="koboProxyWrap"' + (K.cfg.access === "proxy" ? "" : ' style="display:none"') + ">" + field('Proxy <i class="kobo-dot" id="koboProxyDot"></i>', '<input type="text" id="koboProxy" value="' + esc(K.cfg.proxy) + '">') + "</div></div>" +
           '<button id="koboConnect" class="btn-primary kobo-wide">' + sym("link") + "Connect</button>" +
           '<p class="kobo-status" id="koboStatus" style="display:none;"></p>' +
@@ -428,7 +444,7 @@
     $("koboCustom").addEventListener("change", function () { K.cfg.custom = this.value.trim(); saveCfg(); });
     $("koboToken").addEventListener("change", function () { K.token = this.value.trim(); saveCfg(); });
     $("koboRemember").addEventListener("change", function () { K.cfg.remember = this.checked; saveCfg(); });
-    $("koboAccess").addEventListener("change", function () { K.cfg.access = this.value; $("koboProxyWrap").style.display = this.value === "proxy" ? "" : "none"; saveCfg(); pingProxy(); });
+    $("koboAccess").addEventListener("change", function () { K.cfg.access = this.value; K.cfg.accessChosen = true; $("koboProxyWrap").style.display = this.value === "proxy" ? "" : "none"; saveCfg(); pingProxy(); });
     $("koboProxy").addEventListener("change", function () { K.cfg.proxy = this.value.trim() || "http://127.0.0.1:8767"; saveCfg(); pingProxy(); });
     $("koboConnect").addEventListener("click", function () { K.token = $("koboToken").value.trim(); saveCfg(); K.connect().catch(function () { }); });
     $("koboForms").addEventListener("click", function (e) {

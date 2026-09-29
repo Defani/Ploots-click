@@ -30,6 +30,7 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 ## Table of Contents
 
 - [What is this?](#what-is-this)
+- [Desktop app](#desktop-app)
 - [Interface](#interface)
 - [Features](#features)
   - [Charts](#charts)
@@ -64,6 +65,30 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 ## What is this?
 
 Ploots Click is a **client-side-only web app**: open the page (or visit the GitHub Pages link below) and everything — data parsing, chart rendering, maps, page layout, and export — happens locally in your browser tab (maps fetch their basemap tiles online). Nothing you paste or upload is ever sent to a server, because there is no server. The app is just static HTML, CSS, and JavaScript, deployed straight from this repository via GitHub Pages, which is why it costs nothing to run and needs zero setup.
+
+[⬆️ Back to Table of Contents](#table-of-contents)
+
+## Desktop app
+
+Ploots Click also runs as a **desktop app for Windows**, built with [Tauri 2](https://tauri.app) like GeoLibre Desktop. It uses the system's WebView2, so the installer is small.
+
+- **Nothing is hosted.** The app's code, libraries (Fabric.js, MapLibre GL, AG Grid, MathJax, SheetJS, jsPDF, Plotly, geotiff.js, …), fonts and icons are all inside the app. It makes no calls to CDNs, Google Fonts or the Iconify API. Files you open stay on your computer.
+- **Online only when you ask.** Basemap tiles, the data catalog (government ArcGIS servers, GFW, GBIF, iNaturalist), KoboToolbox and the Claude bridge (`ws://127.0.0.1:9878`, on your own computer) connect only when you use them.
+- **KoboToolbox without a proxy.** The app reads the Kobo API natively, so `tools/kobo_proxy.py` is not needed. The access setting shows "Built-in".
+- Web links open in your default browser.
+
+**Install:** download `Ploots Click_<version>_x64-setup.exe` (or the `.msi`) from the repository's Releases page, or from the "ploots-click-windows" artifact of the **Desktop app** workflow run. The setup installs for the current user only and does not need administrator rights. If WebView2 is missing, the installer gets it.
+
+**Build it yourself (Windows):**
+
+1. Install [Rust](https://rustup.rs), the [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload, Python 3, and the Tauri CLI (`cargo install tauri-cli --version "^2" --locked`, or `npm install -g @tauri-apps/cli@^2` with Node.js).
+2. Build the offline copy of the web app into `desktop/dist`. Downloads are cached in `desktop/.cache`:
+   ```bash
+   python desktop/build_dist.py
+   ```
+3. Build the installers from the `desktop` folder with `cargo tauri build` (or `tauri build` with the npm CLI). They land in `desktop/src-tauri/target/release/bundle/nsis/` and `…/msi/`.
+
+The GitHub workflow `.github/workflows/desktop.yml` runs the same steps on every push that changes the app. Pushing a `desktop-v*` tag publishes a release.
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
@@ -365,6 +390,7 @@ flowchart TD
 ├── manifest.json                  # Web app manifest (installable PWA)
 ├── js/
 │   ├── lazy-loader.js             # Loads CDN libraries on first use (Fabric, Papa Parse, SheetJS, AG Grid, jsPDF, ...)
+│   ├── desktop-shell.js           # Desktop app only: opens web links in the default browser
 │   ├── chart-builder/             # Chart settings, data and export, in numbered load-order files
 │   │   ├── 01-config.js           #   static config: fonts, canvas templates, hatch/dash/marker defs
 │   │   ├── 02-state.js            #   shared state object, chart type list, sample data per chart type
@@ -447,6 +473,10 @@ flowchart TD
 │   └── undo_redo.js               # Global undo/redo history
 ├── tools/
 │   └── kobo_proxy.py              # Local KoboToolbox API proxy (CORS) with an optional demo form
+├── desktop/                       # Windows desktop app (Tauri 2)
+│   ├── build_dist.py              #   offline copy of the web app into desktop/dist (libraries, fonts, icons local)
+│   ├── make_icons.py              #   app icons from the logo
+│   └── src-tauri/                 #   Rust shell: window, installers, native Kobo requests (kobo_get)
 ├── vendor/
 │   ├── d3-7.9.0.min.js            # D3.js 7.9.0, bundled locally
 │   └── topojson/                  # Natural Earth base maps (*_110m.json) for the map chart types
@@ -766,7 +796,7 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 | AG Grid Community | 35.3.0 | cdnjs |
 | marked | 16.3.0 | cdnjs — renders this README as HTML on the splash screen |
 | jsPDF | 2.5.1 | cdnjs — PDF export |
-| svg2pdf.js | 2.2.3 | cdnjs — vector charts in PDF export |
+| svg2pdf.js | 2.2.3 | jsDelivr — vector charts in PDF export |
 | iconify-icon | 2.1.0 | code.iconify.design — chart-type icons |
 | MapLibre GL JS | 5.9.0 | cdnjs — the map workspace (loaded when a map is opened) |
 | geotiff.js | 2.1.3 | jsDelivr — GeoTIFF raster layers (loaded on first raster) |

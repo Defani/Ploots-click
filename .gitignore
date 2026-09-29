@@ -1,1 +1,6 @@
 __pycache__/
+# Desktop build output
+desktop/dist/
+desktop/.cache/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/

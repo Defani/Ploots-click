@@ -2782,11 +2782,13 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/layout-editor/29-sidebar-design.js"></script>
 <script src="js/layout-editor/30-topbar.js"></script>
 <script src="js/undo_redo.js"></script>
+<script src="js/desktop-shell.js"></script>
 <script>
 // Registers the offline/repeat-visit cache. Uses a relative path and scope
 // so it works when hosted at a GitHub Pages project subpath (e.g.
-// defani.github.io/Ploots-click/) and not just at a domain root.
-if ("serviceWorker" in navigator) {
+// defani.github.io/Ploots-click/) and not just at a domain root. The desktop
+// app ships every file with it, so it needs no cache.
+if ("serviceWorker" in navigator && !window.__TAURI__) {
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("sw.js").catch(function (err) {
       console.warn("Ploots: service worker registration failed", err);
