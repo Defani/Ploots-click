@@ -1211,7 +1211,11 @@
 
   function boot() {
     build();
-    // Re-open the last form after a reload when the token is remembered.
+    // Re-open the last form after a reload when the token is remembered
+    // (after sign-in when the app is locked).
+    if (window.PlootsLock) window.PlootsLock.whenUnlocked(reopen); else reopen();
+  }
+  function reopen() {
     if ((K.token || /demo\.kobo\.local/.test(server())) && K.cfg.assetUid) {
       K.connect().then(function () {
         if (K.assets.some(function (a) { return a.uid === K.cfg.assetUid; })) return K.openAsset(K.cfg.assetUid).then(function () { renderActive(); schedule(); });

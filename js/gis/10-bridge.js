@@ -500,7 +500,12 @@
   function boot() {
     loadChat();
     build();
-    if (cfg.auto) connect();
+    var Lk = window.PlootsLock;
+    if (!Lk) { if (cfg.auto) connect(); return; }
+    // Claude cannot read or drive the app while it is locked.
+    Lk.whenUnlocked(function () { if (cfg.auto) connect(); });
+    Lk.onLock(function () { if (ws) { manualClose = true; clearTimeout(retryTimer); ws.close(); } if (ui) ui.card.hidden = true; });
+    Lk.onUnlock(function () { if (cfg.auto && !ws) connect(); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
 })();

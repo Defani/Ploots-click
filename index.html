@@ -1283,10 +1283,10 @@ body:not(.gis-mode):not(.kobo-dash-open) .pb-launch,body:not(.gis-mode):not(.kob
 body.kobo-dash-open .pb-launch{bottom:24px}
 body.kobo-dash-open .pb-chat{bottom:82px}
 /* Intro and About (js/intro.js) */
-.intro{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 700px at 50% 38%,var(--panel),var(--bg));color:var(--ink);transition:opacity .45s ease,visibility .45s;cursor:default}
+.intro{position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;background:radial-gradient(1200px 700px at 50% 38%,var(--panel),var(--bg));color:var(--ink);transition:opacity .45s ease,visibility .45s;cursor:default}
 .intro.out{opacity:0;visibility:hidden}
 .intro-about{background:rgba(10,12,16,.55);backdrop-filter:blur(4px)}
-.intro-card{position:relative;width:min(460px,calc(100vw - 32px));text-align:center;padding:34px 30px 22px}
+.intro-card{position:relative;width:min(460px,calc(100vw - 32px));text-align:center;padding:28px 30px 20px;margin:auto}
 .intro-about .intro-card{background:var(--panel);border:1px solid var(--line-strong);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
 .intro-close{position:absolute;right:10px;top:10px;border:none;background:none;color:var(--ink-soft);width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer}
 .intro-close:hover{background:var(--panel-2);color:var(--ink)}
@@ -1303,6 +1303,28 @@ body.kobo-dash-open .pb-chat{bottom:82px}
 .intro-bar{width:160px;height:3px;border-radius:2px;background:var(--line);margin:22px auto 0;overflow:hidden}
 .intro-bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8b55ff,#10c2e0);transform-origin:left;animation:iBar 2.2s ease-in-out both}
 .intro-ver{margin:14px 0 0;font-size:11px;color:var(--ink-soft);animation:iUp .6s .65s both}
+.intro-form{display:flex;flex-direction:column;gap:10px;margin:18px auto 0;width:min(300px,100%);text-align:left;animation:iUp .6s .55s both}
+.intro-form-title{margin:0 0 2px;font-size:13px;font-weight:650;text-align:center}
+.intro-field{position:relative;display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink-soft)}
+.intro-field input{width:100%;box-sizing:border-box;padding:9px 38px 9px 11px;border-radius:9px!important;font-size:13.5px;border:1px solid var(--line-strong)!important;background:var(--panel-2)!important;color:var(--ink)!important;outline:none}
+.intro-field input:focus{border-color:var(--accent)!important}
+input[type=password]{width:100%;padding:8px 10px;border:1px solid var(--line-strong);font-family:inherit;font-size:12px;background:var(--panel-2);color:var(--ink)}
+.intro-eye{position:absolute;right:4px;bottom:4px;width:30px;height:30px;padding:0!important;border:none!important;background:none!important;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;border-radius:7px;cursor:pointer}
+.intro-eye:hover{color:var(--ink)}
+.intro-eye .material-symbols-outlined{font-size:18px}
+.intro-err{min-height:16px;margin:0;font-size:12px;color:var(--danger);text-align:center}
+.intro-submit{width:100%;padding:10px;font-size:13.5px;font-weight:600;border-radius:9px}
+.intro-link{align-self:center;border:none!important;background:none!important;color:var(--ink-soft);font-size:11.5px;cursor:pointer;padding:2px 6px!important;width:auto}
+.intro-link:hover{color:var(--accent);text-decoration:underline}
+.intro-note{margin:0;font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.4}
+.intro-form.shake{animation:iShake .35s}
+@keyframes iShake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.intro-actions{display:flex;justify-content:center;margin-top:14px}
+.intro-actions button{display:flex;align-items:center;gap:6px;padding:7px 14px;width:auto;font-size:12.5px}
+.intro-actions .material-symbols-outlined{font-size:18px}
+.intro-locked{background:var(--bg)}
+.intro-dlg{z-index:5100}
+.app-lock-btn[hidden]{display:none}
 @keyframes iPop{from{opacity:0;transform:scale(.86) translateY(8px)}}
 @keyframes iUp{from{opacity:0;transform:translateY(8px)}}
 @keyframes iBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
@@ -1433,6 +1455,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 </style>
 </head>
 <body>
+<script src="js/lock.js"></script>
 <script src="js/intro.js"></script>
 <div class="topbar glass">
   <a class="brand brand-repo-link" href="https://github.com/Defani/Ploots-click" target="_blank" title="View on GitHub">

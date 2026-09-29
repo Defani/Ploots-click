@@ -325,7 +325,19 @@ Like the QGIS Browser panel: **Files** in the left rail connects one or more fol
 
 Files are read from disk when opened; nothing is copied or uploaded. This uses the File System Access API (Chrome, Edge and the desktop app). In other browsers, a folder can be read for the current session only.
 
-When the app opens, an intro says "Welcome to Ploots Click": personal GIS, data analysis, visualization and field monitoring, a private tool of Defani Arman Alfitriansyah, for personal use only and not for distribution. Click or press a key to skip it. **About** on the Home screen shows it again.
+When the app opens, an intro says "Welcome to Ploots Click": personal GIS, data analysis, visualization and field monitoring, a private tool of Defani Arman Alfitriansyah, for personal use only and not for distribution.
+
+**Sign-in.** The intro also asks for a **username and password**.
+
+- **First launch:** you set up the account.
+- **Every launch after that:** you sign in, and the app stays covered until then.
+- **Nothing runs before sign-in.** Plugins, the Claude bridge and the Kobo auto-reopen wait until you are signed in. The bridge also disconnects while the app is locked.
+- **How the password is kept:** only a PBKDF2-SHA-256 hash (310,000 iterations, random salt) is kept on the device.
+- **Wrong attempts:** after three, each new attempt must wait longer.
+- **Locking again:** the lock button in the top bar locks the app; **About → Account** changes the username or password and sets auto-lock after 5 to 60 minutes of inactivity.
+- **Forgotten password:** it can only be reset, and resetting also removes what the app saved on that device. Files on disk are not touched.
+
+This lock protects the app on a device. It is not encryption: someone with the app's files and the know-how can get past it. To keep the software itself private, keep the repository private and turn GitHub Pages off.
 
 ### Plugins
 
@@ -425,7 +437,8 @@ flowchart TD
 │   ├── desktop-shell.js           # Desktop app only: opens web links in the default browser
 │   ├── plugins.js                 # Plugin manager: install (.zip / folder / URL), enable, the app API, starter
 │   ├── file-browser.js            # Files panel: connected folders, tree, open files by type
-│   ├── intro.js                   # Launch intro and About screen
+│   ├── intro.js                   # Launch intro, sign-in / account setup, About and Account dialogs
+│   ├── lock.js                    # Password lock: PBKDF2 hash, attempt delays, Lock button, auto-lock, reset
 │   ├── chart-builder/             # Chart settings, data and export, in numbered load-order files
 │   │   ├── 01-config.js           #   static config: fonts, canvas templates, hatch/dash/marker defs
 │   │   ├── 02-state.js            #   shared state object, chart type list, sample data per chart type

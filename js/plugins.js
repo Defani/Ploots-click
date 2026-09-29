@@ -637,15 +637,18 @@
 
   function boot() {
     build();
-    // Load after the other modules have set up their globals.
-    setTimeout(function () {
+    // Load after the other modules have set up their globals, and after
+    // sign-in when the app is locked.
+    var start = function () { setTimeout(load, 300); };
+    if (window.PlootsLock) window.PlootsLock.whenUnlocked(start); else start();
+    function load() {
       if (!window.indexedDB) return;
       dbAll().then(function (list) {
         records = list || [];
         renderList();
         records.filter(function (r) { return r.enabled; }).forEach(function (r) { activate(r); });
       }).catch(function (e) { console.error("[plugins]", e); });
-    }, 300);
+    }
   }
   if (document.readyState === "complete") boot(); else window.addEventListener("load", boot);
 })();
