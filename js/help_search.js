@@ -91,6 +91,14 @@
     { title: 'Layer menu', panel: 'panel-map', section: 'gisLayers', icon: 'more_vert',
       desc: 'Right-click a layer: filter, select by expression, field calculator, legend, properties, duplicate.',
       kw: 'layer menu context right click filter definition query select by expression field calculator properties scale visibility duplicate rename legend feature count' },
+    { title: 'KoboToolbox', panel: 'panel-kobo', section: null, icon: 'fact_check',
+      run: function () { if (window.PlootsGIS) window.PlootsGIS.enterMapMode(); window.activateSidebarPanel('panel-kobo'); },
+      desc: 'Connect a Kobo form; monitoring dashboard with daily recap per enumerator, routes and data.',
+      kw: 'kobo kobotoolbox survey form submission enumerator monitoring dashboard recap route daily rekap proxy' },
+    { title: 'Claude chat', panel: null, section: null, icon: 'smart_toy',
+      run: function () { if (window.PlootsGIS) window.PlootsGIS.enterMapMode(); if (window.PlootsBridge) window.PlootsBridge.open(); },
+      desc: 'Chat bubble connected to Claude through the geolibre-live MCP bridge.',
+      kw: 'claude ai chat assistant bubble mcp bridge geolibre live ask' },
     { title: 'Measure', panel: 'panel-map', section: 'gisView', icon: 'straighten',
       desc: 'Measure line length or area from the Tools menu or the map tool bar.',
       kw: 'measure distance length area perimeter ruler tools zoom extent previous next' }
@@ -147,6 +155,7 @@
 
   function jumpTo(entry) {
     closePanel();
+    if (entry.run) { entry.run(); return; }
     // The Axis menu now lives docked in the left sidebar (panel-axis), so it
     // uses the same generic activateSidebarPanel path as every other panel.
     if (entry.navBtnId) {

@@ -37,6 +37,7 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
   - [Data View](#data-view)
   - [Editor: toolbars, Design panel & layers](#editor-toolbars-design-panel--layers)
   - [Map workspace (GIS)](#map-workspace-gis)
+  - [KoboToolbox monitoring](#kobotoolbox-monitoring)
   - [Page layout & annotation](#page-layout--annotation)
   - [Export](#export)
 - [Architecture](#architecture)
@@ -255,6 +256,36 @@ Pick **Map** on the Home screen (or the **Map** button in the rail) and the page
   <img src="assets/screenshots/map-attribute-table.png" alt="Attribute table under the map with two features selected, and the map tool bar with the Select tool active" width="100%">
 </p>
 
+### KoboToolbox monitoring
+
+The **Kobo** button in the rail (map mode) connects to a KoboToolbox server (Global, EU, OCHA or your own) with your API token and lists your forms. Pick a form and open the **monitoring dashboard**:
+
+- **Overview**: submissions, today versus yesterday, enumerators active today, average per enumerator-day, area surveyed, quality flags and the last submission; a chart of submissions per day stacked by enumerator; an **enumerator × day matrix** that shows who submitted how much on each day, with today highlighted; today's status per enumerator (active in the last hour, idle, or no submission yet); and a live feed where new submissions are highlighted.
+- **Enumerators**: submissions, today, active days, per day, median interview length, GPS coverage and median accuracy, distance walked, area, quality flags and last submission, plus the list of flagged submissions.
+- **Recap**: every question, with choice counts for select questions and statistics plus a histogram for numbers, and a per-village table.
+- **Route**: an animated route per enumerator for one day, on its own map. Play or pause, choose the speed, scrub the timeline, turn enumerators on and off, and watch a bubble pop up at each arrival. While the dashboard refreshes, new submissions animate in.
+- **Data**: the submissions table with search, CSV export and **Add to map**. Add to map creates a point layer colored by enumerator, with every answer as an attribute, ready for symbology, labels, the attribute table and the print layout. Routes can be added as a line layer too.
+
+Filters for date range and enumerator apply to every tab. **Auto refresh** (every 1 to 30 minutes) fetches only new submissions and shows a notification with who sent them. Fields for enumerator, respondent, village, area, survey date and location are detected from common names and can be changed. Quality checks flag short interviews, missing GPS and poor GPS accuracy.
+
+**Why a proxy is needed.** The KoboToolbox API does not allow requests from other websites (CORS), so a browser page cannot read it directly. Run the small proxy in `tools/` on your computer; it only forwards read-only `/api/v2/` requests to Kobo servers, listens on `127.0.0.1` only, and never stores your token:
+
+```bash
+python tools/kobo_proxy.py
+```
+
+Add `--allow-host kobo.example.org` for a self-hosted server. Add `--demo` to also serve a generated demo form, "Coffee farmer baseline (demo)": five enumerators near Takengon over the last ten days, with today's submissions arriving through the day. The demo lets you try the dashboard without an account.
+
+#### Chat with Claude
+
+The round **Claude** button opens a chat bubble. It connects Ploots Click to the **geolibre-live** MCP server (the same server used by the GeoLibre Live MCP Bridge plugin) at `ws://127.0.0.1:9878`. With that server registered in Claude Desktop or Claude Code:
+
+- Messages typed in the bubble reach Claude through `live_chat_wait` / `live_chat_inbox` (say "dengar geolibre" in Claude to start listening). Claude answers in the bubble with `live_say` (a task list with progress, then a notification when done) and `live_show_chart` (Plotly charts inside the chat).
+- Claude reads the survey from the real submissions with `live_kobo_summary`, `live_kobo_fields`, `live_kobo_rows`, `live_kobo_aggregate` and `live_kobo_load`. It gets the same derived fields as the GeoLibre Kobo Connector (`_enumerator`, `_desa`, `_tanggal`, `_submission_date`, `_luas_ha`, `_validasi`), plus `_durasi_menit`.
+- Claude can also read and drive the map: `live_get_state`, `live_list_layers`, `live_get_layer_features`, `live_get_selection`, `live_screenshot`, `live_set_view`, `live_zoom_to_layer`, `live_set_basemap`, `live_add_geojson_layer`, `live_add_tile_layer`.
+
+The server keeps one app connection and the newest one wins, so a GeoLibre window with the bridge plugin and Ploots Click take turns. If another app takes over, the bubble shows it and does not reconnect by itself. Connecting by hand turns on auto-connect for your next visit.
+
 ### Page layout & annotation
 - **Full-page canvas**, separate from the chart block: position and resize the chart anywhere on the page.
 - **10 built-in page templates** (A4/Letter/Legal landscape & portrait, 16:9 and 4:3 presentation, Instagram Story, social square) plus custom width/height in px, mm or cm, and a page background colour.
@@ -399,7 +430,9 @@ flowchart TD
 │   │   ├── 06-panel.js            #   the Map panel
 │   │   ├── 07-home.js             #   Home screen
 │   │   ├── 08-catalog.js          #   data catalog: government ArcGIS, GFW, GBIF, iNaturalist
-│   │   └── 09-layer-menu.js       #   layer menu, filter / select by expression, field calculator, properties
+│   │   ├── 09-layer-menu.js       #   layer menu, filter / select by expression, field calculator, properties
+│   │   ├── 10-bridge.js           #   Claude bridge (geolibre-live MCP over WebSocket) and chat bubble
+│   │   └── 11-kobo.js             #   KoboToolbox connector, monitoring dashboard, route animation, data API
 │   ├── data_view.js               # Data View: AG Grid table, wide/long reshape, transpose
 │   ├── dv_shelves.js              # Data View chart-mapping shelves (drag fields onto X / Y)
 │   ├── data_formulas.js           # Data View spreadsheet formulas (=SUM, =AVERAGE, ...)
@@ -412,6 +445,8 @@ flowchart TD
 │   ├── help_search.js             # Help search: find a menu or setting by name
 │   ├── ui_sections.js             # Collapsible sidebar sections
 │   └── undo_redo.js               # Global undo/redo history
+├── tools/
+│   └── kobo_proxy.py              # Local KoboToolbox API proxy (CORS) with an optional demo form
 ├── vendor/
 │   ├── d3-7.9.0.min.js            # D3.js 7.9.0, bundled locally
 │   └── topojson/                  # Natural Earth base maps (*_110m.json) for the map chart types
@@ -741,7 +776,7 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 ## Known limitations
 
 <details>
-<summary>Click to expand — 6 known limitations</summary>
+<summary>Click to expand — 7 known limitations</summary>
 
 > [!NOTE]
 > Everything runs in the browser tab — there's no server-side processing, so very large datasets or very high-DPI exports can be slow or memory-heavy depending on the device.
@@ -760,6 +795,9 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 
 > [!NOTE]
 > Maps need an internet connection for MapLibre GL and the basemap tiles. GeoTIFFs are read in EPSG:4326, EPSG:3857 or WGS 84 / UTM and downsampled to 1600 px on the long side; other projections should be reprojected first (e.g. in QGIS).
+
+> [!NOTE]
+> KoboToolbox needs the local proxy (`python tools/kobo_proxy.py`) because the Kobo API does not accept requests from other websites. The chat with Claude needs the geolibre-live MCP server running (Claude Desktop or Claude Code starts it). Submissions are kept in the browser tab only and are fetched again after a reload.
 
 > [!TIP]
 > All 25 chart types are fully functional and ready to use.
