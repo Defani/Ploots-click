@@ -99,20 +99,40 @@
 
   /* ------------------------------------------------------------- state */
 
-  var M = null;
+  // Two map views can show the layers: the layout map (the page's map
+  // frame, "Cartography") and the analysis map (full workspace,
+  // "Analysis", js/gis/12-workspace.js). Every function here works on the
+  // view in M; inView() points M at a view for one call. Outside such a
+  // call M is the layout view, as before.
+  var M = null, LAYOUT = null, ANALYSIS = null;
+  function inView(v, fn, args) {
+    if (!v) return;
+    var prev = M;
+    M = v;
+    try { return fn.apply(null, args || []); } finally { M = prev; }
+  }
+  function views() { return [LAYOUT, ANALYSIS].filter(Boolean); }
+  function activeView() { return document.body.classList.contains("gis-analysis") && ANALYSIS ? ANALYSIS : LAYOUT; }
+  // Map actions (tools, zooms, selection) act on the view on screen.
+  function onActive(fn) { return function () { return inView(activeView(), fn, arguments); }; }
+
   var viewListeners = [];
   GIS.onView = function (fn) { viewListeners.push(fn); };
-  function emitView(final) { viewListeners.forEach(function (fn) { try { fn(final); } catch (e) { console.error(e); } }); }
+  function emitView(final) { if (M && M.analysis) return; viewListeners.forEach(function (fn) { try { fn(final); } catch (e) { console.error(e); } }); }
 
-  GIS.map = function () { return M && M.map; };
-  GIS.mapReady = function () { return !!(M && M.loaded); };
+  GIS.map = function () { var v = activeView(); return v && v.map; };
+  GIS.layoutMap = function () { return LAYOUT && LAYOUT.map; };
+  GIS.mapReady = function () { var v = activeView(); return !!(v && v.loaded); };
 
-  function create(gd) {
+  // Builds a map view in `host`. opts.analysis: the full-workspace map
+  // (always interactive, no page frame, its own extent).
+  function makeView(host, opts) {
+    opts = opts || {};
     var s = state;
-    gd.innerHTML = "";
+    host.innerHTML = "";
     var wrap = document.createElement("div");
-    wrap.className = "gj-map-wrap";
-    wrap.style.cssText = "position:relative;overflow:hidden;";
+    wrap.className = "gj-map-wrap" + (opts.analysis ? " gj-analysis" : "");
+    wrap.style.cssText = opts.analysis ? "position:absolute;inset:0;overflow:hidden;" : "position:relative;overflow:hidden;";
     var mapDiv = document.createElement("div");
     mapDiv.style.cssText = "position:absolute;inset:0;";
     var overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -120,8 +140,8 @@
     overlay.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     overlay.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;";
     var tools = document.createElement("div");
-    tools.className = "gis-map-tools";
-    tools.style.display = "none";
+    tools.className = "gis-map-tools" + (opts.analysis ? " gis-map-tools-analysis" : "");
+    tools.style.display = opts.analysis ? "" : "none";
     tools.innerHTML =
       '<button data-tool="pan" title="Pan"><span class="material-symbols-outlined">pan_tool</span></button>' +
       '<button data-tool="select" title="Select features"><span class="material-symbols-outlined">arrow_selector_tool</span></button>' +
@@ -137,8 +157,7 @@
       '<button data-act="clear-sel" title="Clear selection"><span class="material-symbols-outlined">deselect</span></button>' +
       '<button data-act="prev" title="Previous extent"><span class="material-symbols-outlined">undo</span></button>' +
       '<button data-act="next" title="Next extent"><span class="material-symbols-outlined">redo</span></button>' +
-      '<span class="gis-tools-sep"></span>' +
-      '<button data-act="done" class="gis-done">Done</button>';
+      (opts.analysis ? "" : '<span class="gis-tools-sep"></span><button data-act="done" class="gis-done">Done</button>');
     var box = document.createElement("div");
     box.className = "gis-select-box";
     box.style.display = "none";
@@ -146,39 +165,44 @@
     readout.className = "gis-measure-readout";
     readout.style.display = "none";
     wrap.appendChild(mapDiv); wrap.appendChild(overlay); wrap.appendChild(box); wrap.appendChild(tools); wrap.appendChild(readout);
-    gd.appendChild(wrap);
+    host.appendChild(wrap);
 
-    var opts = {
-      container: mapDiv, style: styleFor(s.mapBasemap), attributionControl: false,
+    var view = opts.analysis ? loadAnalysisView() : s.mapView;
+    var mopts = {
+      container: mapDiv, style: styleFor(s.mapBasemap), attributionControl: opts.analysis ? { compact: true } : false,
       canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },
       preserveDrawingBuffer: true, fadeDuration: 0, pixelRatio: window.devicePixelRatio || 1
     };
-    if (s.mapView) { opts.center = s.mapView.center; opts.zoom = s.mapView.zoom; opts.bearing = s.mapView.bearing; opts.pitch = s.mapView.pitch; }
-    var map = new maplibregl.Map(opts);
-    M = { gd: gd, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, readout: readout, basemap: s.mapBasemap,
-      keys: {}, interactive: false, tool: "pan", loaded: false, layerCount: 0, hist: [], histPos: -1, meas: null };
+    if (view) { mopts.center = view.center; mopts.zoom = view.zoom; mopts.bearing = view.bearing || 0; mopts.pitch = view.pitch || 0; }
+    var map = new maplibregl.Map(mopts);
+    var V = { gd: opts.analysis ? null : host, host: host, analysis: !!opts.analysis, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, readout: readout, basemap: s.mapBasemap,
+      keys: {}, interactive: !!opts.analysis, tool: "pan", loaded: false, layerCount: 0, hist: [], histPos: -1, meas: null, moveListeners: [] };
+    function run(fn) { return function () { return inView(V, fn, arguments); }; }
     map.boxZoom.disable();
     map.doubleClickZoom.disable();
 
-    map.on("style.load", function () { M.keys = {}; applyLayers(); drawMeasure(); });
-    map.on("load", function () {
+    map.on("style.load", run(function () { M.keys = {}; applyLayers(); drawMeasure(); }));
+    map.on("load", run(function () {
       M.loaded = true;
-      if (!state.mapView) fitAll();
+      if (!view) fitAll();
       M.layerCount = GIS.layers.length;
-      syncRatio(); drawOverlay(); emitView(true);
-    });
+      if (!M.analysis) syncRatio();
+      drawOverlay(); emitView(true);
+      if (M.analysis) setTool(M.tool);
+    }));
     var raf = 0;
     map.on("move", function () {
+      V.moveListeners.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
       if (raf) return;
-      raf = requestAnimationFrame(function () { raf = 0; drawOverlay(); emitView(false); });
+      raf = requestAnimationFrame(run(function () { raf = 0; drawOverlay(); emitView(false); }));
     });
-    map.on("moveend", function () { emitView(true); pushExtent(); });
-    map.on("zoomend", function () { if (hasScaleRange()) applyLayers(); });
-    map.on("click", onMapClick);
-    map.on("dblclick", function () { if (M.meas && !M.meas.done && M.meas.pts.length) { M.meas.done = true; M.meas.hover = null; drawMeasure(); } });
-    map.on("mousemove", onMapHover);
+    map.on("moveend", run(function () { emitView(true); pushExtent(); if (M.analysis) saveView(); }));
+    map.on("zoomend", run(function () { if (hasScaleRange()) applyLayers(); }));
+    map.on("click", run(onMapClick));
+    map.on("dblclick", run(function () { if (M.meas && !M.meas.done && M.meas.pts.length) { M.meas.done = true; M.meas.hover = null; drawMeasure(); } }));
+    map.on("mousemove", run(onMapHover));
 
-    tools.addEventListener("click", function (e) {
+    tools.addEventListener("click", run(function (e) {
       var b = e.target.closest("button");
       if (!b) return;
       if (b.dataset.tool) setTool(b.dataset.tool);
@@ -191,27 +215,66 @@
       else if (b.dataset.act === "next") stepExtent(1);
       else if (b.dataset.act === "zoom-sel") zoomToSelection();
       else if (b.dataset.act === "clear-sel") clearSelection();
-    });
+    }));
     // While moving content the wheel belongs to the map, not the page zoom.
-    wrap.addEventListener("wheel", function (e) { if (M && M.interactive) e.stopPropagation(); }, { passive: true });
-    wireBoxSelect();
-
-    gd._plootsCleanup = cleanup;
-    gd._plootsExport = exportSvg;
-    return M;
+    wrap.addEventListener("wheel", function (e) { if (V.interactive) e.stopPropagation(); }, { passive: true });
+    wireBoxSelect(V);
+    return V;
   }
 
+  function create(gd) {
+    var V = makeView(gd, {});
+    M = LAYOUT = V;
+    gd._plootsCleanup = cleanup;
+    gd._plootsExport = exportSvg;
+    return V;
+  }
+
+  // Analysis view extent, kept per device (the layout keeps its own).
+  var ANALYSIS_VIEW_KEY = "ploots-gis-analysis-view";
+  function loadAnalysisView() { try { return JSON.parse(localStorage.getItem(ANALYSIS_VIEW_KEY) || "null"); } catch (e) { return null; } }
+
+  GIS.analysis = {
+    // Creates the analysis map in `host` the first time; later calls resize.
+    mount: function (host) {
+      if (typeof maplibregl === "undefined") return PlootsLazy.ensureMapLibre().then(function () { return GIS.analysis.mount(host); });
+      if (!ANALYSIS || ANALYSIS.host !== host || !host.contains(ANALYSIS.wrap)) {
+        if (ANALYSIS) { try { ANALYSIS.map.remove(); } catch (e) { } }
+        ANALYSIS = makeView(host, { analysis: true });
+      } else {
+        ANALYSIS.map.resize();
+        if (ANALYSIS.basemap !== state.mapBasemap) { ANALYSIS.basemap = state.mapBasemap; ANALYSIS.map.setStyle(styleFor(state.mapBasemap), { diff: false }); }
+      }
+      return Promise.resolve(ANALYSIS);
+    },
+    map: function () { return ANALYSIS && ANALYSIS.map; },
+    onMove: function (fn) { if (ANALYSIS) ANALYSIS.moveListeners.push(fn); },
+    resize: function () { if (ANALYSIS) ANALYSIS.map.resize(); },
+    // Layout map extent = analysis extent (QGIS "Set to map canvas extent").
+    toLayout: function () {
+      if (!ANALYSIS || !LAYOUT) return;
+      var b = ANALYSIS.map.getBounds();
+      inView(LAYOUT, function () { M.map.fitBounds(b, { padding: 0, animate: false, bearing: ANALYSIS.map.getBearing() }); saveView(); emitView(true); });
+    },
+    fromLayout: function () {
+      if (!ANALYSIS || !LAYOUT) return;
+      ANALYSIS.map.fitBounds(LAYOUT.map.getBounds(), { padding: 0, animate: false });
+    }
+  };
+
   function cleanup() {
-    if (!M) return;
-    setInteractive(false);
-    try { M.map.remove(); } catch (e) { }
-    if (M.gd) { M.gd._plootsCleanup = null; M.gd._plootsExport = null; }
-    M = null;
+    if (!LAYOUT) return;
+    inView(LAYOUT, function () {
+      setInteractive(false);
+      try { M.map.remove(); } catch (e) { }
+      if (M.gd) { M.gd._plootsCleanup = null; M.gd._plootsExport = null; }
+    });
+    M = LAYOUT = null;
   }
 
   // Render at devicePixelRatio × canvas zoom (see header).
   function syncRatio() {
-    if (!M || M.exporting) return;
+    if (!M || M.exporting || M.analysis) return;
     var w = M.wrap.offsetWidth;
     if (!w) return;
     var k = M.wrap.getBoundingClientRect().width / w;
@@ -220,9 +283,9 @@
   }
   var stage = window.syncStageSize;
   if (typeof stage === "function") {
-    window.syncStageSize = function () { var out = stage.apply(this, arguments); syncRatio(); return out; };
+    window.syncStageSize = function () { var out = stage.apply(this, arguments); inView(LAYOUT, syncRatio); return out; };
   }
-  window.addEventListener("resize", function () { syncRatio(); });
+  window.addEventListener("resize", function () { inView(LAYOUT, syncRatio); if (ANALYSIS) ANALYSIS.map.resize(); });
 
   /* ------------------------------------------------------------ layers */
 
@@ -295,7 +358,8 @@
   function applyLayers() {
     if (!M) return;
     var map = M.map;
-    if (!map.isStyleLoaded()) { map.once("idle", applyLayers); return; }
+    // Deferred: run again on the same view once the style has loaded.
+    if (!map.isStyleLoaded()) { var v = M; map.once("idle", function () { inView(v, applyLayers); }); return; }
 
     // Drop layers/sources of removed layers.
     var ids = GIS.layers.map(function (l) { return "gis-" + l.id; });
@@ -349,15 +413,19 @@
       // Under proportional circles the polygons become a neutral base.
       var baseFill = ren === "proportional" ? "#e8e6de" : color;
       put(id + "-fill", { type: "fill", source: id, filter: polys, layout: { visibility: feat }, paint: { "fill-color": baseFill, "fill-opacity": (ren === "proportional" ? 0.9 : s.fillOpacity) * op } });
-      put(id + "-outline", { type: "line", source: id, filter: polys, layout: { visibility: feat, "line-join": "round" }, paint: dashed({ "line-color": s.strokeColor, "line-width": s.strokeWidth, "line-opacity": s.strokeWidth > 0 ? op : 0 }, s.strokeDash) });
+      // Outline: polygons' edges, points' rings and (optional) a casing
+      // drawn under lines.
+      var so = s.strokeOpacity != null ? +s.strokeOpacity : 1, join = s.strokeJoin || "round";
+      put(id + "-outline", { type: "line", source: id, filter: polys, layout: { visibility: feat, "line-join": join }, paint: dashed({ "line-color": s.strokeColor, "line-width": s.strokeWidth, "line-opacity": s.strokeWidth > 0 ? op * so : 0 }, s.strokeDash) });
+      put(id + "-casing", { type: "line", source: id, filter: lines, layout: { visibility: s.lineCasing && s.strokeWidth > 0 ? feat : "none", "line-cap": "round", "line-join": join }, paint: { "line-color": s.strokeColor, "line-width": s.lineWidth + 2 * s.strokeWidth, "line-opacity": op * so } });
       put(id + "-line", { type: "line", source: id, filter: lines, layout: { visibility: feat, "line-cap": "round", "line-join": "round" }, paint: dashed({ "line-color": color, "line-width": s.lineWidth, "line-opacity": op }, s.lineDash) });
       put(id + "-point", { type: "circle", source: id, filter: points, layout: { visibility: pointVis }, paint: {
         "circle-color": color, "circle-radius": s.pointRadius, "circle-opacity": Math.max(0.05, s.fillOpacity) * op,
-        "circle-stroke-color": s.strokeColor, "circle-stroke-width": s.strokeWidth, "circle-stroke-opacity": op } });
+        "circle-stroke-color": s.strokeColor, "circle-stroke-width": s.strokeWidth, "circle-stroke-opacity": op * so } });
       if (ren === "proportional") {
         put(id + "-prop", { type: "circle", source: id + "-pts", layout: { visibility: vis, "circle-sort-key": ["-", ["get", "__r"]] }, paint: {
           "circle-color": color, "circle-radius": ["get", "__r"], "circle-opacity": Math.max(0.05, s.fillOpacity) * op,
-          "circle-stroke-color": /^#?f{3,6}$/i.test(s.strokeColor) ? "#3a3a36" : s.strokeColor, "circle-stroke-width": Math.max(0.6, s.strokeWidth), "circle-stroke-opacity": op } });
+          "circle-stroke-color": /^#?f{3,6}$/i.test(s.strokeColor) ? "#3a3a36" : s.strokeColor, "circle-stroke-width": Math.max(0.6, s.strokeWidth), "circle-stroke-opacity": op * so } });
         put(id + "-sel-prop", { type: "circle", source: id + "-pts", filter: sel, layout: { visibility: vis }, paint: {
           "circle-color": "rgba(0,0,0,0)", "circle-radius": ["get", "__r"], "circle-stroke-color": "#ffcc00", "circle-stroke-width": 2.5 } });
       }
@@ -598,6 +666,7 @@
 
   function drawOverlay() {
     if (!M) return;
+    if (M.analysis) { while (M.overlay.firstChild) M.overlay.removeChild(M.overlay.firstChild); return; }
     var s = state, W = s.chartBox.w, H = s.chartBox.h, inner = innerRect(W, H);
     var svg = d3.select(M.overlay).attr("width", W).attr("height", H).attr("viewBox", "0 0 " + W + " " + H);
     svg.selectAll("*").remove();
@@ -762,14 +831,16 @@
   function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
   // Rectangle select with the Select tool (drag on the map).
-  function wireBoxSelect() {
-    var start = null, canvas = M.map.getCanvasContainer();
+  function wireBoxSelect(V) {
+    var start = null, canvas = V.map.getCanvasContainer();
     function pt(e) { var r = canvas.getBoundingClientRect(), k = r.width / canvas.offsetWidth; return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; }
-    canvas.addEventListener("mousedown", function (e) {
+    canvas.addEventListener("mousedown", function (e) { inView(V, down, [e]); });
+    function down(e) {
       if (!M || !M.interactive || M.tool !== "select" || e.button !== 0) return;
       start = pt(e); M.boxDragged = false;
-    });
-    window.addEventListener("mousemove", function (e) {
+    }
+    window.addEventListener("mousemove", function (e) { if (start) inView(V, move, [e]); });
+    function move(e) {
       if (!start || !M) return;
       var p = pt(e);
       if (!M.boxDragged && Math.abs(p[0] - start[0]) + Math.abs(p[1] - start[1]) < 5) return;
@@ -777,8 +848,9 @@
       var b = M.box.style;
       b.display = "block"; b.left = Math.min(p[0], start[0]) + "px"; b.top = Math.min(p[1], start[1]) + "px";
       b.width = Math.abs(p[0] - start[0]) + "px"; b.height = Math.abs(p[1] - start[1]) + "px";
-    });
-    window.addEventListener("mouseup", function (e) {
+    }
+    window.addEventListener("mouseup", function (e) { if (start) inView(V, up, [e]); });
+    function up(e) {
       if (!start || !M) return;
       var p = pt(e), s0 = start;
       start = null;
@@ -791,8 +863,8 @@
           .forEach(function (h) { l.selection.add(h.properties.__i); });
         GIS.emit("selection");
       }
-      setTimeout(function () { if (M) M.boxDragged = false; }, 0);
-    });
+      setTimeout(function () { V.boxDragged = false; }, 0);
+    }
   }
 
   function onKey(e) {
@@ -804,11 +876,16 @@
   function saveView() {
     if (!M) return;
     var map = M.map, c = map.getCenter();
+    if (M.analysis) {
+      try { localStorage.setItem(ANALYSIS_VIEW_KEY, JSON.stringify({ center: [c.lng, c.lat], zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() })); } catch (e) { }
+      return;
+    }
     state.mapView = { center: [c.lng, c.lat], zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() };
   }
 
   function setInteractive(on) {
     if (!M) return;
+    if (M.analysis) return; // the analysis map is always interactive
     if (on && state.mapLock) return;
     if (M.interactive === !!on) return;
     M.interactive = !!on;
@@ -847,26 +924,33 @@
     var a = map.unproject([x - 50, y]), b = map.unproject([x + 50, y]);
     return d3.geoDistance([a.lng, a.lat], [b.lng, b.lat]) * 6371008.8 / 100;
   }
-  GIS.metresPerPixel = metresPerPixel;
-  GIS.getScale = function () { var m = metresPerPixel(); return m ? m / PAGE_M_PER_PX : 0; };
+  function layoutScale() { var m = metresPerPixel(); return m ? m / PAGE_M_PER_PX : 0; }
+  // Scale and rotation belong to the layout map (the printed page).
+  GIS.metresPerPixel = function () { return inView(LAYOUT, metresPerPixel) || 0; };
+  GIS.getScale = function () { return inView(LAYOUT, layoutScale) || 0; };
   GIS.setScale = function (n) {
-    if (!M || !(n > 0)) return;
-    var cur = GIS.getScale();
-    if (!cur) return;
-    M.map.setZoom(M.map.getZoom() + Math.log2(cur / n));
-    saveView(); emitView(true);
+    inView(LAYOUT, function () {
+      if (!M || !(n > 0)) return;
+      var cur = layoutScale();
+      if (!cur) return;
+      M.map.setZoom(M.map.getZoom() + Math.log2(cur / n));
+      saveView(); emitView(true);
+    });
   };
-  GIS.setRotation = function (deg) { if (!M) return; M.map.setBearing(-(+deg || 0)); saveView(); emitView(true); };
-  GIS.getRotation = function () { return M ? -M.map.getBearing() : 0; };
+  GIS.setRotation = function (deg) { inView(LAYOUT, function () { if (!M) return; M.map.setBearing(-(+deg || 0)); saveView(); emitView(true); }); };
+  GIS.getRotation = function () { return inView(LAYOUT, function () { return M ? -M.map.getBearing() : 0; }) || 0; };
 
   GIS.mapActions = {
-    setInteractive: setInteractive, isInteractive: function () { return !!(M && M.interactive); },
-    setTool: setTool, fitAll: fitAll, zoomToLayer: zoomToLayer, zoomToSelection: zoomToSelection, clearSelection: clearSelection,
-    tool: function () { return M ? M.tool : "pan"; },
-    zoomToFeatures: function (layer, idx) {
+    // Move mode is the layout map's; the analysis map is always live.
+    setInteractive: function (on) { return inView(LAYOUT, setInteractive, [on]); },
+    isInteractive: function () { var v = activeView(); return !!(v && v.interactive); },
+    setTool: onActive(setTool), fitAll: onActive(fitAll), zoomToLayer: onActive(zoomToLayer), zoomToSelection: onActive(zoomToSelection),
+    clearSelection: clearSelection,
+    tool: function () { var v = activeView(); return v ? v.tool : "pan"; },
+    zoomToFeatures: onActive(function (layer, idx) {
       if (layer && layer.kind === "vector") fitBounds(GIS.featureBounds(idx.map(function (i) { return layer.data.features[i]; }).filter(Boolean)), 16);
-    },
-    redraw: function () { if (M) { applyLayers(); } }
+    }),
+    redraw: function () { views().forEach(function (v) { inView(v, applyLayers); }); }
   };
 
   function hookFabric() {
@@ -874,7 +958,7 @@
     if (!fc || fc._gisHooked) return;
     fc._gisHooked = true;
     fc.on("mouse:dblclick", function (opt) {
-      if (state.chartType === TYPE && opt.target && opt.target.isChartProxy) setInteractive(true);
+      if (state.chartType === TYPE && opt.target && opt.target.isChartProxy) inView(LAYOUT, setInteractive, [true]);
     });
   }
   document.addEventListener("ploots:canvasready", hookFabric);
@@ -883,12 +967,16 @@
   // Any change in the store restyles the live map.
   GIS.on("*", function (arg, evt) {
     if (evt === "interactive" || evt === "active") return;
-    if (state.chartType !== TYPE || !M) return;
-    var grew = evt === "layers" && M.loaded && GIS.layers.length > (M.layerCount || 0);
-    M.layerCount = GIS.layers.length;
-    applyLayers();
-    // A newly added layer is framed, unless the map is locked.
-    if (grew && !state.mapLock) zoomToLayer(GIS.active());
+    views().forEach(function (v) {
+      inView(v, function () {
+        if (!M.analysis && state.chartType !== TYPE) return;
+        var grew = evt === "layers" && M.loaded && GIS.layers.length > (M.layerCount || 0);
+        M.layerCount = GIS.layers.length;
+        applyLayers();
+        // A newly added layer is framed, unless the layout map is locked.
+        if (grew && (M.analysis || !state.mapLock)) zoomToLayer(GIS.active());
+      });
+    });
   });
 
   /* ------------------------------------------------------------ export */
@@ -944,6 +1032,7 @@
     M.mapDiv.style.inset = z.t + "px " + z.r + "px " + z.b + "px " + z.l + "px";
     M.map.resize();
     syncRatio();
+    if (ANALYSIS && ANALYSIS.basemap !== s.mapBasemap) { ANALYSIS.basemap = s.mapBasemap; ANALYSIS.map.setStyle(styleFor(s.mapBasemap), { diff: false }); }
     if (M.basemap !== s.mapBasemap) { M.basemap = s.mapBasemap; M.map.setStyle(styleFor(s.mapBasemap), { diff: false }); return; }
     applyLayers();
     emitView(true);

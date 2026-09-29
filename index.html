@@ -1397,6 +1397,96 @@ input[type=password]{width:100%;padding:8px 10px;border:1px solid var(--line-str
 .fb-prev-plugin .material-symbols-outlined{color:var(--accent)}
 .fb-info button{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:6px;padding:6px}
 .fb-info button .material-symbols-outlined{font-size:16px}
+/* GIS workspace: Analysis / Cartography (js/gis/12-workspace.js) */
+.gisw{flex-direction:column;background:var(--stage-bg)}
+.gisw.active{display:flex}
+.gisw-map{position:relative;flex:1;min-height:0;background:var(--panel-2)}
+.gisw-map .gis-map-tools{top:12px}
+.gisw-map .maplibregl-ctrl-attrib{font-size:10px}
+.gisw-status{display:flex;align-items:center;gap:14px;padding:0 12px;height:30px;flex:none;background:var(--panel);border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden}
+.gisw-status span{display:flex;align-items:center;gap:5px}
+.gisw-status span b{font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.gisw-status .material-symbols-outlined{font-size:15px}
+.gisw-status .gisw-grow{flex:1}
+.gisw-status button{display:flex;align-items:center;gap:4px;border:none!important;background:none!important;color:var(--ink-soft);font-size:11.5px;padding:3px 6px!important;border-radius:6px;cursor:pointer;width:auto}
+.gisw-status button:hover{background:var(--panel-2)!important;color:var(--ink)}
+.gisw-status button .material-symbols-outlined{font-size:16px}
+body:not(.gis-mode) .gisw-seg{display:none!important}
+.gisw-seg{display:flex;gap:0;padding:2px;border-radius:9px;background:var(--panel-2);border:1px solid var(--line)}
+.gisw-seg button{display:flex;align-items:center;gap:5px;border:none;background:none;padding:5px 11px;border-radius:7px;font:500 12.5px Inter,'Segoe UI',Arial,sans-serif;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+.gisw-seg button .material-symbols-outlined{font-size:18px}
+.gisw-seg button.active{background:var(--panel);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+body:not(.gis-mode) .nav-gis{display:none}
+body.gis-analysis .nav-carto,body.gis-analysis .nav-btn[data-panel="panel-canvas"],body.gis-analysis .nav-btn[data-panel="panel-shapes"],body.gis-analysis .nav-btn[data-panel="panel-latex"],body.gis-analysis .nav-btn[data-panel="panel-export"],body.gis-analysis #navDesign,body.gis-analysis #navLayers{display:none!important}
+body.gis-analysis .tb-insert,body.gis-analysis .tb-carto,body.gis-analysis .tb-export{display:none!important}
+/* GIS right dock with tabs: Layers | Layer styling (js/gis/12-workspace.js) */
+.gisw-dock{display:none;position:relative;flex:none;flex-direction:column;background:var(--panel);border-left:1px solid var(--line);min-width:0}
+body.gis-mode .gisw-dock{display:flex}
+.gisw-dock-tabs{display:flex;align-items:stretch;gap:2px;padding:6px 6px 0;border-bottom:1px solid var(--line);flex:none}
+.gisw-dock-tabs [data-tab]{display:flex;align-items:center;gap:6px;flex:1;min-width:0;justify-content:center;padding:8px 8px 9px!important;border:none!important;border-bottom:2px solid transparent!important;border-radius:6px 6px 0 0;background:none!important;color:var(--ink-soft);font:500 12.5px Inter,'Segoe UI',Arial,sans-serif;cursor:pointer;white-space:nowrap}
+.gisw-dock-tabs [data-tab] span:last-child{overflow:hidden;text-overflow:ellipsis}
+.gisw-dock-tabs [data-tab] .material-symbols-outlined{font-size:17px}
+.gisw-dock-tabs [data-tab]:hover{color:var(--ink);background:var(--panel-2)!important}
+.gisw-dock-tabs [data-tab].active{color:var(--accent);border-bottom-color:var(--accent)!important}
+.gisw-dock-hide{display:flex;align-items:center;justify-content:center;flex:none;width:28px;padding:0!important;border:none!important;background:none!important;color:var(--ink-soft);border-radius:6px;cursor:pointer}
+.gisw-dock-hide:hover{background:var(--panel-2)!important;color:var(--ink)}
+.gisw-dock-hide .material-symbols-outlined{font-size:18px}
+.gisw-dock-body{flex:1;min-height:0;overflow:auto;padding:0 0 12px}
+.gisw-dock-body[hidden]{display:none}
+.gisw-dock-grip{position:absolute;left:-3px;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:5}
+.gisw-dock-grip:hover{background:var(--accent-soft)}
+body.gisw-resizing{cursor:ew-resize;user-select:none}
+body.gisw-resizing .maplibregl-canvas,body.gisw-resizing iframe{pointer-events:none}
+.gisw-dock-strip{display:none}
+.gisw-dock.collapsed{width:34px}
+.gisw-dock.collapsed>:not(.gisw-dock-strip){display:none}
+.gisw-dock.collapsed .gisw-dock-strip{display:flex;flex-direction:column;gap:4px;padding:8px 0}
+.gisw-dock-strip button{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;padding:8px 0!important;border:none!important;background:none!important;color:var(--ink-soft);cursor:pointer;font-size:11.5px}
+.gisw-dock-strip button span:last-child{writing-mode:vertical-rl}
+.gisw-dock-strip button:hover{color:var(--accent)}
+.gisw-map .gis-map-tools{max-width:calc(100% - 24px);flex-wrap:wrap;justify-content:center}
+.gis-subhead{margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.gis-slidenum{display:flex;align-items:center;gap:8px}
+.gis-slidenum input[type=range]{flex:1;min-width:0}
+.gis-slidenum input[type=number]{width:64px;flex:none}
+.gis-outline-presets{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.gis-outline-presets button{display:flex;align-items:center;gap:6px;width:auto;padding:4px 8px!important;font-size:11.5px;border-radius:6px}
+.gis-outline-presets i{display:inline-block;width:14px;height:10px;background:#8fb996;box-sizing:border-box}
+/* Color ramp picker (js/gis/14-ramp-picker.js) */
+.rp-btn{display:flex;align-items:center;gap:8px;width:100%;padding:5px 6px 5px 6px!important;border-radius:6px;cursor:pointer;text-align:left}
+.rp-btn .rp-bar{flex:none;width:92px;height:16px;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.rp-btn .rp-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+.rp-btn .material-symbols-outlined{font-size:18px;color:var(--ink-soft)}
+.rp-pop{position:fixed;z-index:10050;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.28);overflow:hidden}
+.rp-search{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.rp-search .material-symbols-outlined{font-size:18px;color:var(--ink-soft)}
+.rp-search input{flex:1;border:none!important;background:none!important;outline:none;padding:2px!important;font-size:12.5px;color:var(--ink)}
+.rp-list{overflow:auto;padding:4px 0 6px}
+.rp-group{padding:10px 12px 4px;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.rp-row{display:flex;align-items:center;gap:10px;width:100%;padding:4px 12px!important;border:none!important;background:none!important;border-radius:0;cursor:pointer;text-align:left;color:var(--ink)}
+.rp-row:hover{background:var(--panel-2)!important}
+.rp-row.active{background:var(--accent-soft)!important}
+.rp-row .rp-bar{flex:none;width:120px;height:14px;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.rp-row .rp-name{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-empty{padding:14px;color:var(--ink-soft);font-size:12px}
+/* Add data panel (js/gis/12-workspace.js) */
+.gisw-add{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.gisw-add-hint{font-size:12px;color:var(--ink-soft);line-height:1.45;margin-bottom:4px}
+.gisw-add>button,.gisw-add-more button{position:relative;display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px!important;border-radius:8px;text-align:left;font-size:13px;overflow:hidden}
+.gisw-add>button .material-symbols-outlined,.gisw-add-more button .material-symbols-outlined{font-size:20px;color:var(--accent)}
+.gisw-add #gisVectorFile,.gisw-add #gisRasterFile{position:absolute;inset:0;opacity:0;cursor:pointer}
+.gisw-add-more{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}
+#panel-gis-add .side-section{margin-top:4px}
+/* The Layers tab is only the list: no section heading of its own. */
+.gisw-dock-body [data-section="gisLayers"]>.side-section-head{display:none}
+.gisw-dock-body [data-section="gisStyle"]>.side-section-head{display:none}
+/* Layer menu submenu (Export) */
+.gis-ctx.open{overflow:visible;max-height:none}
+.gis-ctx-sub{position:relative}
+.gis-ctx-subbtn .gis-ctx-arrow{margin-left:auto;font-size:18px!important}
+.gis-ctx-subm{display:none;position:absolute;top:-5px;left:100%;min-width:210px;padding:5px;background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;box-shadow:0 10px 28px rgba(0,0,0,.25)}
+.sub-left .gis-ctx-subm{left:auto;right:100%}
+.gis-ctx-sub:hover>.gis-ctx-subm,.gis-ctx-sub:focus-within>.gis-ctx-subm{display:block}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -2937,6 +3027,8 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/09-layer-menu.js"></script>
 <script src="js/gis/10-bridge.js"></script>
 <script src="js/gis/11-kobo.js"></script>
+<script src="js/gis/12-workspace.js"></script>
+<script src="js/gis/14-ramp-picker.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>

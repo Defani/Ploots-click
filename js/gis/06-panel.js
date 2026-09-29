@@ -33,6 +33,21 @@
   function color(bind, v) { return '<input type="color" class="full-color-picker" data-bind="' + bind + '" value="' + esc(v) + '">'; }
   function check(bind, v, label) { var id = "gb_" + bind.replace(/\W/g, "_"); return '<div class="check-row"><input type="checkbox" id="' + id + '" data-bind="' + bind + '"' + (v ? " checked" : "") + '><label for="' + id + '">' + label + "</label></div>"; }
   function select(bind, list, v) { return '<select data-bind="' + bind + '">' + options(list, v) + "</select>"; }
+  // A ramp list; js/gis/14-ramp-picker.js turns it into a picker with previews.
+  function rampSelect(bind, v, kind) {
+    var h = kind === "qual" ? opt("", "Active chart palette", !v) : "";
+    GIS.sym.RAMP_GROUPS.forEach(function (g) {
+      h += '<optgroup label="' + esc(g.label) + '">' + options(g.names.map(function (x) { return [x, x.replace(/^ColorBrewer /, "")]; }), v) + "</optgroup>";
+    });
+    return '<select data-bind="' + bind + '" data-ramp="' + (kind || "ramp") + '">' + h + "</select>";
+  }
+  // A slider with its number beside it; both edit the same value live.
+  function slideNum(bind, v, min, max, step) {
+    return '<div class="gis-slidenum">' + range(bind, v, min, max, step) + num(bind, v, 0, null, step) + "</div>";
+  }
+  var JOINS = [["round", "Round"], ["miter", "Miter"], ["bevel", "Bevel"]];
+  // Quick outline presets: [id, label, color, width].
+  var OUTLINE_PRESETS = [["none", "None", "#bbbbbb", 0], ["hair", "Hairline", "#ffffff", 0.4], ["white", "White", "#ffffff", 1], ["dark", "Dark", "#333333", 1], ["bold", "Bold", "#111111", 2.5]];
   function range(bind, v, min, max, step) { return '<input type="range" data-bind="' + bind + '" value="' + esc(v) + '" min="' + min + '" max="' + max + '" step="' + step + '">'; }
   function text(bind, v, ph) { return '<input type="text" data-bind="' + bind + '" value="' + esc(v) + '" placeholder="' + esc(ph || "") + '">'; }
 
@@ -231,7 +246,7 @@
         h += field("Blue", select("rasterRgb:2", bands, r.rgb[2]));
       } else {
         h += field("Band", select("raster:band", bands, r.band));
-        h += field("Color ramp", select("raster:ramp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), r.ramp));
+        h += field("Color ramp", rampSelect("raster:ramp", r.ramp));
         h += check("raster:reverse", r.reverse, "Invert ramp");
         h += pair(field("Color mode", select("raster:classMode", [["continuous", "Continuous"], ["discrete", "Discrete"]], r.classMode)),
           r.classMode === "discrete" ? field("Classes", num("raster:classes", r.classes, 2, 20, 1)) : "");
@@ -250,7 +265,7 @@
     if (ren === "heatmap") {
       h += field("Weight", '<select data-bind="layer:heatField">' + opt("", "Equal weight", !s.heatField) + options(numList, s.heatField) + "</select>");
       h += pair(field("Radius (px)", num("layer:heatRadius", s.heatRadius, 2, 150, 1)), field("Intensity", num("layer:heatIntensity", s.heatIntensity, 0.1, 10, 0.1)));
-      h += field("Color ramp", select("layer:heatRamp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), s.heatRamp));
+      h += field("Color ramp", rampSelect("layer:heatRamp", s.heatRamp));
       h += field("Opacity", range("layer:heatOpacity", s.heatOpacity, 0, 1, 0.05));
       box.innerHTML = h;
       return;
@@ -267,6 +282,7 @@
       h += field("Value", '<select data-bind="layer:field">' + opt("", "— Select field —", !s.field) + options(list, s.field) + "</select>");
       if (s.field === GIS.TABLE_FIELD) h += field("Join field", select("layer:joinField", f.all.map(function (k) { return [k, k]; }), s.joinField));
       if (s.symbology === "categorized") {
+        h += field("Palette", rampSelect("layer:catPalette", s.catPalette || "", "qual"));
         var cats = GIS.sym.categories(l);
         h += '<div class="gj-class-list">' + (cats.length ? cats.slice(0, 80).map(function (c, i) {
           return '<div class="gj-class-row"><input type="color" data-cat="' + i + '" value="' + c.color + '"><span title="' + esc(c.value) + '">' + esc(c.value) + "</span><em>" + c.count + "</em></div>";
@@ -274,7 +290,7 @@
         h += '<button id="gisRecolor" style="width:100%;margin-top:6px;">Classify with active palette</button>';
       } else if (s.symbology === "graduated") {
         h += pair(field("Classes", num("layer:classes", s.classes, 2, 9, 1)), field("Mode", select("layer:method", METHODS, s.method)));
-        h += field("Color ramp", select("layer:ramp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), s.ramp));
+        h += field("Color ramp", rampSelect("layer:ramp", s.ramp));
         h += check("layer:reverse", s.reverse, "Invert ramp");
         var cls = GIS.sym.classes(l);
         h += '<div class="gj-class-list">' + (cls.colors.length ? cls.labels.map(function (lb, i) {
@@ -285,10 +301,21 @@
     }
     var kind = GIS.geometryKind(l);
     if (kind === "polygon") h += field("Fill opacity", range("layer:fillOpacity", s.fillOpacity, 0, 1, 0.05));
-    h += pair(field("Stroke color", color("layer:strokeColor", s.strokeColor)), field("Stroke width", num("layer:strokeWidth", s.strokeWidth, 0, 20, 0.1)));
-    if (kind === "polygon") h += field("Stroke style", select("layer:strokeDash", DASHES, s.strokeDash));
-    if (kind === "point") h += field("Point size", num("layer:pointRadius", s.pointRadius, 1, 50, 0.5));
-    if (kind === "line") h += pair(field("Line width", num("layer:lineWidth", s.lineWidth, 0.2, 30, 0.2)), field("Line style", select("layer:lineDash", DASHES, s.lineDash)));
+    if (kind === "point") h += field("Point size", slideNum("layer:pointRadius", s.pointRadius, 1, 40, 0.5));
+    if (kind === "line") h += field("Line width", slideNum("layer:lineWidth", s.lineWidth, 0.2, 20, 0.2)) + field("Line style", select("layer:lineDash", DASHES, s.lineDash));
+    // Outline: one group for polygon edges, point rings and line casings.
+    // Every control applies as it changes.
+    h += '<div class="gis-subhead">' + (kind === "point" ? "Outline (ring)" : kind === "line" ? "Outline (casing)" : "Outline") + "</div>";
+    if (kind === "line") h += check("layer:lineCasing", s.lineCasing, "Draw an outline around the line");
+    if (kind !== "line" || s.lineCasing) {
+      h += pair(field("Color", color("layer:strokeColor", s.strokeColor)), field("Opacity", range("layer:strokeOpacity", s.strokeOpacity != null ? s.strokeOpacity : 1, 0, 1, 0.05)));
+      h += field("Width", slideNum("layer:strokeWidth", s.strokeWidth, 0, 10, 0.1));
+      if (kind === "polygon") h += pair(field("Style", select("layer:strokeDash", DASHES, s.strokeDash)), field("Join", select("layer:strokeJoin", JOINS, s.strokeJoin || "round")));
+      else if (kind === "line") h += field("Join", select("layer:strokeJoin", JOINS, s.strokeJoin || "round"));
+      h += '<div class="gis-outline-presets">' + OUTLINE_PRESETS.map(function (p) {
+        return '<button type="button" data-outline="' + p[0] + '" title="' + p[1] + '"><i style="border:' + Math.max(1, Math.min(3, p[3])) + "px solid " + p[2] + '"></i>' + p[1] + "</button>";
+      }).join("") + "</div>";
+    }
     h += field("Labels", '<select data-bind="layer:labelField">' + opt("", "No labels", !s.labelField) + options(f.all.map(function (k) { return [k, k]; }), s.labelField) + "</select>");
     h += field("Label template", text("layer:labelTemplate", s.labelTemplate, "{name} ({value})"));
     if (s.labelField || s.labelTemplate) {
@@ -439,12 +466,14 @@
 
   function onBind(el) {
     var b = el.dataset.bind.split(":"), scope = b[0], key = b[1], v = parse(el), l = GIS.active();
+    // Keep twin controls (slider + number) in step.
+    document.querySelectorAll('[data-bind="' + el.dataset.bind + '"]').forEach(function (t) { if (t !== el && t.type !== "checkbox" && t.value !== el.value) t.value = el.value; });
     if (scope === "layer" && l) {
       var prevTemplate = l.style.labelTemplate;
-      if (key === "field" || key === "joinField") l.style.catColors = {};
+      if (key === "field" || key === "joinField" || key === "catPalette") l.style.catColors = {};
       l.style[key] = v;
       GIS.emit("style");
-      if (/^(field|joinField|classes|method|ramp|reverse|labelField|renderer|sizeField)$/.test(key) || (key === "labelTemplate" && !!v !== !!prevTemplate)) renderStyle();
+      if (/^(field|joinField|classes|method|ramp|reverse|labelField|renderer|sizeField|catPalette|lineCasing)$/.test(key) || (key === "labelTemplate" && !!v !== !!prevTemplate)) renderStyle();
     } else if (scope === "layerTop" && l) {
       l[key] = v;
       GIS.emit(key === "url" ? "layers" : "style");
@@ -471,8 +500,11 @@
     }
   }
 
-  function wireStatic() {
-    var panel = $(PANEL_ID);
+  // Delegated input handling for the panel and for its sections that the
+  // GIS workspace (12-workspace.js) moves into the right dock.
+  function wireRoot(panel) {
+    if (!panel || panel._gisWired) return;
+    panel._gisWired = true;
     panel.addEventListener("input", function (e) { if (e.target.dataset && e.target.dataset.bind && e.target.type !== "checkbox" && e.target.tagName !== "SELECT") onBind(e.target); });
     panel.addEventListener("change", function (e) {
       var t = e.target;
@@ -495,6 +527,12 @@
         if (b.dataset.sym === "categorized" && !l.style.field) l.style.field = f.all[0] || "";
         GIS.emit("style"); renderStyle();
       } else if (b.id === "gisRecolor" && l) { l.style.catColors = {}; GIS.emit("style"); renderStyle(); }
+      else if (b.dataset.outline && l) {
+        var pr = OUTLINE_PRESETS.filter(function (p) { return p[0] === b.dataset.outline; })[0];
+        l.style.strokeWidth = pr[3];
+        if (pr[3] > 0) { l.style.strokeColor = pr[2]; l.style.strokeOpacity = 1; }
+        GIS.emit("style"); renderStyle();
+      }
       else if (b.dataset.add) { enterMapMode(); GIS.items.add(b.dataset.add); }
       else if (b.id === "gisLegendFit") { var lo = selectedItem(); if (lo) { GIS.items.update(lo, { boxW: 0, boxH: 0 }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisMoveBtn") GIS.mapActions && GIS.mapActions.setInteractive(true);
@@ -510,6 +548,11 @@
       if (e.target.id === "gisScale" && e.target.value) GIS.setScale(parseFloat(e.target.value));
       if (e.target.id === "gisRotation") GIS.setRotation(parseFloat(e.target.value));
     });
+  }
+  GIS.wirePanelRoot = wireRoot;
+
+  function wireStatic() {
+    wireRoot($(PANEL_ID));
 
     $("gisVectorFile").addEventListener("change", function () {
       var files = Array.prototype.slice.call(this.files || []);

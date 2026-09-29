@@ -70,14 +70,17 @@
     }
     h += SEP + row("rename", "edit", "Rename…") + row("dup", "content_copy", "Duplicate layer");
     h += row("top", "vertical_align_top", "Move to top", { disabled: i === 0 }) + row("bottom", "vertical_align_bottom", "Move to bottom", { disabled: i === n - 1 });
-    if (vec) h += SEP + row("xgeo", "download", "Export GeoJSON") + row("xgeosel", "download", "Export selected features", { disabled: !l.selection.size }) + row("xcsv", "download", "Export CSV") +
-      row("xshp", "folder_zip", "Export Shapefile (.zip)") + row("xkml", "travel_explore", "Export KML (Google Earth)") + row("xgpx", "route", "Export GPX");
+    if (vec) h += SEP + '<div class="gis-ctx-sub"><button type="button" class="gis-ctx-subbtn">' + sym("ios_share") + '<span>Export</span><span class="material-symbols-outlined gis-ctx-arrow">chevron_right</span></button><div class="gis-ctx-subm">' +
+      row("xgeo", "data_object", "GeoJSON") + row("xshp", "folder_zip", "Shapefile (.zip)") + row("xkml", "travel_explore", "KML (Google Earth)") + row("xgpx", "route", "GPX") + row("xcsv", "csv", "CSV") +
+      SEP + row("xgeosel", "select", "Selected features (GeoJSON)", { disabled: !l.selection.size }) + "</div></div>";
     h += SEP + row("props", "tune", "Properties…") + row("remove", "delete", "Remove layer", { danger: true });
     menu.innerHTML = h;
     menu.classList.add("open");
     var w = menu.offsetWidth, hh = menu.offsetHeight;
     menu.style.left = Math.max(6, Math.min(window.innerWidth - w - 6, x)) + "px";
     menu.style.top = Math.max(6, Math.min(window.innerHeight - hh - 6, y)) + "px";
+    // Submenus open to the side with room.
+    menu.classList.toggle("sub-left", x + w + 220 > window.innerWidth);
     menu.onclick = function (e) {
       var b = e.target.closest("button[data-act]");
       if (!b || b.disabled) return;
@@ -120,6 +123,7 @@
   }
 
   function openStyling() {
+    if (GIS.openStylingPanel) { GIS.openStylingPanel(); return; }
     if (GIS.enterMapMode) GIS.enterMapMode();
     if (typeof activateSidebarPanel === "function") activateSidebarPanel("panel-map");
     var sec = document.querySelector('#panel-map [data-section="gisStyle"]');

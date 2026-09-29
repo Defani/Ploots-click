@@ -314,9 +314,18 @@
     function drawSwatch(color, l, kind, x, cy) {
       var s = l.style || { fillOpacity: 0.45, strokeWidth: 0.8, strokeColor: "#9a978c", lineWidth: 1, pointRadius: 4, renderer: "simple" };
       if (s && s.renderer === "proportional") kind = "point";
-      if (kind === "line") add(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), selectable: false, evented: false }));
-      else if (kind === "point") add(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeColor, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));
-      else add(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: color, opacity: Math.max(0.15, s.fillOpacity), stroke: s.strokeWidth > 0 ? (/^#?f{3,6}$/i.test(s.strokeColor) ? "#9a978c" : s.strokeColor) : null, strokeWidth: 0.8, selectable: false, evented: false }));
+      var so = s.strokeOpacity != null ? +s.strokeOpacity : 1;
+      if (kind === "line") {
+        if (s.lineCasing && s.strokeWidth > 0) add(new fabric.Line([x, cy, x + sw, cy], { stroke: s.strokeColor, opacity: so, strokeWidth: Math.min(10, s.lineWidth + 1 + 2 * s.strokeWidth), strokeLineCap: "round", selectable: false, evented: false }));
+        add(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), strokeLineCap: "round", selectable: false, evented: false }));
+      }
+      else if (kind === "point") add(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeWidth > 0 ? s.strokeColor : null, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));
+      else {
+        // The patch's fill takes the fill opacity; its outline follows the
+        // layer's outline (a white one shows grey on the white legend).
+        add(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: color, opacity: Math.max(0.15, s.fillOpacity), selectable: false, evented: false }));
+        if (s.strokeWidth > 0) add(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: "rgba(0,0,0,0)", opacity: so, stroke: /^#?f{3,6}$/i.test(s.strokeColor) ? "#9a978c" : s.strokeColor, strokeWidth: Math.min(3, Math.max(0.6, s.strokeWidth)), strokeDashArray: s.strokeDash && s.strokeDash !== "solid" ? (s.strokeDash === "dot" ? [1, 2] : [4, 2]) : null, strokeUniform: true, selectable: false, evented: false }));
+      }
     }
     if (!layers.length) { var e0 = text("No layers", pad, y, fs, { fill: "#8a8a8a" }); parts.push(e0); maxW = e0.width; y += row; }
     blockTop.push(y);

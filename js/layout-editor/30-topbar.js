@@ -149,8 +149,10 @@
   var gridBtn = button('grid_4x4', 'Grid', 'Coordinate grid');
   var itemsBtn = button('dashboard_customize', 'Map items', 'Add a layout item', 'tb-drop');
   [addBtn, bmBtn, attrBtn, moveBtn, toolsBtn, gridBtn, itemsBtn].forEach(function (b) { mapGroup.appendChild(b); });
+  // Page-only map buttons (hidden in the Analysis view).
+  [moveBtn, gridBtn, itemsBtn].forEach(function (b) { b.classList.add('tb-carto'); });
 
-  function mapPanel() { if (GIS) GIS.enterMapMode(); activateSidebarPanel('panel-map'); }
+  function mapPanel() { if (GIS && GIS.openLayersPanel) { GIS.openLayersPanel(); return; } if (GIS) GIS.enterMapMode(); activateSidebarPanel('panel-map'); }
   addBtn.addEventListener('click', function () {
     openMenu(addBtn,
       item('vector', sym('polyline'), 'Vector (GeoJSON, TopoJSON)') + item('raster', sym('grid_on'), 'Raster (GeoTIFF)') +
@@ -160,7 +162,7 @@
         if (v === 'vector' || v === 'raster') { var inp = $(v === 'vector' ? 'gisVectorFile' : 'gisRasterFile'); if (inp) inp.click(); return; }
         if (v === 'sample') { GIS.loadSampleLayer(); return; }
         if (v === 'catalog') { GIS.openCatalog(); return; }
-        mapPanel();
+        if (GIS.openAddPanel) GIS.openAddPanel(); else mapPanel();
         var btn = $(v === 'xyz' ? 'gisXyzBtn' : 'gisUrlBtn'), wrap = $(v === 'xyz' ? 'gisXyzWrap' : 'gisUrlWrap');
         if (btn && wrap && wrap.style.display === 'none') btn.click();
       });

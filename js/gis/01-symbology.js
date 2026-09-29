@@ -13,6 +13,10 @@
   function fmt(v) { return typeof formatValue === "function" ? formatValue(v, state.valueFormat || "auto") : String(v); }
 
   function palette() { return PALETTES[state.paletteIdx].colors; }
+  function namedPalette(name) {
+    var p = name && PALETTES.filter(function (q) { return q.name === name || q.name === "ColorBrewer " + name; })[0];
+    return p ? p.colors : palette();
+  }
 
   function rampColors(name, reverse) {
     var p = PALETTES.filter(function (q) { return q.name === name || q.name === "ColorBrewer " + name; })[0];
@@ -39,7 +43,7 @@
     });
     var numeric = order.every(function (k) { return isFinite(Number(k)); });
     order.sort(numeric ? function (a, b) { return a - b; } : function (a, b) { return a.localeCompare(b); });
-    var pal = palette(), over = layer.style.catColors || {};
+    var pal = layer.style.catPalette ? namedPalette(layer.style.catPalette) : palette(), over = layer.style.catColors || {};
     return order.map(function (k, i) { return { value: k, count: counts[k], color: over[k] || pal[i % pal.length] }; });
   }
 
@@ -242,10 +246,30 @@
     return cls.colors.map(function (c, i) { return { color: c, label: cls.labels[i] }; });
   }
 
+  // Color ramps, grouped like QGIS's ramp catalog. Every palette of the
+  // data visualization side is a ramp too ("Data visualization").
+  var RAMP_GROUPS = (function () {
+    var groups = [
+      { id: "seq", label: "Sequential", names: ["YlGn", "YlGnBu", "GnBu", "BuGn", "PuBuGn", "PuBu", "BuPu", "RdPu", "PuRd", "OrRd", "YlOrRd", "YlOrBr", "Greens", "Blues", "Purples", "Oranges", "Reds", "Grayscale", "Ice Blues", "Monochrome Blue"] },
+      { id: "perc", label: "Perceptual", names: ["Viridis", "Plasma", "Inferno", "Magma", "Cividis", "Turbo", "Cubehelix", "Twilight"] },
+      { id: "div", label: "Diverging", names: ["RdYlGn", "RdYlBu", "RdBu", "RdGy", "Spectral", "BrBG", "PiYG", "PRGn", "PuOr", "Coolwarm"] },
+      { id: "terrain", label: "Terrain & special", names: ["Terrain", "Gist Earth", "Ocean", "Hot", "Cool", "Copper", "Bone", "Pink", "Spring", "Summer", "Autumn", "Winter", "Wistia", "CMRmap", "Gist Stern", "Gnuplot"] },
+      { id: "rainbow", label: "Rainbow", names: ["Jet", "Rainbow", "Gist Rainbow", "HSV", "Nipy Spectral", "Gist Ncar", "Prism"] }
+    ];
+    var used = {};
+    groups.forEach(function (g) {
+      g.names = g.names.filter(function (n) { return PALETTES.some(function (q) { return q.name === n || q.name === "ColorBrewer " + n; }); });
+      g.names.forEach(function (n) { used[n] = used["ColorBrewer " + n] = 1; });
+    });
+    groups.push({ id: "viz", label: "Data visualization palettes", names: PALETTES.map(function (q) { return q.name; }).filter(function (n) { return !used[n]; }) });
+    return groups;
+  })();
+
   GIS.sym = {
     palette: palette, rampColors: rampColors, categories: categories, classes: classes,
     colorExpression: colorExpression, styledData: styledData, labelData: labelData, legendEntries: legendEntries,
     pointData: pointData, sizeLegend: sizeLegend, labelText: labelText, hasLabels: hasLabels,
-    RAMPS: ["YlGn", "Greens", "Blues", "YlGnBu", "GnBu", "BuPu", "OrRd", "YlOrRd", "Reds", "Purples", "Grayscale", "Viridis", "Magma", "Cividis", "Turbo", "RdYlGn", "Spectral", "BrBG", "Terrain"]
+    RAMPS: RAMP_GROUPS.reduce(function (a, g) { return a.concat(g.names); }, []),
+    RAMP_GROUPS: RAMP_GROUPS
   };
 })();
