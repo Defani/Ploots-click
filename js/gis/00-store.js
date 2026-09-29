@@ -276,6 +276,34 @@
       GIS.download(JSON.stringify({ type: "FeatureCollection", features: feats }), safeName(layer.name) + (selectedOnly ? "_selected" : "") + ".geojson", "application/geo+json");
     },
 
+    // Shapefile (.zip), KML or GPX through PlootsFormats (js/formats.js).
+    // KML keeps the layer's colors for single and categorized symbology.
+    exportFormat: function (layer, fmt, selectedOnly) {
+      var F = window.PlootsFormats;
+      if (!F) throw new Error("The format writers are not loaded.");
+      var feats = layer.data.features.filter(function (f, i) { return !selectedOnly || layer.selection.has(i); });
+      var fc = { type: "FeatureCollection", features: feats }, name = safeName(layer.name) + (selectedOnly ? "_selected" : "");
+      if (fmt === "shp") {
+        var blob = F.toShapefileZip(fc, name), url = URL.createObjectURL(blob), a = document.createElement("a");
+        a.href = url; a.download = name + "_shp.zip"; a.click();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+        return;
+      }
+      if (fmt === "kml") {
+        var s = layer.style, colorOf = null;
+        if (s.symbology === "single" || !s.field) colorOf = function () { return s.singleColor; };
+        else if (s.symbology === "categorized" && GIS.sym) {
+          var map = {};
+          GIS.sym.categories(layer).forEach(function (c) { map[String(c.value)] = c.color; });
+          colorOf = function (f) { return map[String(GIS.valueOf(layer, f, GIS.table()))] || s.missingColor; };
+        }
+        GIS.download(F.toKML(fc, layer.name, colorOf), name + ".kml", "application/vnd.google-earth.kml+xml");
+        return;
+      }
+      if (fmt === "gpx") { GIS.download(F.toGPX(fc, layer.name), name + ".gpx", "application/gpx+xml"); return; }
+      throw new Error("Unknown export format " + fmt + ".");
+    },
+
     exportCSV: function (layer, selectedOnly) {
       var fields = GIS.fields(layer).all;
       var rows = [fields.concat(["geometry_type", "x", "y"])];

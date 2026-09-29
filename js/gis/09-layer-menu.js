@@ -70,7 +70,8 @@
     }
     h += SEP + row("rename", "edit", "Rename…") + row("dup", "content_copy", "Duplicate layer");
     h += row("top", "vertical_align_top", "Move to top", { disabled: i === 0 }) + row("bottom", "vertical_align_bottom", "Move to bottom", { disabled: i === n - 1 });
-    if (vec) h += SEP + row("xgeo", "download", "Export GeoJSON") + row("xgeosel", "download", "Export selected features", { disabled: !l.selection.size }) + row("xcsv", "download", "Export CSV");
+    if (vec) h += SEP + row("xgeo", "download", "Export GeoJSON") + row("xgeosel", "download", "Export selected features", { disabled: !l.selection.size }) + row("xcsv", "download", "Export CSV") +
+      row("xshp", "folder_zip", "Export Shapefile (.zip)") + row("xkml", "travel_explore", "Export KML (Google Earth)") + row("xgpx", "route", "Export GPX");
     h += SEP + row("props", "tune", "Properties…") + row("remove", "delete", "Remove layer", { danger: true });
     menu.innerHTML = h;
     menu.classList.add("open");
@@ -110,6 +111,9 @@
       case "xgeo": GIS.exportGeoJSON(l, false); break;
       case "xgeosel": GIS.exportGeoJSON(l, true); break;
       case "xcsv": GIS.exportCSV(l, false); break;
+      case "xshp": case "xkml": case "xgpx":
+        try { GIS.exportFormat(l, act.slice(1), false); } catch (e) { if (window.PlootsKobo) window.PlootsKobo.toast(e.message); }
+        break;
       case "props": layerProperties(l); break;
       case "remove": GIS.remove(l.id); break;
     }

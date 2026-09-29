@@ -45,6 +45,9 @@
           '<div class="gis-attr-menu">' +
             '<button data-x="geojson">GeoJSON — all features</button><button data-x="geojson-sel">GeoJSON — selected</button>' +
             '<button data-x="csv">CSV — all features</button><button data-x="csv-sel">CSV — selected</button>' +
+            '<button data-x="shp">Shapefile — all features</button><button data-x="shp-sel">Shapefile — selected</button>' +
+            '<button data-x="kml">KML — all features</button><button data-x="kml-sel">KML — selected</button>' +
+            '<button data-x="gpx">GPX — all features</button><button data-x="gpx-sel">GPX — selected</button>' +
           "</div></div>" +
         '<input type="search" class="gis-attr-search" placeholder="Search">' +
         '<button data-a="close" title="Close"><span class="material-symbols-outlined">close</span></button>' +
@@ -95,7 +98,11 @@
     if (!l) return;
     var sel = /-sel$/.test(what);
     if (sel && !l.selection.size) return;
-    if (/^geojson/.test(what)) GIS.exportGeoJSON(l, sel); else GIS.exportCSV(l, sel);
+    try {
+      if (/^geojson/.test(what)) GIS.exportGeoJSON(l, sel);
+      else if (/^csv/.test(what)) GIS.exportCSV(l, sel);
+      else GIS.exportFormat(l, what.replace(/-sel$/, ""), sel);
+    } catch (e) { if (window.PlootsKobo) window.PlootsKobo.toast(e.message); }
   }
 
   function addField(l) {

@@ -16,6 +16,10 @@
 
    PlootsFormats.read(files) takes File objects (the parts of a shapefile
    can come together) and resolves to [{ name, geojson, note? }].
+
+   Writers (GeoJSON in WGS 84): toShapefileZip(fc, name) -> Blob (.zip with
+   one shapefile per geometry kind, UTF-8 .dbf, WGS 84 .prj), toKML(fc,
+   name, colorOf?) and toGPX(fc, name) -> text.
    ========================================================================== */
 (function () {
   "use strict";
@@ -286,6 +290,230 @@
     return { type: "FeatureCollection", features: feats };
   }
 
+
+  /* ---------------------------------------------------------- writers */
+  // GeoJSON (WGS 84) -> Shapefile (.zip), KML, GPX.
+
+  var WGS84_PRJ = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+  function xmlEsc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function kindOf(g) { var t = g && g.type ? g.type.replace("Multi", "") : ""; return t === "Point" ? "point" : t === "LineString" ? "line" : t === "Polygon" ? "polygon" : null; }
+
+  // Parts of one geometry as flat rings / lines / points.
+  function partsOf(g) {
+    if (!g) return [];
+    switch (g.type) {
+      case "Point": return [[g.coordinates]];
+      case "MultiPoint": return [g.coordinates];
+      case "LineString": return [g.coordinates];
+      case "MultiLineString": return g.coordinates;
+      case "Polygon": return g.coordinates;
+      case "MultiPolygon": return [].concat.apply([], g.coordinates);
+      case "GeometryCollection": return [].concat.apply([], g.geometries.map(partsOf));
+    }
+    return [];
+  }
+  function signedArea(r) { var s = 0; for (var i = 0; i < r.length - 1; i++) s += (r[i + 1][0] - r[i][0]) * (r[i + 1][1] + r[i][1]); return s; }
+
+  // DBF columns from the properties: numbers N, booleans L, text C (UTF-8).
+  function dbfColumns(features) {
+    var keys = [], info = {};
+    features.forEach(function (f) {
+      Object.keys(f.properties || {}).forEach(function (k) {
+        if (/^__/.test(k)) return;
+        if (!info[k]) { info[k] = { num: true, bool: true, len: 1, int: 1, dec: 0, any: false }; keys.push(k); }
+        var v = f.properties[k], c = info[k];
+        if (v === null || v === undefined || v === "") return;
+        c.any = true;
+        if (typeof v !== "boolean") c.bool = false;
+        if (typeof v === "number" && isFinite(v)) {
+          var s = String(v);
+          if (/e/i.test(s)) s = v.toFixed(8);
+          var d = s.indexOf(".") >= 0 ? s.length - s.indexOf(".") - 1 : 0;
+          c.dec = Math.min(8, Math.max(c.dec, d));
+          c.int = Math.max(c.int, String(Math.trunc(Math.abs(v))).length + (v < 0 ? 1 : 0));
+        } else {
+          c.num = false;
+          c.len = Math.max(c.len, new TextEncoder().encode(typeof v === "object" ? JSON.stringify(v) : String(v)).length);
+        }
+      });
+    });
+    var used = {};
+    return keys.map(function (k) {
+      var c = info[k], name = k.replace(/[^A-Za-z0-9_]/g, "_").slice(0, 10) || "FIELD", base = name, n = 1;
+      while (used[name.toUpperCase()]) { n++; name = base.slice(0, 10 - String(n).length) + n; }
+      used[name.toUpperCase()] = true;
+      var type = !c.any ? "C" : c.bool ? "L" : c.num ? "N" : "C";
+      var len = type === "L" ? 1 : type === "N" ? Math.min(19, c.int + (c.dec ? c.dec + 1 : 0)) : Math.min(254, Math.max(1, c.len));
+      return { key: k, name: name, type: type, len: len, dec: type === "N" ? c.dec : 0 };
+    });
+  }
+
+  function writeDbf(features, cols) {
+    var enc = new TextEncoder(), recLen = 1 + cols.reduce(function (s, c) { return s + c.len; }, 0), headLen = 32 + 32 * cols.length + 1;
+    var buf = new Uint8Array(headLen + recLen * features.length + 1), dv = new DataView(buf.buffer), d = new Date();
+    buf[0] = 3; buf[1] = d.getFullYear() - 1900; buf[2] = d.getMonth() + 1; buf[3] = d.getDate();
+    dv.setUint32(4, features.length, true); dv.setUint16(8, headLen, true); dv.setUint16(10, recLen, true);
+    buf[29] = 0x00; // code page left to the .cpg (UTF-8)
+    cols.forEach(function (c, i) {
+      var o = 32 + i * 32;
+      buf.set(enc.encode(c.name).slice(0, 10), o);
+      buf[o + 11] = c.type.charCodeAt(0); buf[o + 16] = c.len; buf[o + 17] = c.dec;
+    });
+    buf[headLen - 1] = 0x0d;
+    features.forEach(function (f, r) {
+      var o = headLen + r * recLen;
+      buf[o] = 0x20;
+      var at = o + 1;
+      cols.forEach(function (c) {
+        var v = (f.properties || {})[c.key], s;
+        if (v === null || v === undefined || v === "") s = "";
+        else if (c.type === "N") s = typeof v === "number" ? (c.dec ? v.toFixed(c.dec) : String(Math.round(v))) : String(v);
+        else if (c.type === "L") s = v ? "T" : "F";
+        else s = typeof v === "object" ? JSON.stringify(v) : String(v);
+        var bytes = enc.encode(s);
+        if (bytes.length > c.len) { // cut on a character boundary
+          var cut = c.len;
+          while (cut > 0 && (bytes[cut] & 0xc0) === 0x80) cut--;
+          bytes = bytes.slice(0, cut);
+        }
+        var cell = new Uint8Array(c.len).fill(0x20);
+        if (c.type === "N") cell.set(bytes, c.len - bytes.length); else cell.set(bytes, 0);
+        buf.set(cell, at);
+        at += c.len;
+      });
+    });
+    buf[buf.length - 1] = 0x1a;
+    return buf.buffer;
+  }
+
+  // One geometry kind -> .shp and .shx buffers.
+  function writeShp(features, kind) {
+    var type = kind === "point" ? 1 : kind === "line" ? 3 : 5, recs = [], all = [];
+    features.forEach(function (f) {
+      var parts = partsOf(f.geometry).filter(function (p) { return p.length; });
+      if (kind === "polygon") parts = parts.map(function (r, i, arr) {
+        // Shapefile: outer rings clockwise, holes counter-clockwise.
+        var outer = f.geometry.type === "Polygon" ? i === 0 : isOuterInMulti(f.geometry, r);
+        var cw = signedArea(r) > 0;
+        return outer === cw ? r : r.slice().reverse();
+      });
+      var pts = [].concat.apply([], parts);
+      pts.forEach(function (p) { all.push(p); });
+      var len;
+      if (kind === "point") {
+        // A multipoint feature is written as its first point.
+        len = 20;
+        recs.push({ len: len, write: function (dv, o) { dv.setInt32(o, 1, true); dv.setFloat64(o + 4, pts[0][0], true); dv.setFloat64(o + 12, pts[0][1], true); } });
+      } else {
+        len = 44 + 4 * parts.length + 16 * pts.length;
+        recs.push({ len: len, write: function (dv, o) {
+          var b = bbox(pts);
+          dv.setInt32(o, type, true);
+          dv.setFloat64(o + 4, b[0], true); dv.setFloat64(o + 12, b[1], true); dv.setFloat64(o + 20, b[2], true); dv.setFloat64(o + 28, b[3], true);
+          dv.setInt32(o + 36, parts.length, true); dv.setInt32(o + 40, pts.length, true);
+          var k = 0;
+          parts.forEach(function (pp, i) { dv.setInt32(o + 44 + i * 4, k, true); k += pp.length; });
+          var at = o + 44 + 4 * parts.length;
+          pts.forEach(function (p, i) { dv.setFloat64(at + i * 16, p[0], true); dv.setFloat64(at + i * 16 + 8, p[1], true); });
+        } });
+      }
+    });
+    var total = 100 + recs.reduce(function (s, r) { return s + 8 + r.len; }, 0);
+    var shp = new ArrayBuffer(total), shx = new ArrayBuffer(100 + 8 * recs.length), sv = new DataView(shp), xv = new DataView(shx), b = all.length ? bbox(all) : [0, 0, 0, 0];
+    [sv, xv].forEach(function (v, i) {
+      v.setInt32(0, 9994, false); v.setInt32(24, (i ? 100 + 8 * recs.length : total) / 2, false); v.setInt32(28, 1000, true); v.setInt32(32, type, true);
+      v.setFloat64(36, b[0], true); v.setFloat64(44, b[1], true); v.setFloat64(52, b[2], true); v.setFloat64(60, b[3], true);
+    });
+    var o = 100;
+    recs.forEach(function (r, i) {
+      xv.setInt32(100 + i * 8, o / 2, false); xv.setInt32(104 + i * 8, r.len / 2, false);
+      sv.setInt32(o, i + 1, false); sv.setInt32(o + 4, r.len / 2, false);
+      r.write(sv, o + 8);
+      o += 8 + r.len;
+    });
+    return { shp: shp, shx: shx };
+  }
+  function isOuterInMulti(g, ring) {
+    if (g.type !== "MultiPolygon") return true;
+    return g.coordinates.some(function (poly) { return poly[0] === ring; });
+  }
+  function bbox(pts) {
+    var b = [Infinity, Infinity, -Infinity, -Infinity];
+    pts.forEach(function (p) { if (p[0] < b[0]) b[0] = p[0]; if (p[1] < b[1]) b[1] = p[1]; if (p[0] > b[2]) b[2] = p[0]; if (p[1] > b[3]) b[3] = p[1]; });
+    return b;
+  }
+
+  function safe(n) { return String(n || "layer").replace(/[\\/:*?"<>|]+/g, "").trim() || "layer"; }
+
+  // A zip with one shapefile per geometry kind (points / lines / polygons).
+  function toShapefileZip(fc, name) {
+    if (!window.PlootsPlugins || !window.PlootsPlugins.writeZip) throw new Error("The zip writer is not loaded.");
+    var groups = { point: [], line: [], polygon: [] };
+    (fc.features || []).forEach(function (f) { var k = kindOf(f.geometry); if (k) groups[k].push(f); });
+    var kinds = Object.keys(groups).filter(function (k) { return groups[k].length; });
+    if (!kinds.length) throw new Error("No features to export.");
+    var files = {}, base = safe(name);
+    kinds.forEach(function (k) {
+      var stem = kinds.length > 1 ? base + "_" + k + "s" : base, feats = groups[k], cols = dbfColumns(feats), s = writeShp(feats, k);
+      files[stem + ".shp"] = s.shp; files[stem + ".shx"] = s.shx; files[stem + ".dbf"] = writeDbf(feats, cols);
+      files[stem + ".prj"] = WGS84_PRJ; files[stem + ".cpg"] = "UTF-8";
+    });
+    return window.PlootsPlugins.writeZip(files);
+  }
+
+  function kmlCoords(line) { return line.map(function (p) { return +p[0].toFixed(7) + "," + +p[1].toFixed(7); }).join(" "); }
+  function kmlGeom(g) {
+    if (!g) return "";
+    switch (g.type) {
+      case "Point": return "<Point><coordinates>" + kmlCoords([g.coordinates]) + "</coordinates></Point>";
+      case "LineString": return "<LineString><tessellate>1</tessellate><coordinates>" + kmlCoords(g.coordinates) + "</coordinates></LineString>";
+      case "Polygon": return "<Polygon>" + g.coordinates.map(function (r, i) { return (i ? "<innerBoundaryIs>" : "<outerBoundaryIs>") + "<LinearRing><coordinates>" + kmlCoords(r) + "</coordinates></LinearRing>" + (i ? "</innerBoundaryIs>" : "</outerBoundaryIs>"); }).join("") + "</Polygon>";
+      case "MultiPoint": case "MultiLineString": case "MultiPolygon":
+        return "<MultiGeometry>" + g.coordinates.map(function (c) { return kmlGeom({ type: g.type.replace("Multi", ""), coordinates: c }); }).join("") + "</MultiGeometry>";
+      case "GeometryCollection": return "<MultiGeometry>" + g.geometries.map(kmlGeom).join("") + "</MultiGeometry>";
+    }
+    return "";
+  }
+  function toKML(fc, name, colorOf) {
+    var nameKey = pickNameKey(fc);
+    var body = (fc.features || []).map(function (f, i) {
+      var p = f.properties || {}, color = colorOf ? colorOf(f, i) : null, style = "";
+      if (color) {
+        var c = color.replace("#", ""), abgr = "ff" + c.slice(4, 6) + c.slice(2, 4) + c.slice(0, 2), fill = "99" + c.slice(4, 6) + c.slice(2, 4) + c.slice(0, 2);
+        style = "<Style><IconStyle><color>" + abgr + "</color></IconStyle><LineStyle><color>" + abgr + "</color><width>2</width></LineStyle><PolyStyle><color>" + fill + "</color></PolyStyle></Style>";
+      }
+      var data = Object.keys(p).filter(function (k) { return !/^__/.test(k); }).map(function (k) {
+        var v = p[k];
+        return '<Data name="' + xmlEsc(k) + '"><value>' + xmlEsc(v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : v) + "</value></Data>";
+      }).join("");
+      return "<Placemark><name>" + xmlEsc(nameKey ? p[nameKey] : "#" + (i + 1)) + "</name>" + style + "<ExtendedData>" + data + "</ExtendedData>" + kmlGeom(f.geometry) + "</Placemark>";
+    }).join("\n");
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + xmlEsc(name) + "</name>\n" + body + "\n</Document></kml>\n";
+  }
+  function pickNameKey(fc) {
+    var f = (fc.features || [])[0];
+    if (!f) return null;
+    var keys = Object.keys(f.properties || {});
+    return keys.filter(function (k) { return /^(name|nama|label|title|judul|id)$/i.test(k); })[0] || keys.filter(function (k) { return /name|nama/i.test(k); })[0] || null;
+  }
+
+  function toGPX(fc, name) {
+    var nameKey = pickNameKey(fc), wpts = [], trks = [];
+    (fc.features || []).forEach(function (f, i) {
+      var g = f.geometry, p = f.properties || {}, nm = xmlEsc(nameKey ? p[nameKey] : "#" + (i + 1));
+      if (!g) return;
+      if (g.type === "Point" || g.type === "MultiPoint") {
+        (g.type === "Point" ? [g.coordinates] : g.coordinates).forEach(function (c) { wpts.push('<wpt lat="' + c[1] + '" lon="' + c[0] + '"><name>' + nm + "</name></wpt>"); });
+      } else {
+        var lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates
+          : g.type === "Polygon" ? [g.coordinates[0]] : g.type === "MultiPolygon" ? g.coordinates.map(function (x) { return x[0]; }) : [];
+        if (lines.length) trks.push("<trk><name>" + nm + "</name>" + lines.map(function (l) { return "<trkseg>" + l.map(function (c) { return '<trkpt lat="' + c[1] + '" lon="' + c[0] + '"/>'; }).join("") + "</trkseg>"; }).join("") + "</trk>");
+      }
+    });
+    if (!wpts.length && !trks.length) throw new Error("No features to export.");
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Ploots Click" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>' + xmlEsc(name) + "</name></metadata>\n" + wpts.concat(trks).join("\n") + "\n</gpx>\n";
+  }
+
   /* ------------------------------------------------------------ entry */
 
   function unzip(buf) {
@@ -346,5 +574,6 @@
 
   function canRead(name) { return /\.(shp|kml|kmz|gpx)$/i.test(name); }
 
-  window.PlootsFormats = { read: read, canRead: canRead, kml: kml, gpx: gpx, shapefile: shapefile, parsePrj: parsePrj, shapefilesFrom: shapefilesFrom };
+  window.PlootsFormats = { read: read, canRead: canRead, kml: kml, gpx: gpx, shapefile: shapefile, parsePrj: parsePrj, shapefilesFrom: shapefilesFrom,
+    toShapefileZip: toShapefileZip, toKML: toKML, toGPX: toGPX };
 })();
