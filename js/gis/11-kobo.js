@@ -170,6 +170,7 @@
   K.connect = function () {
     setBusy(true, "Connecting…");
     return request(apiUrl("/api/v2/assets/", { format: "json", asset_type: "survey", limit: 300 })).then(function (j) {
+      K.connected = true;
       K.assets = (j.results || []).filter(function (a) { return a.asset_type === "survey" || !a.asset_type; })
         .sort(function (a, b) { return String(b.date_modified || "").localeCompare(String(a.date_modified || "")); });
       setBusy(false, K.assets.length + " form" + (K.assets.length === 1 ? "" : "s"), true);
@@ -472,7 +473,7 @@
   function renderForms() {
     var box = $("koboForms");
     if (!box) return;
-    if (!K.assets.length) { box.innerHTML = '<div class="gis-empty">Not connected</div>'; return; }
+    if (!K.assets.length) { box.innerHTML = '<div class="gis-empty">' + (K.connected ? "No forms" : "Not connected") + "</div>"; return; }
     box.innerHTML = K.assets.map(function (a) {
       var n = a.deployment__submission_count;
       return '<button type="button" class="kobo-form' + (K.asset && K.asset.uid === a.uid ? " active" : "") + '" data-uid="' + esc(a.uid) + '">' + sym(a.has_deployment === false ? "draft" : "assignment") +
