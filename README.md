@@ -39,6 +39,7 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
   - [Editor: toolbars, Design panel & layers](#editor-toolbars-design-panel--layers)
   - [Map workspace (GIS)](#map-workspace-gis)
   - [KoboToolbox monitoring](#kobotoolbox-monitoring)
+  - [Plugins](#plugins)
   - [Page layout & annotation](#page-layout--annotation)
   - [Export](#export)
 - [Architecture](#architecture)
@@ -311,6 +312,22 @@ The round **Claude** button opens a chat bubble. It connects Ploots Click to the
 
 The server keeps one app connection and the newest one wins, so a GeoLibre window with the bridge plugin and Ploots Click take turns. If another app takes over, the bubble shows it and does not reconnect by itself. Connecting by hand turns on auto-connect for your next visit.
 
+### Plugins
+
+Add features without changing the app, the same way as GeoLibre plugins. **Plugins** in the left rail installs a plugin from a `.zip`, a folder or a `plugin.json` URL (a `.zip` can also be dropped on the panel). Each installed plugin can be enabled, disabled, reloaded, downloaded as a `.zip` or removed. Installed plugins are kept in the browser (or the desktop app) and load at startup.
+
+A plugin is a folder with a `plugin.json` manifest and one ES module that exports `activate(app)` / `deactivate(app)`. Through `app`, a plugin can:
+
+- add top-bar buttons, rail panels, dialogs and notifications;
+- read and change map layers, the view and the basemap;
+- read and set chart data and the chart type;
+- add text and images to the page;
+- keep its own settings;
+- read the KoboToolbox data;
+- send messages to the Claude chat.
+
+Everything a plugin adds is removed when it is disabled. **New plugin** downloads a working starter to edit. The API is documented in [PLUGINS.md](./PLUGINS.md), and an example plugin is in `plugins/examples/map-coordinates/` (cursor coordinates in decimal degrees, DMS or UTM).
+
 ### Page layout & annotation
 - **Full-page canvas**, separate from the chart block: position and resize the chart anywhere on the page.
 - **10 built-in page templates** (A4/Letter/Legal landscape & portrait, 16:9 and 4:3 presentation, Instagram Story, social square) plus custom width/height in px, mm or cm, and a page background colour.
@@ -391,6 +408,7 @@ flowchart TD
 ├── js/
 │   ├── lazy-loader.js             # Loads CDN libraries on first use (Fabric, Papa Parse, SheetJS, AG Grid, jsPDF, ...)
 │   ├── desktop-shell.js           # Desktop app only: opens web links in the default browser
+│   ├── plugins.js                 # Plugin manager: install (.zip / folder / URL), enable, the app API, starter
 │   ├── chart-builder/             # Chart settings, data and export, in numbered load-order files
 │   │   ├── 01-config.js           #   static config: fonts, canvas templates, hatch/dash/marker defs
 │   │   ├── 02-state.js            #   shared state object, chart type list, sample data per chart type
@@ -471,6 +489,8 @@ flowchart TD
 │   ├── help_search.js             # Help search: find a menu or setting by name
 │   ├── ui_sections.js             # Collapsible sidebar sections
 │   └── undo_redo.js               # Global undo/redo history
+├── PLUGINS.md                     # How to write a plugin, and the app API
+├── plugins/examples/              # Example plugin (map-coordinates)
 ├── tools/
 │   └── kobo_proxy.py              # Local KoboToolbox API proxy (CORS) with an optional demo form
 ├── desktop/                       # Windows desktop app (Tauri 2)
