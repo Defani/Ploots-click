@@ -87,6 +87,13 @@
   try { typeFilter = localStorage.getItem("ploots-files-type") || "all"; } catch (e) { }
   function filtering() { return !!query || typeFilter !== "all"; }
   var selSet = new Set(), anchorKey = null;
+  var RECENT_KEY = "ploots-files-recent", recent = [], newKeys = new Set();
+  try { recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch (e) { }
+  function addRecent(key) {
+    recent = [{ key: key, at: Date.now() }].concat(recent.filter(function (x) { return x.key !== key; })).slice(0, 10);
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch (e) { }
+    newKeys.delete(key);
+  }
 
   var roots = [], selected = null, query = "", openPaths = {};
   // Which folders are expanded is remembered between sessions.
@@ -154,6 +161,16 @@
 
   // Children of a directory, directories first, hidden entries skipped.
   var cache = {};
+  // Entries shown in the tree: no hidden files, no shapefile sidecars.
+  function visibleEntries(list) {
+    var stems = {};
+    list.forEach(function (e) { if (/\.shp$/i.test(e.name)) stems[e.name.slice(0, -4).toLowerCase()] = true; });
+    return list.filter(function (e) {
+      if (HIDDEN.test(e.name)) return false;
+      var m = SIDECAR.exec(e.name);
+      return !(m && stems[e.name.slice(0, m.index).toLowerCase()]);
+    });
+  }
   function listDir(root, path, handle, node) {
     var key = root.id + "/" + path;
     if (cache[key]) return Promise.resolve(cache[key]);
@@ -169,13 +186,7 @@
       })();
     }
     return p.then(function (list) {
-      var stems = {};
-      list.forEach(function (e) { if (/\.shp$/i.test(e.name)) stems[e.name.slice(0, -4).toLowerCase()] = true; });
-      list = list.filter(function (e) {
-        if (HIDDEN.test(e.name)) return false;
-        var m = SIDECAR.exec(e.name);
-        return !(m && stems[e.name.slice(0, m.index).toLowerCase()]);
-      })
+      list = visibleEntries(list)
         .sort(function (a, b) { return a.kind !== b.kind ? (a.kind === "dir" ? -1 : 1) : a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }); });
       cache[key] = list;
       return list;
@@ -196,9 +207,27 @@
     }
     Promise.all(roots.map(function (r) { return renderRoot(r); })).then(function (parts) {
       if (token !== renderToken) return;
-      box.innerHTML = parts.join("");
+      box.innerHTML = recentHtml() + parts.join("");
       if (selected) { var s = box.querySelector('[data-path="' + CSS.escape(selected) + '"]'); if (s) s.classList.add("sel"); }
     });
+  }
+
+  function recentHtml() {
+    var ids = {};
+    roots.forEach(function (r) { if (r.state === "ok") ids[r.id] = r; });
+    var list = recent.filter(function (x) { return ids[x.key.split("/")[0]] && matches(x.key.split("/").pop()) && (typeFilter === "all" || catOf(x.key) === typeFilter); }).slice(0, 6);
+    if (!list.length) return "";
+    var open = !openPaths["@recent"];
+    return '<div class="fb-root fb-recent-head"><button class="fb-tw" data-toggle="@recent">' + sym(open ? "expand_more" : "chevron_right") + "</button>" + sym("history") + "<b>Recent</b></div>" +
+      (open ? list.map(function (x) {
+        var name = x.key.split("/").pop(), t = TYPES[extOf(name)];
+        return '<div class="fb-row fb-file" style="padding-left:18px" tabindex="0" draggable="true" data-path="' + esc(x.key) + '" title="' + esc(pathOf(x.key)) + '"><i class="fb-sp"></i>' + sym(t ? t[0] : "draft") +
+          "<span>" + esc(name) + '</span><em class="fb-when">' + esc(when(x.at)) + "</em></div>";
+      }).join("") : "");
+  }
+  function when(t) {
+    var s = (Date.now() - t) / 1000;
+    return s < 60 ? "now" : s < 3600 ? Math.round(s / 60) + " min" : s < 86400 ? Math.round(s / 3600) + " h" : Math.round(s / 86400) + " d";
   }
 
   function renderRoot(r) {
@@ -229,7 +258,7 @@
         if (!matches(e.name) || (typeFilter !== "all" && catOf(e.name) !== typeFilter)) return "";
         var t = TYPES[extOf(e.name)];
         return '<div class="fb-row fb-file' + (t ? "" : " unsupported") + (selSet.has(key) ? " sel" : "") + '" ' + pad + ' tabindex="0" draggable="true" data-path="' + esc(key) + '" title="' + esc(p + (t ? " · " + t[1] : "")) + '">' +
-          '<i class="fb-sp"></i>' + sym(t ? t[0] : "draft") + "<span>" + esc(e.name) + "</span></div>";
+          '<i class="fb-sp"></i>' + sym(t ? t[0] : "draft") + "<span>" + esc(e.name) + "</span>" + (newKeys.has(key) ? '<i class="fb-new" title="New"></i>' : "") + "</div>";
       })).then(function (rows) { return rows.join(""); });
     });
   }
@@ -362,7 +391,7 @@
   }
 
   function openKey(key, mode) {
-    return resolve(key).then(function (f) { return openFile(f, key, mode); }).catch(function (e) { toast(e.message || String(e)); });
+    return resolve(key).then(function (f) { return Promise.resolve(openFile(f, key, mode)).then(function () { addRecent(key); render(); }); }).catch(function (e) { toast(e.message || String(e)); });
   }
   function openMany(keys, mode) {
     return keys.reduce(function (p, k) { return p.then(function () { return openKey(k, mode); }); }, Promise.resolve());
@@ -468,6 +497,7 @@
     row.classList.add("sel");
     var key = selected = anchorKey = row.dataset.path;
     selSet = new Set([key]);
+    if (newKeys.delete(key)) { var dot = row.querySelector(".fb-new"); if (dot) dot.remove(); }
     var info = $("fbInfo");
     resolve(key).then(function (f) {
       var t = TYPES[extOf(f.name)];
@@ -710,6 +740,41 @@
     if (ev && ev.type === "click" && interceptable(this)) { divert(this); return false; }
     return nativeDispatch.apply(this, arguments);
   };
+
+  /* ------------------------------------------------------------ watch */
+  // Every few seconds, the connected folders that are expanded are listed
+  // again; files that appeared since are marked with a dot and announced.
+
+  var WATCH_MS = 8000, watching = false;
+  function watch() {
+    if (watching || document.hidden || (window.PlootsLock && !window.PlootsLock.isUnlocked() && window.PlootsLock.configured())) return;
+    watching = true;
+    var found = [], jobs = [], changedDirs = 0;
+    roots.forEach(function (r) {
+      if (r.state !== "ok" || r.session || !openPaths[r.id + "/"]) return;
+      var dirs = [""].concat(Object.keys(openPaths).filter(function (k) { return k.indexOf(r.id + "/") === 0 && k.length > r.id.length + 1 && /\/$/.test(k); }).map(function (k) { return k.slice(r.id.length + 1); }));
+      dirs.forEach(function (dir) {
+        var key = r.id + "/" + dir, before = cache[key];
+        if (!before) return;
+        jobs.push(dirEntries(r, dir).then(function (all) {
+          var visible = visibleEntries(all), had = {}, now = {};
+          before.forEach(function (e) { had[e.name] = true; });
+          visible.forEach(function (e) { now[e.name] = true; });
+          var fresh = visible.filter(function (e) { return !had[e.name]; });
+          var gone = before.some(function (e) { return !now[e.name]; });
+          if (fresh.length || gone) { delete cache[key]; changedDirs++; }
+          fresh.forEach(function (e) { if (e.kind === "file") { newKeys.add(key + e.name); found.push(r.name + "/" + dir + e.name); } });
+        }).catch(function () { }));
+      });
+    });
+    Promise.all(jobs).then(function () {
+      watching = false;
+      if (!jobs.length) return;
+      if (found.length) toast("New file" + (found.length === 1 ? "" : "s") + ": " + found.slice(0, 3).join(", ") + (found.length > 3 ? " +" + (found.length - 3) : ""));
+      if (changedDirs) render();
+    });
+  }
+  setInterval(watch, WATCH_MS);
 
   function boot() {
     build();
