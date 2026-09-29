@@ -172,15 +172,6 @@
   // Map panel, which keeps the cartography settings as "Map frame").
 
   var panelsBuilt = false;
-  function makePanel(id, title) {
-    var p = document.createElement("div");
-    p.id = id;
-    p.className = "sidebar-panel";
-    p.innerHTML = '<div class="sp-head"><span class="sp-title">' + title + '</span><button type="button" class="sp-close" title="Close panel">' + sym("keyboard_double_arrow_left") + "</button></div>";
-    document.querySelector(".sidebar").appendChild(p);
-    p.querySelector(".sp-close").addEventListener("click", function () { window.closeSidebar(); });
-    return p;
-  }
   function railButton(panelId, icon, label, cls, before) {
     var nav = document.querySelector(".sidebar-nav"), b = document.createElement("button");
     b.className = "nav-btn " + cls;
@@ -295,36 +286,82 @@
     var layers = tabs.layers.body, style = tabs.style.body;
     moveSection("gisLayers", layers);
     moveSection("gisStyle", style);
-    // Add data (left, like QGIS's Data Source Manager): the add buttons,
-    // their URL / XYZ forms and the basemap. The Layers tab keeps only the
-    // layer list.
-    var add = makePanel("panel-gis-add", "Add data"), lsec = $("gisLayers");
-    var addBody = document.createElement("div");
-    addBody.className = "gisw-add";
-    addBody.innerHTML = '<div class="gisw-add-hint">Add a layer from a file, a tile service, a URL or pasted GeoJSON. Layers appear in the Layers dock on the right.</div>';
+    // Add data: one small rail button per source, like QGIS's Manage
+    // Layers toolbar. Files open the file dialog straight away; XYZ and URL
+    // open their form in a popover beside the rail. The Layers tab keeps
+    // only the layer list (the basemap is in the top bar's Basemap menu).
+    var lsec = $("gisLayers"), keep = {};
+    Array.prototype.forEach.call(lsec.querySelectorAll(".gis-layer-actions button"), function (btn) { keep[btn.id || btn.querySelector("input").id] = btn; });
+    var hold = document.createElement("div");
+    hold.className = "gisw-hold";
+    hold.hidden = true;
     Array.prototype.forEach.call(lsec.querySelectorAll(".gis-layer-actions"), function (a) {
-      Array.prototype.slice.call(a.children).forEach(function (b) { if (b.id !== "gisTableBtn") addBody.appendChild(b); else b.hidden = true; });
+      Array.prototype.slice.call(a.children).forEach(function (c) { hold.appendChild(c); });
       a.remove();
     });
-    ["gisUrlWrap", "gisXyzWrap", "gisStatus"].forEach(function (id) { if ($(id)) addBody.appendChild($(id)); });
-    var more = document.createElement("div");
-    more.className = "gisw-add-more";
-    more.innerHTML =
-      '<button type="button" data-go="files">' + sym("folder_open") + "Browse folders</button>" +
-      '<button type="button" data-go="catalog">' + sym("travel_explore") + "Data catalog</button>";
-    more.addEventListener("click", function (e) {
-      var b = e.target.closest("[data-go]");
-      if (!b) return;
-      if (b.dataset.go === "catalog" && GIS.openCatalog) GIS.openCatalog();
-      else if (b.dataset.go === "files") { var fb = document.querySelector('.nav-btn[data-panel="panel-files"]'); if (fb) fb.click(); }
+    document.body.appendChild(hold);
+    var pop = document.createElement("div");
+    pop.className = "gisw-addpop";
+    pop.hidden = true;
+    ["gisXyzWrap", "gisUrlWrap"].forEach(function (id) { var w = $(id); if (w) { pop.appendChild(w); w.style.display = "none"; } });
+    document.body.appendChild(pop);
+    if (GIS.wirePanelRoot) GIS.wirePanelRoot(pop);
+    var sec = $("gisBasemapSec");
+    if (sec && sec.closest(".side-section")) sec.closest(".side-section").hidden = true;
+    function closePop() { pop.hidden = true; railAdd.forEach(function (x) { x.classList.remove("active"); }); }
+    function openPop(kind, btn) {
+      if (!pop.hidden && pop.dataset.kind === kind) { closePop(); return; }
+      pop.dataset.kind = kind;
+      $("gisXyzWrap").style.display = kind === "xyz" ? "" : "none";
+      $("gisUrlWrap").style.display = kind === "url" ? "" : "none";
+      pop.hidden = false;
+      railAdd.forEach(function (x) { x.classList.toggle("active", x === btn); });
+      var r = btn.getBoundingClientRect();
+      pop.style.left = r.right + 8 + "px";
+      pop.style.top = Math.max(8, Math.min(window.innerHeight - pop.offsetHeight - 8, r.top)) + "px";
+      var f = pop.querySelector(kind === "xyz" ? "#gisXyzUrl" : "#gisUrlText");
+      if (f) f.focus();
+    }
+    GIS.openAddForm = function (kind) {
+      if (GIS.enterMapMode) GIS.enterMapMode();
+      var btn = railAdd.filter(function (x) { return x.dataset.add === kind; })[0];
+      if (btn) openPop(kind, btn);
+    };
+    document.addEventListener("mousedown", function (e) { if (!pop.hidden && !pop.contains(e.target) && !e.target.closest(".nav-add")) closePop(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !pop.hidden) closePop(); });
+    // Loading from the URL / XYZ form closes the popover.
+    ["gisUrlLoad", "gisXyzAdd"].forEach(function (id) { var x = $(id); if (x) x.addEventListener("click", function () { setTimeout(closePop, 0); }); });
+    var ADD = [["vector", "polyline", "Vector", "Add a vector layer (GeoJSON, Shapefile, KML/KMZ, GPX, TopoJSON)"],
+      ["raster", "grid_on", "Raster", "Add a raster layer (GeoTIFF)"],
+      ["xyz", "travel_explore", "XYZ", "Add an XYZ tile layer"],
+      ["url", "link", "URL", "Add a layer from a URL or pasted GeoJSON"],
+      ["sample", "public", "Sample", "Add the sample layer"]];
+    var anchor = nav.querySelector('[data-panel="panel-files"]');
+    anchor = anchor ? anchor.nextSibling : mapBtn;
+    var head = document.createElement("div");
+    head.className = "nav-gis nav-add-sep";
+    head.textContent = "Add";
+    anchor.before(head);
+    var railAdd = ADD.map(function (d) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "nav-btn nav-gis nav-add";
+      b.dataset.add = d[0];
+      b.title = d[3];
+      b.innerHTML = sym(d[1]) + '<span class="nav-lbl">' + d[2] + "</span>";
+      anchor.before(b);
+      b.addEventListener("click", function () {
+        if (d[0] === "vector" || d[0] === "raster") { closePop(); $(d[0] === "vector" ? "gisVectorFile" : "gisRasterFile").click(); }
+        else if (d[0] === "sample") { closePop(); if (keep.gisSampleBtn) keep.gisSampleBtn.click(); }
+        else openPop(d[0], b);
+      });
+      return b;
     });
-    addBody.appendChild(more);
-    add.appendChild(addBody);
-    moveSection("gisBasemapSec", add);
-    if (GIS.wirePanelRoot) GIS.wirePanelRoot(add);
+    var tail = document.createElement("div");
+    tail.className = "nav-gis nav-add-sep";
+    anchor.before(tail);
     // The moved sections keep the Map panel's input handling.
     if (GIS.wirePanelRoot) { GIS.wirePanelRoot(layers); GIS.wirePanelRoot(style); }
-    railButton("panel-gis-add", "add_circle", "Add data", "nav-gis", nav.querySelector('[data-panel="panel-files"]') ? nav.querySelector('[data-panel="panel-files"]').nextSibling : mapBtn);
     dockRailButton("layers", "layers", "Layers", mapBtn);
     dockRailButton("style", "palette", "Styling", mapBtn);
     syncDock();
@@ -341,7 +378,6 @@
     if (GIS.processing && GIS.processing.build) GIS.processing.build(mapBtn);
   }
   // Panels that used to open "panel-map" for layers or styling now open these.
-  GIS.openAddPanel = function () { if (GIS.enterMapMode) GIS.enterMapMode(); buildPanels(); activateSidebarPanel("panel-gis-add"); };
   GIS.openLayersPanel = function () { if (GIS.enterMapMode) GIS.enterMapMode(); buildPanels(); showTab("layers"); };
   GIS.openStylingPanel = function () { if (GIS.enterMapMode) GIS.enterMapMode(); buildPanels(); showTab("style"); };
 

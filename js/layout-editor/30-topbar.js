@@ -162,7 +162,8 @@
         if (v === 'vector' || v === 'raster') { var inp = $(v === 'vector' ? 'gisVectorFile' : 'gisRasterFile'); if (inp) inp.click(); return; }
         if (v === 'sample') { GIS.loadSampleLayer(); return; }
         if (v === 'catalog') { GIS.openCatalog(); return; }
-        if (GIS.openAddPanel) GIS.openAddPanel(); else mapPanel();
+        if (GIS.openAddForm) { GIS.openAddForm(v); return; }
+        mapPanel();
         var btn = $(v === 'xyz' ? 'gisXyzBtn' : 'gisUrlBtn'), wrap = $(v === 'xyz' ? 'gisXyzWrap' : 'gisUrlWrap');
         if (btn && wrap && wrap.style.display === 'none') btn.click();
       });
