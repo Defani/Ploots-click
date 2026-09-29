@@ -814,7 +814,13 @@
     M.interactive = !!on;
     var fc = window.fabricCanvas, wrapper = fc && (fc.wrapperEl || (fc.upperCanvasEl && fc.upperCanvasEl.parentNode));
     if (on && fc) { fc.discardActiveObject(); fc.requestRenderAll(); }
-    if (wrapper) wrapper.style.pointerEvents = on ? "none" : "";
+    // The page objects' canvas sits above the map; let pointer events reach
+    // the map while moving its content (both the Fabric container and the
+    // wrapper around it cover the map).
+    [wrapper, document.getElementById("fabricCanvasWrap")].forEach(function (el) { if (el) el.style.pointerEvents = on ? "none" : ""; });
+    // 07-selection.js gives the wrapper its events back on every mousedown
+    // on the page; this class tells it not to while the map is moving.
+    document.body.classList.toggle("gis-map-interactive", !!on);
     var block = document.getElementById("chartBlock");
     if (block) block.classList.toggle("gj-interactive", !!on);
     M.tools.style.display = on ? "" : "none";
