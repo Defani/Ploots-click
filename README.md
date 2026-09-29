@@ -333,6 +333,7 @@ Like the QGIS Browser panel: **Files** in the left rail connects one or more fol
 - **Several at once:** Ctrl / Shift + click to select several files, then **Open all**.
 - **Right-click** for Open, Use as chart data, Add as points (tables with latitude / longitude), Add to map, Copy name and Copy path.
 - **Drag** files onto the page or the map to open them; images land where they are dropped.
+- **Save exports to** a connected folder, or **Ask each time**, instead of Downloads. This covers every export: PNG / JPG / PDF / SVG, CSV and GeoJSON, Kobo CSV and plugin zips. Name clashes get " (2)", and the folder asks once for write access.
 
 Selecting a file shows a **preview** before it is opened: the first rows of a CSV or Excel sheet (with the list of sheets), a thumbnail map of a vector file with its feature count, geometry type and fields, an image thumbnail, or a plugin's name and description. Expanded folders are remembered.
 

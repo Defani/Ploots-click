@@ -189,6 +189,7 @@
     var box = $("fbTree");
     if (!box) return;
     var token = ++renderToken;
+    renderSave();
     if (!roots.length) {
       box.innerHTML = '<div class="gis-empty">No folders connected</div>';
       return;
@@ -383,6 +384,7 @@
         '<div class="fb-types" id="fbTypes">' + CATS.map(function (c) { return '<button type="button" data-type="' + c[0] + '"' + (c[0] === typeFilter ? ' class="on"' : "") + ">" + c[1] + "</button>"; }).join("") + "</div>" +
         '<div class="fb-tree" id="fbTree"></div>' +
         '<div class="fb-info" id="fbInfo"></div>' +
+        '<label class="fb-save">' + sym("save") + '<span>Save exports to</span><select id="fbSave"></select></label>' +
       "</div>";
     document.querySelector(".sidebar").appendChild(p);
 
@@ -401,6 +403,7 @@
     p.querySelector(".sp-close").addEventListener("click", function () { window.closeSidebar(); });
 
     $("fbConnect").addEventListener("click", connect);
+    $("fbSave").addEventListener("change", function () { setSaveTo(this.value); });
     $("fbPick").addEventListener("change", function () { sessionFolder(this.files); this.value = ""; });
     $("fbSearch").addEventListener("input", function () { query = this.value.trim().toLowerCase(); render(); });
     var tree = $("fbTree");
@@ -633,6 +636,80 @@
       });
     }, Promise.resolve()).catch(function (x) { toast(x.message || String(x)); });
   }, true);
+
+  /* ------------------------------------------------- save exports to */
+  // Every download the app makes (PNG / PDF / SVG exports, CSV, GeoJSON,
+  // Kobo CSV, plugin zips) goes through an <a download> click. When a
+  // target is chosen, that click writes the file into the folder instead
+  // (or asks where to save it), and the Downloads folder is left alone.
+
+  var SAVE_KEY = "ploots-files-save";
+  var saveTo = "";
+  try { saveTo = localStorage.getItem(SAVE_KEY) || ""; } catch (e) { }
+  var FSA_SAVE = typeof window.showSaveFilePicker === "function";
+
+  function renderSave() {
+    var s = $("fbSave");
+    if (!s) return;
+    var opts = [["", "Downloads"]].concat(FSA_SAVE ? [["ask", "Ask each time"]] : [])
+      .concat(roots.filter(function (r) { return r.handle; }).map(function (r) { return [r.id, "Folder: " + r.name]; }));
+    if (!opts.some(function (o) { return o[0] === saveTo; })) saveTo = "";
+    s.innerHTML = opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === saveTo ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("");
+  }
+  function setSaveTo(v) {
+    var r = roots.filter(function (x) { return x.id === v; })[0];
+    function done(ok) { saveTo = ok ? v : ""; try { localStorage.setItem(SAVE_KEY, saveTo); } catch (e) { } renderSave(); if (ok && r) toast("Exports are saved to " + r.name); }
+    if (!r) { done(true); return; }
+    // Writing needs its own permission (asked once, from this click).
+    r.handle.requestPermission({ mode: "readwrite" }).then(function (p) { done(p === "granted"); if (p !== "granted") toast("Write access to " + r.name + " was not given."); }, function () { done(false); });
+  }
+
+  function uniqueName(dir, name) {
+    var m = /^(.*?)(\.[^.]*)?$/.exec(name), stem = m[1], ext = m[2] || "", n = 1;
+    function tryName(nm) {
+      return dir.getFileHandle(nm).then(function () { n++; return tryName(stem + " (" + n + ")" + ext); }, function () { return nm; });
+    }
+    return tryName(name);
+  }
+  function saveBlob(blob, name) {
+    if (saveTo === "ask") {
+      return window.showSaveFilePicker({ suggestedName: name }).then(function (fh) {
+        return fh.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(function () { toast("Saved " + fh.name); });
+      }, function (e) { if (e && e.name === "AbortError") return; throw e; });
+    }
+    var r = roots.filter(function (x) { return x.id === saveTo; })[0];
+    if (!r || !r.handle) return Promise.reject(new Error("The export folder is not connected."));
+    return r.handle.queryPermission({ mode: "readwrite" }).then(function (p) {
+      if (p !== "granted") return r.handle.requestPermission({ mode: "readwrite" });
+      return p;
+    }).then(function (p) {
+      if (p !== "granted") throw new Error("No write access to " + r.name + ".");
+      return uniqueName(r.handle, name).then(function (nm) {
+        return r.handle.getFileHandle(nm, { create: true }).then(function (fh) { return fh.createWritable(); })
+          .then(function (w) { return w.write(blob).then(function () { return w.close(); }); })
+          .then(function () {
+            Object.keys(cache).forEach(function (k) { if (k === r.id + "/") delete cache[k]; });
+            render();
+            toast("Saved " + r.name + "/" + nm);
+          });
+      });
+    });
+  }
+  // Intercept download clicks (a.click() and dispatched click events).
+  function interceptable(a) {
+    return saveTo && a && a.hasAttribute && a.hasAttribute("download") && /^(blob:|data:)/.test(a.href || "");
+  }
+  function divert(a) {
+    var name = a.getAttribute("download") || "export";
+    fetch(a.href).then(function (r) { return r.blob(); }).then(function (b) { return saveBlob(b, name); })
+      .catch(function (e) { toast("Could not save " + name + ": " + (e.message || e) + ". Saved to Downloads instead."); nativeClick.call(a); });
+  }
+  var nativeClick = HTMLAnchorElement.prototype.click, nativeDispatch = HTMLAnchorElement.prototype.dispatchEvent;
+  HTMLAnchorElement.prototype.click = function () { if (interceptable(this)) { divert(this); return; } return nativeClick.apply(this, arguments); };
+  HTMLAnchorElement.prototype.dispatchEvent = function (ev) {
+    if (ev && ev.type === "click" && interceptable(this)) { divert(this); return false; }
+    return nativeDispatch.apply(this, arguments);
+  };
 
   function boot() {
     build();
