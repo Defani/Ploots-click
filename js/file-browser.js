@@ -77,6 +77,17 @@
   // roots: [{ id, name, handle?, files?(session fallback), state: "ok"|"ask"|"gone", open: {path:true} }]
   // A node: { name, path, kind: "dir"|"file", handle?, file?, children? }
 
+  var CATS = [["all", "All"], ["table", "Tables"], ["vector", "Vector"], ["raster", "Raster"], ["image", "Images"]];
+  function catOf(name) {
+    var e = extOf(name);
+    return /^(csv|tsv|txt|xlsx|xls)$/.test(e) ? "table" : /^(json|geojson|topojson|shp|kml|kmz|gpx|zip)$/.test(e) ? "vector"
+      : /^tiff?$/.test(e) ? "raster" : /^(png|jpe?g|gif|webp|svg)$/.test(e) ? "image" : "other";
+  }
+  var typeFilter = "all";
+  try { typeFilter = localStorage.getItem("ploots-files-type") || "all"; } catch (e) { }
+  function filtering() { return !!query || typeFilter !== "all"; }
+  var selSet = new Set(), anchorKey = null;
+
   var roots = [], selected = null, query = "", openPaths = {};
   // Which folders are expanded is remembered between sessions.
   try { openPaths = JSON.parse(localStorage.getItem("ploots-files-open") || "{}"); } catch (e) { }
@@ -209,14 +220,14 @@
       return Promise.all(list.map(function (e) {
         var p = path + e.name + (e.kind === "dir" ? "/" : ""), key = r.id + "/" + p, pad = 'style="padding-left:' + (depth * 14 + 4) + 'px"';
         if (e.kind === "dir") {
-          var open = openPaths[key] || !!query;
+          var open = openPaths[key] || filtering();
           var row = '<div class="fb-row fb-dir" ' + pad + ' data-toggle="' + esc(key) + '">' + sym(open ? "expand_more" : "chevron_right") + sym(open ? "folder_open" : "folder") + "<span>" + esc(e.name) + "</span></div>";
-          if (!open) return query ? "" : row;
-          return renderDir(r, p, e.handle, e.node, depth + 1).then(function (inner) { return query && !inner ? "" : row + inner; });
+          if (!open) return filtering() ? "" : row;
+          return renderDir(r, p, e.handle, e.node, depth + 1).then(function (inner) { return filtering() && !inner ? "" : row + inner; });
         }
-        if (!matches(e.name)) return "";
+        if (!matches(e.name) || (typeFilter !== "all" && catOf(e.name) !== typeFilter)) return "";
         var t = TYPES[extOf(e.name)];
-        return '<div class="fb-row fb-file' + (t ? "" : " unsupported") + '" ' + pad + ' tabindex="0" data-path="' + esc(key) + '" title="' + esc(p + (t ? " · " + t[1] : "")) + '">' +
+        return '<div class="fb-row fb-file' + (t ? "" : " unsupported") + (selSet.has(key) ? " sel" : "") + '" ' + pad + ' tabindex="0" draggable="true" data-path="' + esc(key) + '" title="' + esc(p + (t ? " · " + t[1] : "")) + '">' +
           '<i class="fb-sp"></i>' + sym(t ? t[0] : "draft") + "<span>" + esc(e.name) + "</span></div>";
       })).then(function (rows) { return rows.join(""); });
     });
@@ -308,9 +319,20 @@
     });
   }
 
-  function openFile(file, key) {
+  // mode: undefined (by type and workspace), "chart" (table as chart data),
+  // "points" (table with lat/lon as a point layer).
+  function openFile(file, key, mode) {
     var ext = extOf(file.name);
     if (window.PlootsHome) window.PlootsHome.hide();
+    if (mode === "points") {
+      window.PlootsGIS.enterMapMode();
+      return csvToPoints(file).then(function (done) { if (!done) throw new Error(file.name + " has no latitude / longitude columns."); });
+    }
+    if (mode === "chart") {
+      toChart();
+      if (/^xlsx?$/.test(ext)) feed("xlsxFile", file); else if (ext === "json") feed("jsonFile", file); else feed("csvFile", file);
+      return;
+    }
     switch (ext) {
       case "shp":
         return (key ? siblings(key) : Promise.resolve([file])).then(function (parts) { return addLayers(parts.length ? parts : [file]); });
@@ -338,8 +360,11 @@
     }
   }
 
-  function openKey(key) {
-    resolve(key).then(function (f) { return openFile(f, key); }).catch(function (e) { toast(e.message || String(e)); });
+  function openKey(key, mode) {
+    return resolve(key).then(function (f) { return openFile(f, key, mode); }).catch(function (e) { toast(e.message || String(e)); });
+  }
+  function openMany(keys, mode) {
+    return keys.reduce(function (p, k) { return p.then(function () { return openKey(k, mode); }); }, Promise.resolve());
   }
 
   /* ------------------------------------------------------------- panel */
@@ -355,6 +380,7 @@
         '<button id="fbConnect" class="btn-primary fb-connect">' + sym("create_new_folder") + "Connect folder</button>" +
         '<input type="file" id="fbPick" webkitdirectory multiple style="display:none">' +
         '<input type="search" id="fbSearch" placeholder="Filter files">' +
+        '<div class="fb-types" id="fbTypes">' + CATS.map(function (c) { return '<button type="button" data-type="' + c[0] + '"' + (c[0] === typeFilter ? ' class="on"' : "") + ">" + c[1] + "</button>"; }).join("") + "</div>" +
         '<div class="fb-tree" id="fbTree"></div>' +
         '<div class="fb-info" id="fbInfo"></div>' +
       "</div>";
@@ -388,7 +414,37 @@
       }
       if ((t = e.target.closest("[data-remove]"))) { disconnect(t.dataset.remove); return; }
       if ((t = e.target.closest("[data-toggle]"))) { var k = t.dataset.toggle; if (openPaths[k]) delete openPaths[k]; else openPaths[k] = true; saveOpen(); render(); return; }
-      if ((t = e.target.closest("[data-path]"))) select(t);
+      if ((t = e.target.closest("[data-path]"))) {
+        var k2 = t.dataset.path;
+        if (e.ctrlKey || e.metaKey) { if (selSet.has(k2)) selSet.delete(k2); else selSet.add(k2); anchorKey = k2; showSelection(); }
+        else if (e.shiftKey && anchorKey) {
+          var all = Array.prototype.map.call(tree.querySelectorAll("[data-path]"), function (x) { return x.dataset.path; });
+          var a = all.indexOf(anchorKey), b = all.indexOf(k2);
+          if (a >= 0 && b >= 0) { selSet = new Set(all.slice(Math.min(a, b), Math.max(a, b) + 1)); showSelection(); }
+        } else select(t);
+      }
+    });
+    tree.addEventListener("contextmenu", function (e) {
+      var t = e.target.closest("[data-path]");
+      if (!t) return;
+      e.preventDefault();
+      if (!selSet.has(t.dataset.path)) select(t);
+      menu(e.clientX, e.clientY);
+    });
+    tree.addEventListener("dragstart", function (e) {
+      var t = e.target.closest("[data-path]");
+      if (!t) return;
+      var keys = selSet.has(t.dataset.path) ? Array.from(selSet) : [t.dataset.path];
+      e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(keys));
+      e.dataTransfer.effectAllowed = "copy";
+    });
+    $("fbTypes").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-type]");
+      if (!b) return;
+      typeFilter = b.dataset.type;
+      try { localStorage.setItem("ploots-files-type", typeFilter); } catch (x) { }
+      Array.prototype.forEach.call(this.children, function (c) { c.classList.toggle("on", c === b); });
+      render();
     });
     tree.addEventListener("dblclick", function (e) { var t = e.target.closest("[data-path]"); if (t) openKey(t.dataset.path); });
     tree.addEventListener("keydown", function (e) {
@@ -407,7 +463,8 @@
   function select(row) {
     Array.prototype.forEach.call(document.querySelectorAll("#fbTree .sel"), function (x) { x.classList.remove("sel"); });
     row.classList.add("sel");
-    var key = selected = row.dataset.path;
+    var key = selected = anchorKey = row.dataset.path;
+    selSet = new Set([key]);
     var info = $("fbInfo");
     resolve(key).then(function (f) {
       var t = TYPES[extOf(f.name)];
@@ -500,6 +557,82 @@
       " · " + fields.length + " field" + (fields.length === 1 ? "" : "s") + (note ? "<br>" + esc(note) : "") + "</div>" +
       (fields.length ? '<div class="fb-prev-fields">' + fields.slice(0, 12).map(function (k) { return "<i>" + esc(k) + "</i>"; }).join("") + (fields.length > 12 ? "<i>+" + (fields.length - 12) + "</i>" : "") + "</div>" : "");
   }
+
+  // Several files selected (Ctrl / Shift + click).
+  function showSelection() {
+    var tree = $("fbTree");
+    Array.prototype.forEach.call(tree.querySelectorAll("[data-path]"), function (x) { x.classList.toggle("sel", selSet.has(x.dataset.path)); });
+    if (selSet.size <= 1) { var only = tree.querySelector(".sel"); if (only) select(only); return; }
+    var info = $("fbInfo");
+    info.innerHTML = "<b>" + selSet.size + " files selected</b><span>" + esc(Array.from(selSet).map(function (k) { return k.split("/").pop(); }).slice(0, 6).join(", ")) + (selSet.size > 6 ? "…" : "") + "</span>" +
+      '<button class="btn-primary" id="fbOpenAll">' + sym("open_in_new") + "Open all</button>";
+    $("fbOpenAll").addEventListener("click", function () { openMany(Array.from(selSet)); });
+  }
+
+  /* ------------------------------------------------------ context menu */
+
+  var ctx = null;
+  function closeMenu() { if (ctx) ctx.classList.remove("open"); }
+  document.addEventListener("mousedown", function (e) { if (ctx && !ctx.contains(e.target)) closeMenu(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
+  function menu(x, y) {
+    if (!ctx) { ctx = document.createElement("div"); ctx.className = "gis-ctx fb-ctx"; document.body.appendChild(ctx); }
+    var keys = Array.from(selSet), names = keys.map(function (k) { return k.split("/").pop(); });
+    var cats = new Set(names.map(catOf)), one = keys.length === 1, h = '<div class="gis-ctx-head">' + esc(one ? names[0] : keys.length + " files") + "</div>";
+    function item(act, icon, label) { return '<button type="button" data-act="' + act + '">' + sym(icon) + "<span>" + esc(label) + "</span></button>"; }
+    h += item("open", "open_in_new", one ? "Open" : "Open all");
+    if (cats.has("table")) h += item("chart", "bar_chart", "Use as chart data") + item("points", "scatter_plot", "Add as points");
+    if (cats.has("vector") || cats.has("raster")) h += item("map", "add_location_alt", "Add to map");
+    h += '<div class="gis-ctx-sep"></div>' + item("name", "content_copy", one ? "Copy name" : "Copy names") + item("path", "link", one ? "Copy path" : "Copy paths");
+    ctx.innerHTML = h;
+    ctx.classList.add("open");
+    ctx.style.left = Math.max(6, Math.min(window.innerWidth - ctx.offsetWidth - 6, x)) + "px";
+    ctx.style.top = Math.max(6, Math.min(window.innerHeight - ctx.offsetHeight - 6, y)) + "px";
+    ctx.onclick = function (e) {
+      var b = e.target.closest("[data-act]");
+      if (!b) return;
+      closeMenu();
+      var a = b.dataset.act;
+      if (a === "open" || a === "map") openMany(keys);
+      else if (a === "chart") openMany(keys.filter(function (k) { return catOf(k) === "table"; }).slice(0, 1), "chart");
+      else if (a === "points") openMany(keys.filter(function (k) { return catOf(k) === "table"; }), "points");
+      else if (a === "name" || a === "path") {
+        var txt = (a === "name" ? names : keys.map(pathOf)).join("\n");
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { toast("Copied " + (keys.length === 1 ? txt : keys.length + " " + (a === "name" ? "names" : "paths"))); });
+      }
+    };
+  }
+  // "Folder/sub/file.csv" for a key (root name + path inside it).
+  function pathOf(key) {
+    var id = key.split("/")[0], r = roots.filter(function (x) { return x.id === id; })[0];
+    return (r ? r.name : id) + "/" + key.slice(id.length + 1);
+  }
+
+  /* ------------------------------------------------------ drag & drop */
+  // Drag files from the panel onto the page or the map to open them;
+  // images land where they are dropped.
+
+  var DRAG_TYPE = "application/x-ploots-files";
+  function isOurs(e) { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], DRAG_TYPE) >= 0; }
+  document.addEventListener("dragover", function (e) {
+    if (!isOurs(e) || !e.target.closest || !e.target.closest("#paneLayout")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  document.addEventListener("drop", function (e) {
+    if (!isOurs(e) || !e.target.closest || !e.target.closest("#paneLayout")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var keys = [];
+    try { keys = JSON.parse(e.dataTransfer.getData(DRAG_TYPE)); } catch (x) { return; }
+    var at = typeof stageClientToCanvasPoint === "function" ? stageClientToCanvasPoint(e.clientX, e.clientY) : null;
+    keys.reduce(function (p, k) {
+      return p.then(function () {
+        if (catOf(k) === "image" && at && typeof addImageObjectFromFile === "function") return resolve(k).then(function (f) { addImageObjectFromFile(f, at); });
+        return openKey(k);
+      });
+    }, Promise.resolve()).catch(function (x) { toast(x.message || String(x)); });
+  }, true);
 
   function boot() {
     build();

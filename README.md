@@ -327,6 +327,13 @@ Like the QGIS Browser panel: **Files** in the left rail connects one or more fol
 - **Images** are placed on the page.
 - A **plugin .zip** is installed.
 
+**Working with files:**
+
+- **Type filter:** All, Tables, Vector, Raster or Images.
+- **Several at once:** Ctrl / Shift + click to select several files, then **Open all**.
+- **Right-click** for Open, Use as chart data, Add as points (tables with latitude / longitude), Add to map, Copy name and Copy path.
+- **Drag** files onto the page or the map to open them; images land where they are dropped.
+
 Selecting a file shows a **preview** before it is opened: the first rows of a CSV or Excel sheet (with the list of sheets), a thumbnail map of a vector file with its feature count, geometry type and fields, an image thumbnail, or a plugin's name and description. Expanded folders are remembered.
 
 Files are read from disk when opened; nothing is copied or uploaded. This uses the File System Access API (Chrome, Edge and the desktop app). In other browsers, a folder can be read for the current session only.
