@@ -78,6 +78,9 @@
   // A node: { name, path, kind: "dir"|"file", handle?, file?, children? }
 
   var roots = [], selected = null, query = "", openPaths = {};
+  // Which folders are expanded is remembered between sessions.
+  try { openPaths = JSON.parse(localStorage.getItem("ploots-files-open") || "{}"); } catch (e) { }
+  function saveOpen() { try { localStorage.setItem("ploots-files-open", JSON.stringify(openPaths)); } catch (e) { } }
 
   function connect() {
     if (!FSA) { $("fbPick").click(); return; }
@@ -95,6 +98,7 @@
         return tx("readwrite", function (s) { return s.put(rec); }).then(function () {
           roots.push({ id: rec.id, name: rec.name, handle: h, state: "ok" });
           openPaths[rec.id + "/"] = true;
+          saveOpen();
           render();
         });
       });
@@ -383,7 +387,7 @@
         render(); return;
       }
       if ((t = e.target.closest("[data-remove]"))) { disconnect(t.dataset.remove); return; }
-      if ((t = e.target.closest("[data-toggle]"))) { var k = t.dataset.toggle; openPaths[k] = !openPaths[k]; render(); return; }
+      if ((t = e.target.closest("[data-toggle]"))) { var k = t.dataset.toggle; if (openPaths[k]) delete openPaths[k]; else openPaths[k] = true; saveOpen(); render(); return; }
       if ((t = e.target.closest("[data-path]"))) select(t);
     });
     tree.addEventListener("dblclick", function (e) { var t = e.target.closest("[data-path]"); if (t) openKey(t.dataset.path); });
@@ -403,15 +407,98 @@
   function select(row) {
     Array.prototype.forEach.call(document.querySelectorAll("#fbTree .sel"), function (x) { x.classList.remove("sel"); });
     row.classList.add("sel");
-    selected = row.dataset.path;
+    var key = selected = row.dataset.path;
     var info = $("fbInfo");
-    resolve(selected).then(function (f) {
+    resolve(key).then(function (f) {
       var t = TYPES[extOf(f.name)];
       info.innerHTML = '<b title="' + esc(f.name) + '">' + esc(f.name) + "</b><span>" + (t ? t[1] : "Not supported") + " · " + size(f.size) + " · " + new Date(f.lastModified).toLocaleString() + "</span>" +
+        '<div class="fb-prev" id="fbPrev"></div>' +
         (t ? '<button class="btn-primary" id="fbOpen">' + sym("open_in_new") + "Open</button>" : "");
       var ob = $("fbOpen");
-      if (ob) ob.addEventListener("click", function () { openKey(selected); });
+      if (ob) ob.addEventListener("click", function () { openKey(key); });
+      preview(f, key, $("fbPrev"));
     }).catch(function (e) { info.textContent = e.message; });
+  }
+
+  /* ----------------------------------------------------------- preview */
+  // A look inside the selected file before it is opened: the first rows of
+  // a table, a thumbnail map of a vector layer, or the image itself.
+
+  var PREVIEW_MAX = 40 * 1024 * 1024, prevToken = 0;
+  function preview(f, key, box) {
+    var token = ++prevToken, ext = extOf(f.name);
+    function show(html) { if (token === prevToken && box.isConnected) box.innerHTML = html; }
+    if (f.size > PREVIEW_MAX) { show('<em class="fb-prev-note">Too large to preview</em>'); return; }
+    show('<em class="fb-prev-note">Reading…</em>');
+    var job;
+    if (/^(csv|tsv|txt)$/.test(ext)) job = f.slice(0, 256 * 1024).text().then(function (s) {
+      return PlootsLazy.ensurePapaParse().then(function () {
+        var rows = Papa.parse(s.replace(/\n[^\n]*$/, ""), { skipEmptyLines: true, preview: 9 }).data;
+        return tableHtml(rows);
+      });
+    });
+    else if (/^xlsx?$/.test(ext)) job = PlootsLazy.ensureXLSX().then(function () { return f.arrayBuffer(); }).then(function (b) {
+      var wb = XLSX.read(new Uint8Array(b), { type: "array", sheetRows: 9 }), sh = wb.Sheets[wb.SheetNames[0]];
+      return tableHtml(XLSX.utils.sheet_to_json(sh, { header: 1, defval: "" })) + (wb.SheetNames.length > 1 ? '<em class="fb-prev-note">' + wb.SheetNames.length + " sheets: " + esc(wb.SheetNames.join(", ")) + "</em>" : "");
+    });
+    else if (/^(geojson|topojson|json)$/.test(ext)) job = f.text().then(function (s) {
+      var j = JSON.parse(s);
+      if (Array.isArray(j)) return tableHtml([Object.keys(j[0] || {})].concat(j.slice(0, 8).map(function (r) { return Object.keys(j[0] || {}).map(function (k) { return r[k]; }); })));
+      return vectorHtml(window.PlootsGIS.normalise(j));
+    });
+    else if (/^(shp|kml|kmz|gpx|zip)$/.test(ext)) job = (ext === "shp" && key ? siblings(key) : Promise.resolve([f])).then(function (parts) {
+      if (ext === "zip") return f.arrayBuffer().then(window.PlootsPlugins.readZip).then(function (z) {
+        var m = Object.keys(z).filter(function (n) { return /(^|\/)plugin\.json$/.test(n); })[0];
+        if (m) { var man = JSON.parse(new TextDecoder().decode(z[m])); return '<div class="fb-prev-plugin">' + sym(man.icon || "extension") + "<div><b>" + esc(man.name || man.id) + "</b> " + esc(man.version || "") + "<p>" + esc(man.description || "Plugin") + "</p></div></div>"; }
+        return window.PlootsFormats.read([f]).then(function (ls) { return vectorHtml(ls[0].geojson, ls.length > 1 ? ls.length + " layers" : ""); });
+      });
+      return window.PlootsFormats.read(parts).then(function (ls) { return vectorHtml(ls[0].geojson, ls[0].note || ""); });
+    });
+    else if (/^(png|jpe?g|gif|webp|svg)$/.test(ext)) job = Promise.resolve().then(function () {
+      var url = URL.createObjectURL(f);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      return '<img class="fb-prev-img" src="' + url + '" alt="">';
+    });
+    else if (/^tiff?$/.test(ext)) job = Promise.resolve('<em class="fb-prev-note">GeoTIFF · opens as a raster layer</em>');
+    else job = Promise.resolve("");
+    job.then(show, function (e) { show('<em class="fb-prev-note error">' + esc(e.message || String(e)) + "</em>"); });
+  }
+
+  function tableHtml(rows) {
+    if (!rows || !rows.length) return '<em class="fb-prev-note">Empty</em>';
+    var cols = Math.min(6, Math.max.apply(null, rows.map(function (r) { return r.length; })));
+    return '<div class="fb-prev-table"><table>' + rows.slice(0, 9).map(function (r, i) {
+      var tag = i === 0 ? "th" : "td";
+      return "<tr>" + r.slice(0, cols).map(function (v) { return "<" + tag + ">" + esc(v == null ? "" : String(v).slice(0, 40)) + "</" + tag + ">"; }).join("") + "</tr>";
+    }).join("") + "</table></div>" + (Math.max.apply(null, rows.map(function (r) { return r.length; })) > cols ? '<em class="fb-prev-note">First ' + cols + " columns</em>" : "");
+  }
+
+  function vectorHtml(fc, note) {
+    var feats = fc.features || [], W = 260, H = 150;
+    var types = {};
+    feats.forEach(function (x) { if (x.geometry) types[x.geometry.type.replace("Multi", "")] = (types[x.geometry.type.replace("Multi", "")] || 0) + 1; });
+    var fields = Object.keys((feats[0] && feats[0].properties) || {});
+    var svg = "";
+    try {
+      var sample = feats.length > 3000 ? feats.filter(function (x, i) { return i % Math.ceil(feats.length / 3000) === 0; }) : feats;
+      var sfc = { type: "FeatureCollection", features: sample };
+      // Planar lon/lat (not spherical): ring winding does not matter, so
+      // polygons in either orientation draw as themselves. A single point
+      // (or points on one spot) has no extent: frame ±0.01°.
+      var proj = d3.geoIdentity().reflectY(true), b = d3.geoPath(proj).bounds(sfc), fitTo = sfc;
+      if (b[1][0] - b[0][0] < 1e-6 && b[1][1] - b[0][1] < 1e-6) fitTo = { type: "MultiPoint", coordinates: [[b[0][0] - 0.01, -b[1][1] - 0.01], [b[0][0] + 0.01, -b[1][1] + 0.01]] };
+      proj.fitExtent([[6, 6], [W - 6, H - 6]], fitTo);
+      var path = d3.geoPath(proj).pointRadius(3);
+      svg = '<svg class="fb-prev-map" viewBox="0 0 ' + W + " " + H + '">' + sample.map(function (x) {
+        var d = path(x);
+        if (!d) return "";
+        var poly = /Polygon/.test(x.geometry.type), line = /LineString/.test(x.geometry.type);
+        return '<path d="' + d + '" class="' + (poly ? "pg" : line ? "ln" : "pt") + '"/>';
+      }).join("") + "</svg>";
+    } catch (e) { svg = ""; }
+    return svg + '<div class="fb-prev-meta"><b>' + feats.length.toLocaleString() + "</b> feature" + (feats.length === 1 ? "" : "s") + " · " + esc(Object.keys(types).join(", ") || "no geometry") +
+      " · " + fields.length + " field" + (fields.length === 1 ? "" : "s") + (note ? "<br>" + esc(note) : "") + "</div>" +
+      (fields.length ? '<div class="fb-prev-fields">' + fields.slice(0, 12).map(function (k) { return "<i>" + esc(k) + "</i>"; }).join("") + (fields.length > 12 ? "<i>+" + (fields.length - 12) + "</i>" : "") + "</div>" : "");
   }
 
   function boot() {
