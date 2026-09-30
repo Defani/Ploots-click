@@ -281,7 +281,8 @@
   };
 
   function buildLegend(o) {
-    var fs = o.fontSize, row = fs + 8, sw = 18, pad = 10, parts = [], y = pad, maxW = 0;
+    // Spacing (Legend ▸ Spacing): rows, symbol size, symbol-label gap, columns, padding.
+    var fs = o.fontSize, row = fs + (o.rowGap != null ? +o.rowGap : 8), sw = +o.symbolW || 18, lg = o.labelGap != null ? +o.labelGap : 8, pad = o.pad != null ? +o.pad : 10, parts = [], y = pad, maxW = 0;
     var bg = rect(0, 0, 10, 10, o.background || "rgba(0,0,0,0)", o.frame ? "#9a978c" : null, 0.8);
     parts.push(bg);
     if (o.title) {
@@ -348,9 +349,9 @@
       }
       if (entries.length === 1 && !entries[0].label) {
         newBlock();
-        var one = text(lname(l), pad + sw + 8, y + row / 2 - 2 - fs * 0.62, fs);
+        var one = text(lname(l), pad + sw + lg, y + row / 2 - 2 - fs * 0.62, fs);
         drawSwatch(entries[0].color, l, kind, pad, y + row / 2 - 2);
-        add(one); maxW = Math.max(maxW, sw + 8 + one.width); y += row;
+        add(one); maxW = Math.max(maxW, sw + lg + one.width); y += row;
         return;
       }
       if (o.showLayerNames) {
@@ -364,8 +365,8 @@
           newBlock();
           var i = dl.classColors.length - 1 - ri, cy2 = y + row / 2 - 2;
           add(new fabric.Rect({ left: pad, top: cy2 - 6, width: sw, height: 12, fill: c, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false }));
-          var tl = text(numFmt(dl.breaks[i]) + " – " + numFmt(dl.breaks[i + 1]), pad + sw + 8, cy2 - fs * 0.62, fs);
-          add(tl); maxW = Math.max(maxW, sw + 8 + tl.width); y += row;
+          var tl = text(numFmt(dl.breaks[i]) + " – " + numFmt(dl.breaks[i + 1]), pad + sw + lg, cy2 - fs * 0.62, fs);
+          add(tl); maxW = Math.max(maxW, sw + lg + tl.width); y += row;
         });
         return;
       }
@@ -384,8 +385,8 @@
         newBlock();
         var cy = y + row / 2 - 2;
         if (e.color) drawSwatch(e.color, l, kind, pad, cy);
-        var t2 = text(e.label || lname(l), pad + (e.color ? sw + 8 : 0), cy - fs * 0.62, fs);
-        add(t2); maxW = Math.max(maxW, (e.color ? sw + 8 : 0) + t2.width); y += row;
+        var t2 = text(e.label || lname(l), pad + (e.color ? sw + lg : 0), cy - fs * 0.62, fs);
+        add(t2); maxW = Math.max(maxW, (e.color ? sw + lg : 0) + t2.width); y += row;
       });
       if (sizes) { y += 4; drawSizes(null); }
     });
@@ -407,7 +408,7 @@
     }
     if (!layers.length) { var e0 = text("No layers", pad, y, fs, { fill: "#8a8a8a" }); parts.push(e0); maxW = e0.width; y += row; }
     blockTop.push(y);
-    var avail = o.boxH > 0 ? Math.max(row, o.boxH - titleBottom - pad) : Infinity, gap = 16;
+    var avail = o.boxH > 0 ? Math.max(row, o.boxH - titleBottom - pad) : Infinity, gap = o.colGap != null ? +o.colGap : 16;
     var col = 0, colY = 0, colOf = [], shiftY = [], colW = [0], colH = [0];
     for (var k = 0; k <= blk; k++) {
       var h = blockTop[k + 1] - blockTop[k];

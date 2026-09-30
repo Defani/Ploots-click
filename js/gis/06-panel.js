@@ -429,6 +429,10 @@
       h += check("item:frame", p.frame, "Frame") + check("item:showLayerNames", p.showLayerNames, "Layer headings");
       h += check("item:onlyVisible", p.onlyVisible !== false, "Only visible layers");
       if (p.boxW || p.boxH) h += '<button id="gisLegendFit" style="width:100%;margin-top:8px;">Fit to content</button>';
+      h += '<div class="gis-subhead">Spacing</div>' +
+        pair(field("Between rows", num("item:rowGap", p.rowGap != null ? p.rowGap : 8, 0, 60, 1)), field("Symbol width", num("item:symbolW", p.symbolW || 18, 6, 80, 1))) +
+        pair(field("Symbol to label", num("item:labelGap", p.labelGap != null ? p.labelGap : 8, 0, 60, 1)), field("Between columns", num("item:colGap", p.colGap != null ? p.colGap : 16, 0, 120, 1))) +
+        field("Padding", num("item:pad", p.pad != null ? p.pad : 10, 0, 60, 1));
       h += '<label class="field-label">Legend items</label><div class="gis-legend-pick">' + legendPick(p) + "</div>";
     } else if (o.gisItem === "scalebar") {
       h += field("Style", select("item:style", SCALE_STYLES, p.style)) + field("Units", select("item:units", SCALE_UNITS, p.units));

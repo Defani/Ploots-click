@@ -72,7 +72,7 @@
     h += row("top", "vertical_align_top", "Move to top", { disabled: i === 0 }) + row("bottom", "vertical_align_bottom", "Move to bottom", { disabled: i === n - 1 });
     if (vec) h += SEP + '<div class="gis-ctx-sub"><button type="button" class="gis-ctx-subbtn">' + sym("ios_share") + '<span>Export</span><span class="material-symbols-outlined gis-ctx-arrow">chevron_right</span></button><div class="gis-ctx-subm">' +
       row("xgeo", "data_object", "GeoJSON") + row("xshp", "folder_zip", "Shapefile (.zip)") + row("xkml", "travel_explore", "KML (Google Earth)") + row("xgpx", "route", "GPX") + row("xcsv", "csv", "CSV") +
-      SEP + row("xgeosel", "select", "Selected features (GeoJSON)", { disabled: !l.selection.size }) + "</div></div>";
+      SEP + row("xgeosel", "select", "Selected features (GeoJSON)", { disabled: !l.selection.size }) + SEP + row("xsld", "palette", "Style as SLD (QGIS, GeoServer)") + "</div></div>";
     h += SEP + row("props", "tune", "Properties…") + row("remove", "delete", "Remove layer", { danger: true });
     menu.innerHTML = h;
     menu.classList.add("open");
@@ -119,6 +119,7 @@
       case "xshp": case "xkml": case "xgpx":
         try { GIS.exportFormat(l, act.slice(1), false); } catch (e) { if (window.PlootsKobo) window.PlootsKobo.toast(e.message); }
         break;
+      case "xsld": try { GIS.exportSLD(l); } catch (e) { if (window.PlootsKobo) window.PlootsKobo.toast(e.message); } break;
       case "props": layerProperties(l); break;
       case "remove": GIS.remove(l.id); break;
     }
