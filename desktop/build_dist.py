@@ -76,6 +76,7 @@ def copy_app() -> None:
         shutil.copy2(ROOT / name, DIST / name)
     shutil.copytree(ROOT / "js", DIST / "js")
     shutil.copytree(ROOT / "vendor", DIST / "vendor")
+    shutil.copytree(ROOT / "css", DIST / "css")
     (DIST / "assets").mkdir()
     for f in (ROOT / "assets").glob("logo_*"):
         shutil.copy2(f, DIST / "assets" / f.name)

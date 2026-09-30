@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v19";
+const CACHE_NAME = "ploots-click-v20";
 
 const PRECACHE_URLS = [
   "./",
@@ -128,6 +128,7 @@ const PRECACHE_URLS = [
   "./js/canvas_ruler.js",
   "./js/undo_redo.js",
   "./js/desktop-shell.js",
+  "./css/glass.css",
   "./js/local-fonts.js",
   "./js/plugins.js",
   "./js/formats.js",
