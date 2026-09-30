@@ -82,6 +82,7 @@ def copy_app() -> None:
         shutil.copy2(f, DIST / "assets" / f.name)
     # Fonts and sprites for offline (PMTiles) basemaps.
     shutil.copytree(ROOT / "assets" / "basemaps-assets", DIST / "assets" / "basemaps-assets")
+    shutil.copytree(ROOT / "assets" / "home", DIST / "assets" / "home")
 
 
 def text_files() -> list[Path]:

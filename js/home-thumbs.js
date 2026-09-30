@@ -24,7 +24,9 @@
     var rows = text.trim().split("\n").map(function (l) { return l.split("\t"); });
     var series = rows[0].slice(1), cats = rows.slice(1).map(function (r) { return r[0]; });
     var vals = rows.slice(1).map(function (r) { return r.slice(1).map(Number); });
-    var pal = (window.PALETTES && window.state && PALETTES[state.paletteIdx] ? PALETTES[state.paletteIdx].colors : ["#2f6360", "#c9a66b", "#8a5a44", "#5c7a99"]);
+    // Greens that sit with the app accent (#4e8a2e): the Forest Canopy palette.
+    var forest = (window.PALETTES || []).filter(function (p) { return p.name === "Forest Canopy"; })[0];
+    var pal = forest ? forest.colors : ["#1e4d3a", "#3d7a5c", "#6ba368", "#a4c95f"];
     var max = Math.max.apply(null, [].concat.apply([], vals)) * 1.1;
     var x0 = 26, y0 = 104, pw = W - x0 - 10, ph = 78, gw = pw / cats.length, bw = gw * 0.78 / series.length;
     var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="ht ht-chart" aria-hidden="true"><rect width="' + W + '" height="' + H + '" fill="#fff"/>';
@@ -49,7 +51,7 @@
     var ramp = (window.PlootsGIS && PlootsGIS.sym) ? PlootsGIS.sym.rampColors("YlGn") : ["#ffffe5", "#d9f0a3", "#78c679", "#238443", "#004529"];
     var q = d3.scaleQuantile().domain(vals).range([0.1, 0.3, 0.55, 0.78, 1]);
     var interp = d3.interpolateRgbBasis(ramp);
-    var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="ht ht-map" aria-hidden="true"><rect width="' + W + '" height="' + H + '" fill="#aad3df"/>';
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="ht ht-map" aria-hidden="true"><rect width="' + W + '" height="' + H + '" fill="#dfe9dc"/>';
     fc.features.forEach(function (f, i) {
       s += '<path class="ht-cty" style="--d:' + (i * 0.25).toFixed(2) + "s;--c:" + interp(q(f.properties.population_m || 0)) + '" d="' + path(f) + '"/>';
     });
@@ -71,29 +73,14 @@
   }
 
   /* -------------------------------------------------------------- agro */
+  // Frames rendered by the simulator's own 3D view ("Eye level" camera, in a
+  // coffee alley under the lamtoro) at years 1, 3 and 6, cross-fading while
+  // the camera walks slowly down the row.
   function agro() {
-    // A 40 x 22 m corner of the default plot, as the 2D view draws it.
-    var pw = 40, phm = 22, sc = Math.min((W - 16) / pw, (H - 24) / phm), ox = (W - pw * sc) / 2, oy = 18;
-    var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="ht ht-agro" aria-hidden="true"><rect width="' + W + '" height="' + H + '" fill="#f4f1ea"/>';
-    s += '<rect x="' + ox + '" y="' + oy + '" width="' + pw * sc + '" height="' + phm * sc + '" fill="#e9e3d3"/>';
-    for (var gx = 0; gx <= pw; gx += 10) s += '<line x1="' + (ox + gx * sc) + '" x2="' + (ox + gx * sc) + '" y1="' + oy + '" y2="' + (oy + phm * sc) + '" class="ht-pg"/>';
-    for (var gy = 0; gy <= phm; gy += 10) s += '<line x1="' + ox + '" x2="' + (ox + pw * sc) + '" y1="' + (oy + gy * sc) + '" y2="' + (oy + gy * sc) + '" class="ht-pg"/>';
-    // lamtoro shade on the ground, then coffee, then lamtoro crowns (lower first)
-    var lam = [];
-    for (var ly = 2.5, row = 0; ly < phm; ly += 5, row++) for (var lx = 2.5 + (row % 2 ? 2.5 : 0); lx < pw; lx += 5) lam.push([lx, ly]);
-    lam.forEach(function (p, i) { s += '<circle class="ht-shade" style="--d:' + (0.3 + (i % 5) * 0.05).toFixed(2) + 's" cx="' + (ox + p[0] * sc).toFixed(1) + '" cy="' + (oy + p[1] * sc).toFixed(1) + '" r="' + (2.2 * sc).toFixed(1) + '"/>'; });
-    for (var cy = 1.25; cy < phm; cy += 2.5) for (var cx = 1.25; cx < pw; cx += 2.5) {
-      s += '<g transform="translate(' + (ox + cx * sc).toFixed(1) + " " + (oy + cy * sc).toFixed(1) + ')"><circle class="ht-cof" style="--d:' + ((cx + cy) * 0.012).toFixed(2) + 's" r="' + (1.3 * sc).toFixed(1) + '"/><circle r="0.9" fill="#4a3620"/></g>';
-    }
-    lam.forEach(function (p, i) {
-      s += '<g transform="translate(' + (ox + p[0] * sc).toFixed(1) + " " + (oy + p[1] * sc).toFixed(1) + ')"><circle class="ht-lam" style="--d:' + (0.2 + (i % 7) * 0.04).toFixed(2) + 's" r="' + (2.2 * sc).toFixed(1) + '"/><circle r="1.3" fill="#4a3620"/></g>';
-    });
-    s += '<rect x="' + ox + '" y="' + oy + '" width="' + pw * sc + '" height="' + phm * sc + '" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/>';
-    // the year counter of the simulator header
-    s += '<rect x="' + (W - 58) + '" y="3" width="52" height="13" rx="6.5" fill="rgba(0,0,0,.08)"/>';
-    [0, 2, 4, 6, 8, 10].forEach(function (y, i) { s += '<text class="ht-yr' + (i === 5 ? " last" : "") + '" style="--d:' + (i * 0.9).toFixed(1) + 's" x="' + (W - 32) + '" y="12.5" text-anchor="middle">Year ' + y + "</text>"; });
-    s += '<text x="' + ox + '" y="12.5" class="ht-t">Coffee 2.5 × 2.5 m · lamtoro 5 × 5 m</text>';
-    return s + "</svg>";
+    var s = '<div class="ht ht-agro3d">';
+    [1, 3, 6].forEach(function (y, i) { s += '<img src="assets/home/agro-eye-' + y + '.jpg" alt="" style="--d:' + (i * 2) + 's" draggable="false">'; });
+    [1, 3, 6].forEach(function (y, i) { s += '<span class="ht-yr3" style="--d:' + (i * 2) + 's">Year ' + y + "</span>"; });
+    return s + '<span class="ht-cam">Eye level · 1.6 m</span></div>';
   }
 
   // Fills the thumbnails of a freshly built Home (the map one needs the sample data).
