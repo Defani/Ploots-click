@@ -51,14 +51,14 @@ html[data-theme=dark] {
 body {
   background-color: var(--g-field) !important;
   background-image:
-    radial-gradient(60vw 50vh at 8% 0%, rgba(24, 160, 251, .16), transparent 70%),
+    radial-gradient(60vw 50vh at 8% 0%, rgba(78, 138, 46, .16), transparent 70%),
     radial-gradient(50vw 45vh at 100% 20%, rgba(151, 189, 61, .14), transparent 70%),
     radial-gradient(60vw 60vh at 60% 110%, rgba(217, 138, 28, .12), transparent 70%) !important;
   background-attachment: fixed !important;
 }
 html[data-theme=dark] body {
   background-image:
-    radial-gradient(60vw 50vh at 8% 0%, rgba(63, 178, 255, .13), transparent 70%),
+    radial-gradient(60vw 50vh at 8% 0%, rgba(124, 191, 74, .13), transparent 70%),
     radial-gradient(50vw 45vh at 100% 20%, rgba(120, 200, 120, .08), transparent 70%),
     radial-gradient(60vw 60vh at 60% 110%, rgba(217, 138, 28, .08), transparent 70%) !important;
 }

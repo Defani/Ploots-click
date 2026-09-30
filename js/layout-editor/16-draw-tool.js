@@ -53,9 +53,9 @@ function penDrawPreview() {
   var d = penPathData(pen.pts, false, pen.dragging ? null : pen.cursor);
   if (d) objs.push(new fabric.Path(d, { fill: "", stroke: penHexToRgba(penSettings.color, penSettings.opacity), strokeWidth: penSettings.width, strokeLineCap: "round", strokeLineJoin: "round", objectCaching: false }));
   pen.pts.forEach(function (p, i) {
-    if (p.hin) objs.push(new fabric.Line([p.hin.x, p.hin.y, p.hout.x, p.hout.y], { stroke: "#18a0fb", strokeWidth: 1 / z }));
-    [p.hin, p.hout].forEach(function (h) { if (h) objs.push(new fabric.Circle({ left: h.x, top: h.y, radius: 3 / z, originX: "center", originY: "center", fill: "#fff", stroke: "#18a0fb", strokeWidth: 1 / z })); });
-    objs.push(new fabric.Rect({ left: p.x, top: p.y, width: (i === 0 ? 9 : 7) / z, height: (i === 0 ? 9 : 7) / z, originX: "center", originY: "center", fill: i === 0 ? "#18a0fb" : "#fff", stroke: "#18a0fb", strokeWidth: 1 / z }));
+    if (p.hin) objs.push(new fabric.Line([p.hin.x, p.hin.y, p.hout.x, p.hout.y], { stroke: "#4e8a2e", strokeWidth: 1 / z }));
+    [p.hin, p.hout].forEach(function (h) { if (h) objs.push(new fabric.Circle({ left: h.x, top: h.y, radius: 3 / z, originX: "center", originY: "center", fill: "#fff", stroke: "#4e8a2e", strokeWidth: 1 / z })); });
+    objs.push(new fabric.Rect({ left: p.x, top: p.y, width: (i === 0 ? 9 : 7) / z, height: (i === 0 ? 9 : 7) / z, originX: "center", originY: "center", fill: i === 0 ? "#4e8a2e" : "#fff", stroke: "#4e8a2e", strokeWidth: 1 / z }));
   });
   objs.forEach(function (o) { o.set({ selectable: false, evented: false, excludeFromExport: true, penPreview: true }); fabricCanvas.add(o); });
   pen.preview = objs;

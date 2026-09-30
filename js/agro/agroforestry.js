@@ -297,7 +297,25 @@
 
   /* --------------------------------------------------------------- 2D */
 
-  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = true;
+  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = true, realistic = true, flowering = false;
+  // Camera presets: the whole plot from above a corner, or standing in a
+  // coffee row at eye height (1.6 m), looking along the row.
+  function camPreset(k) {
+    if (!G3) return;
+    var c = G3.cam, ctl = G3.ctl;
+    if (k === "eye") {
+      // In the alley between two coffee rows (plants at 1.25 + 2.5 k).
+      var x = Math.min(P.w - 1, 2.5 * Math.round(P.w / 5)), z0 = P.h - 2;
+      c.position.set(x, 1.6 + alt(x, 3), z0);
+      ctl.target.set(x, 1.4 + alt(x, P.h / 2), z0 - 20);
+    } else {
+      c.position.set(-P.w * 0.25, Math.max(P.w, P.h) * 0.55, P.h * 1.25);
+      ctl.target.set(P.w / 2, 0, P.h / 2);
+    }
+    ctl.update();
+    if (realistic) rebuildPlants();
+    G3.dirty = true;
+  }
   function draw2d() {
     var cv = $("agCanvas");
     if (!cv) return;
@@ -359,7 +377,7 @@
     var host = $("agView3d"), W = host.clientWidth, H = host.clientHeight;
     if (!G3) {
       var r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-      r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      r.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
       r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
       host.appendChild(r.domElement);
       var scene = new THREE.Scene();
@@ -370,15 +388,43 @@
       ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.49;
       var hemi = new THREE.HemisphereLight(0xeaf4ff, 0x6b5a3a, 0.55);
       var sun = new THREE.DirectionalLight(0xfff3dd, 1.0);
-      sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+      sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
       scene.add(hemi, sun, sun.target);
-      G3 = { r: r, scene: scene, cam: cam, ctl: ctl, sun: sun, group: null };
-      (function loop() { if (!G3) return; requestAnimationFrame(loop); if (view === "3d") { G3.ctl.update(); G3.r.render(G3.scene, G3.cam); } })();
+      G3 = { r: r, scene: scene, cam: cam, ctl: ctl, sun: sun, hemi: hemi, group: null };
+      // Render only when something changed (camera moving, scene rebuilt).
+      (function loop() {
+        if (!G3) return;
+        requestAnimationFrame(loop);
+        if (view !== "3d") return;
+        var moved = G3.ctl.update();
+        if (moved || G3.dirty) { G3.r.render(G3.scene, G3.cam); G3.dirty = false; }
+      })();
+      // After a move, the nearest plants get the detailed models.
+      ctl.addEventListener("end", function () { if (realistic && G3.lodAt && G3.cam.position.distanceTo(G3.lodAt) > 6) rebuildPlants(); });
       cam.position.set(-P.w * 0.25, Math.max(P.w, P.h) * 0.55, P.h * 1.25); ctl.target.set(P.w / 2, 0, P.h / 2);
     }
-    G3.r.setSize(W, H); G3.cam.aspect = W / H; G3.cam.updateProjectionMatrix();
+    G3.r.setSize(W, H); G3.cam.aspect = W / H; G3.cam.updateProjectionMatrix(); G3.dirty = true; G3.bySp = null; G3.plants = null;
     if (G3.group) { G3.scene.remove(G3.group); G3.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
     var grp = new THREE.Group(), sc = G3.scene;
+    if (realistic && window.PlootsAgroReal) {
+      // Realistic plants (js/agro/agro-3d-real.js): instanced procedural
+      // coffee bushes, lamtoro trees and broadleaf trees.
+      var R3 = window.PlootsAgroReal, bySp = {};
+      R3.atmosphere(sc, G3.r);
+      G3.hemi.intensity = 0.85;
+      grp.add(R3.ground(P.w, P.h, P.topo ? function (x, z) { return alt(x, P.h - z); } : null));
+      Object.keys(P.species).forEach(function (k) {
+        bySp[k] = P.trees.filter(function (t) { return t.alive && t.sp === k; }).map(function (t) {
+          return { id: t.id, x: t.x, z: P.h - t.y, base: alt(t.x, t.y), h: t.h, r: t.r };
+        });
+      });
+      G3.bySp = bySp;
+      sc.add(grp); G3.group = grp;
+      rebuildPlants();
+      setSun(+($("agSun") ? $("agSun").value : 9));
+      return;
+    }
+    sc.background = new THREE.Color(0xcfe3ee); sc.fog = new THREE.Fog(0xcfe3ee, 180, 420); G3.hemi.intensity = 0.55;
     // Ground (with topography when loaded).
     var seg = P.topo ? 50 : 1, gg = new THREE.PlaneGeometry(P.w, P.h, seg, seg);
     gg.rotateX(-Math.PI / 2); gg.translate(P.w / 2, 0, P.h / 2);
@@ -414,6 +460,17 @@
     sc.add(grp); G3.group = grp;
     setSun(+($("agSun") ? $("agSun").value : 9));
   }
+  function rebuildPlants() {
+    if (!G3 || !G3.bySp) return;
+    if (G3.plants) { G3.group.remove(G3.plants); G3.plants.traverse(function (o) { if (o.isInstancedMesh) o.dispose(); }); }
+    var c = G3.cam.position, t = G3.ctl.target;
+    // Detail around what the camera looks at when high up, around the camera at eye level.
+    var at = c.y > 12 ? { x: t.x, z: t.z } : { x: c.x, z: c.z };
+    G3.plants = window.PlootsAgroReal.plants(P.species, G3.bySp, { flowering: flowering, cam: at });
+    G3.group.add(G3.plants);
+    G3.lodAt = c.clone();
+    G3.dirty = true;
+  }
   // Sun for Takengon (4.6° N) at the given hour, simple solar geometry.
   function setSun(hour) {
     if (!G3) return;
@@ -426,6 +483,7 @@
     var S = Math.max(P.w, P.h) * 0.75, cam = G3.sun.shadow.camera;
     cam.left = -S; cam.right = S; cam.top = S; cam.bottom = -S; cam.near = 1; cam.far = 500; cam.updateProjectionMatrix();
     G3.sun.intensity = el > 0 ? 0.4 + 0.8 * Math.sin(el) : 0.1;
+    G3.dirty = true;
   }
 
   /* --------------------------------------------------------------- UI */
@@ -515,7 +573,9 @@
       "</aside>" +
       '<main class="ag-main"><div class="ag-view" id="agView2d"><canvas id="agCanvas"></canvas></div><div class="ag-view" id="agView3d" hidden></div>' +
         '<div class="ag-float" id="agFloat2d"><label class="check-row"><input type="checkbox" id="agLight" checked>Light map (coffee layer)</label></div>' +
-        '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b></div>' +
+        '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b>' +
+          '<span class="ag-fsep"></span><label class="check-row"><input type="checkbox" id="agReal" checked>Realistic</label><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
+          '<span class="ag-fsep"></span><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
         '<div class="ag-info" id="agInfo" hidden></div></main>' +
       '<aside class="ag-right"><h4>' + sym("monitoring") + 'Plot summary</h4><div id="agStats"></div>' +
         '<p class="ag-note">Growth follows SExI-FS style species parameters; yield and carbon are indicative. Calibrate with your field data.</p></aside>';
@@ -553,6 +613,9 @@
     $("agReset").addEventListener("click", function () { restore(0); redraw(); syncReplay(); });
     $("agReplay").addEventListener("input", function () { restore(+this.value); redraw(); });
     $("agLight").addEventListener("change", function () { showLight = this.checked; draw2d(); });
+    $("agReal").addEventListener("change", function () { realistic = this.checked; if (G3) build3d(); });
+    $("agFlower").addEventListener("change", function () { flowering = this.checked; if (G3) build3d(); });
+    $("agFloat3d").addEventListener("click", function (e) { var b = e.target.closest("[data-cam]"); if (b) camPreset(b.dataset.cam); });
     $("agSun").addEventListener("input", function () { var h = +this.value; $("agSunLbl").textContent = String(Math.floor(h)).padStart(2, "0") + ":" + String(Math.round((h % 1) * 60)).padStart(2, "0"); setSun(h); });
     $("agImp").addEventListener("click", function () { $("agFile").click(); });
     $("agFile").addEventListener("change", function () {
@@ -638,5 +701,13 @@
     if (window.PlootsHome) window.PlootsHome.show();
   }
 
-  window.PlootsAgro = { open: open, close: close, importSexi: function (t) { var r = importSexi(t); crownIndices(); record(); redraw(); return r; }, exportSexi: function () { return exportSexi(); }, step: function () { step(); redraw(); }, stats: function () { return stats(); }, project: function () { return P; } };
+  // Milliseconds per 3D frame (render + GPU finish), for tuning.
+  function bench(n) {
+    if (!G3) return null;
+    var gl = G3.r.getContext(), t0 = performance.now();
+    var px = new Uint8Array(4);
+    for (var i = 0; i < (n || 10); i++) { G3.r.render(G3.scene, G3.cam); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); }
+    return (performance.now() - t0) / (n || 10);
+  }
+  window.PlootsAgro = { bench: bench, open: open, close: close, importSexi: function (t) { var r = importSexi(t); crownIndices(); record(); redraw(); return r; }, exportSexi: function () { return exportSexi(); }, step: function () { step(); redraw(); }, stats: function () { return stats(); }, project: function () { return P; } };
 })();
