@@ -812,5 +812,5 @@
   }
   function openToolbox() { if (GIS.enterMapMode) GIS.enterMapMode(); build(); activateSidebarPanel(PANEL); }
 
-  GIS.processing = { build: build, open: openTool, menu: menu, openToolbox: openToolbox, TOOLS: TOOLS, ensureTurf: ensureTurf };
+  GIS.processing = { build: build, open: openTool, menu: menu, openToolbox: openToolbox, TOOLS: TOOLS, ensureTurf: ensureTurf, toWKT: toWKT, fromWKT: fromWKT };
 })();

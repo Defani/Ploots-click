@@ -36,6 +36,7 @@
     big: ["BIG", "https://big.go.id/favicon.ico", "#0a4c8b", "BIG"],
     mapzen: ["Mapzen / AWS Terrain Tiles", "", "#d4145a", "MZ"],
     arcgis: ["ArcGIS server", "", "#0079c1", "AGS"],
+    supabase: ["Supabase", "https://supabase.com/favicon/favicon-32x32.png", "#3ecf8e", "SB"],
     none: ["None", "", "#9aa1a9", "∅"]
   };
 
