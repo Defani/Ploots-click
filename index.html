@@ -1630,7 +1630,7 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 body.gis-carto .tb-ana,
 body.gis-carto .nav-btn[data-panel="panel-gis-toolbox"],body.gis-carto .nav-btn[data-panel="panel-gis-gfw"],
 body.gis-carto .nav-btn[data-panel="panel-catalog"],body.gis-carto .nav-btn[data-panel="panel-kobo"],
-body.gis-carto .nav-add,body.gis-carto .nav-add-sep,body.gis-carto .nav-anim{display:none!important}
+body.gis-carto .nav-add,body.gis-carto .nav-add-sep,body.gis-carto .nav-anim,body.gis-carto .nav-gee{display:none!important}
 .carto-bar{display:none}
 body.gis-carto .carto-bar{display:flex;position:absolute;top:30px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:4px;padding:4px;max-width:calc(100% - 48px);overflow-x:auto;scrollbar-width:none;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .carto-grp{display:flex;align-items:center;gap:1px;padding:0 3px;border-right:1px solid var(--line)}
@@ -1682,6 +1682,14 @@ body.gis-carto #canvasStage{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .anim-rec.on{background:#e5484d!important;color:#fff;border-color:#e5484d!important}
 .anim-rec.on .material-symbols-outlined{color:#fff;animation:gfwSpin 2s linear infinite}
 .anim-label{position:absolute;right:16px;bottom:44px;z-index:6;padding:8px 16px;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font:700 28px Inter,'Segoe UI',Arial,sans-serif;letter-spacing:.01em;pointer-events:none}
+/* Earth Engine (js/gis/23-gee.js) */
+.gee-body{padding:10px 12px 16px}
+.gee-body code{font-size:10.5px;background:var(--panel-2);padding:1px 4px;border-radius:4px;word-break:break-all}
+.gee-recipes{display:flex;flex-direction:column;gap:3px}
+.gee-recipes button{width:100%;text-align:left;justify-content:flex-start;font-size:12.5px}
+#geeCode{width:100%;height:200px;margin-top:6px;font:12px/1.45 'JetBrains Mono',Consolas,monospace;white-space:pre;tab-size:2;resize:vertical}
+.gee-out{margin-top:8px;max-height:200px;overflow:auto;font:11.5px/1.4 Consolas,monospace;color:var(--ink-soft);white-space:pre-wrap;word-break:break-word}
+.gee-out .err{color:var(--danger)}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3233,6 +3241,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/20-cartography.js"></script>
 <script src="js/gis/21-digitize.js"></script>
 <script src="js/gis/22-animation.js"></script>
+<script src="js/gis/23-gee.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
