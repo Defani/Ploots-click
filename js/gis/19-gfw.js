@@ -100,7 +100,7 @@
   // Other layers, by GFW dataset id (added through the catalog's asset lookup).
   var LAYERS = [
     ["umd_tree_cover_density_2000", "Tree cover density (2000)", "park", "Hansen/UMD canopy density in 2000."],
-    ["umd_tree_cover_gain", "Tree cover gain", "trending_up", "Hansen/UMD tree cover gain 2000–2020."],
+    ["umd_tree_cover_gain_from_height", "Tree cover gain", "trending_up", "Hansen/UMD tree cover gain 2000–2020 (from canopy height)."],
     ["umd_regional_primary_forest_2001", "Primary forests (2001)", "forest", "Humid tropical primary forest (Turubanova et al.)."],
     ["gfw_integrated_alerts", "Integrated deforestation alerts", "notification_important", "GLAD-L, GLAD-S2 and RADD alerts combined."],
     ["wur_radd_alerts", "RADD alerts (radar)", "radar", "Wageningen RADD Sentinel-1 disturbance alerts."],

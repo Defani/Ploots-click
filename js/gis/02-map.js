@@ -223,6 +223,47 @@
     try { return fn.apply(null, args || []); } finally { M = prev; }
   }
   function views() { return [LAYOUT, ANALYSIS].filter(Boolean); }
+  // 3D terrain: the Mapzen / AWS Terrarium elevation under any basemap and
+  // layer, tilted; kept across basemap changes (style.load).
+  function applyTerrain(V) {
+    var map = V.map;
+    if (!map.getSource("gcs-terrain")) map.addSource("gcs-terrain", { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15, attribution: "Terrain: Mapzen / AWS" });
+    map.setTerrain({ source: "gcs-terrain", exaggeration: V.terrainX || 1.5 });
+  }
+  function setTerrain(V, on, x) {
+    V.terrain = !!on;
+    if (x) V.terrainX = x;
+    var b = V.tools && V.tools.querySelector('[data-act="terrain"]');
+    if (b) b.classList.toggle("active", V.terrain);
+    if (!V.map.isStyleLoaded()) { setTimeout(function () { setTerrain(V, V.terrain); }, 200); return; }
+    if (V.terrain) { applyTerrain(V); if (V.map.getPitch() < 30) V.map.easeTo({ pitch: 60, duration: 900 }); }
+    else { V.map.setTerrain(null); V.map.easeTo({ pitch: 0, duration: 700 }); }
+  }
+  // 3D globe (MapLibre globe projection), as in GeoLibre.
+  function setGlobe(V, on) {
+    V.globe = !!on;
+    var b = V.tools && V.tools.querySelector('[data-act="globe"]');
+    if (b) b.classList.toggle("active", V.globe);
+    if (!V.map.isStyleLoaded()) { setTimeout(function () { setGlobe(V, V.globe); }, 200); return; }
+    V.map.setProjection({ type: V.globe ? "globe" : "mercator" });
+    // Atmosphere around the globe, and a slow spin while zoomed out (as
+    // GeoLibre's spinning globe), paused by any interaction.
+    if (V.map.setSky) V.map.setSky(V.globe ? { "sky-color": "#0b1a2a", "horizon-color": "#2a4d6e", "fog-color": "#0a0f14", "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 5, 1, 7, 0] } : {});
+    if (V.globe && !V.spin) {
+      V.spin = true;
+      var last = 0, stop = function () { V.spinHold = Date.now() + 4000; };
+      ["mousedown", "touchstart", "wheel"].forEach(function (ev) { V.map.getCanvasContainer().addEventListener(ev, stop, { passive: true }); });
+      (function frame(ts) {
+        if (!V.globe) { V.spin = false; return; }
+        requestAnimationFrame(frame);
+        var dt = last ? (ts - last) / 1000 : 0; last = ts;
+        if (V.spinOff || V.map.getZoom() > 3.5 || V.map.isMoving() || Date.now() < (V.spinHold || 0)) return;
+        var c = V.map.getCenter(); c.lng -= 6 * dt; V.map.jumpTo({ center: c });
+      })(0);
+    }
+  }
+  GIS.globe = function (on, opts) { var v = activeView(); if (v) { v.spinOff = !!(opts && opts.spin === false); setGlobe(v, on == null ? !v.globe : on); } return !!(v && v.globe); };
+  GIS.terrain = function (on, exaggeration) { var v = activeView(); if (v) setTerrain(v, on == null ? !v.terrain : on, exaggeration); return !!(v && v.terrain); };
   function activeView() { return document.body.classList.contains("gis-analysis") && ANALYSIS ? ANALYSIS : LAYOUT; }
   // Map actions (tools, zooms, selection) act on the view on screen.
   function onActive(fn) { return function () { return inView(activeView(), fn, arguments); }; }
@@ -268,6 +309,8 @@
       '<button data-act="clear-sel" title="Clear selection"><span class="material-symbols-outlined">deselect</span></button>' +
       '<button data-act="prev" title="Previous extent"><span class="material-symbols-outlined">undo</span></button>' +
       '<button data-act="next" title="Next extent"><span class="material-symbols-outlined">redo</span></button>' +
+      '<span class="gis-tools-sep"></span><button data-act="terrain" title="3D terrain (Mapzen / AWS elevation)"><span class="material-symbols-outlined">landscape</span></button>' +
+      '<button data-act="globe" title="3D globe"><span class="material-symbols-outlined">public</span></button>' +
       (opts.analysis ? "" : '<span class="gis-tools-sep"></span><button data-act="done" class="gis-done">Done</button>');
     var box = document.createElement("div");
     box.className = "gis-select-box";
@@ -282,7 +325,7 @@
     var mopts = {
       container: mapDiv, style: styleFor(viewBasemap({ analysis: !!opts.analysis })), attributionControl: opts.analysis ? { compact: true } : false,
       canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },
-      preserveDrawingBuffer: true, fadeDuration: 0, pixelRatio: window.devicePixelRatio || 1
+      preserveDrawingBuffer: true, fadeDuration: 0, pixelRatio: window.devicePixelRatio || 1, maxPitch: 75
     };
     if (view) { mopts.center = view.center; mopts.zoom = view.zoom; mopts.bearing = view.bearing || 0; mopts.pitch = view.pitch || 0; }
     var map = new maplibregl.Map(mopts);
@@ -292,7 +335,7 @@
     map.boxZoom.disable();
     map.doubleClickZoom.disable();
 
-    map.on("style.load", run(function () { M.keys = {}; applyLayers(); drawMeasure(); }));
+    map.on("style.load", run(function () { M.keys = {}; applyLayers(); drawMeasure(); if (V.terrain) applyTerrain(V); if (V.globe) V.map.setProjection({ type: "globe" }); }));
     map.on("load", run(function () {
       M.loaded = true;
       if (!view) fitAll();
@@ -324,6 +367,8 @@
       else if (b.dataset.act === "zoom-full") fitAll();
       else if (b.dataset.act === "prev") stepExtent(-1);
       else if (b.dataset.act === "next") stepExtent(1);
+      else if (b.dataset.act === "terrain") setTerrain(V, !V.terrain);
+      else if (b.dataset.act === "globe") setGlobe(V, !V.globe);
       else if (b.dataset.act === "zoom-sel") zoomToSelection();
       else if (b.dataset.act === "clear-sel") clearSelection();
     }));

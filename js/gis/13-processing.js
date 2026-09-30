@@ -527,10 +527,36 @@
       } },
     { id: "dedupe", cat: "Vector general", name: "Delete duplicate geometries", icon: "layers_clear",
       params: [P_in()],
-      run: function (p) { var seen = {}; return feats(p.input, p.input_sel).filter(function (f) { var k = JSON.stringify(f.geometry.coordinates); if (seen[k]) return false; seen[k] = 1; return true; }); } }
+      run: function (p) { var seen = {}; return feats(p.input, p.input_sel).filter(function (f) { var k = JSON.stringify(f.geometry.coordinates); if (seen[k]) return false; seen[k] = 1; return true; }); } },
+    /* Field data */
+    { id: "enumroutes", cat: "Field data", name: "Enumerator routes", icon: "route",
+      help: "Joins each enumerator's survey points in the order they were collected into a route line (per day if chosen), with the number of interviews, distance and time on the road.",
+      params: [P_in("point"), { id: "who", type: "field", label: "Enumerator field", of: "input" },
+        { id: "when", type: "field", label: "Time field (submission or interview time)", of: "input" },
+        { id: "perday", type: "check", label: "One route per day", value: true }],
+      run: function (p) {
+        var groups = {}, keys = [];
+        feats(p.input, p.input_sel).forEach(function (f) {
+          if (!f.geometry || f.geometry.type !== "Point") return;
+          var who = String(f.properties[p.who] == null ? "(none)" : f.properties[p.who]).trim(), t = String(f.properties[p.when] || "");
+          var k = who + (p.perday ? " | " + t.slice(0, 10) : "");
+          if (!groups[k]) { groups[k] = { who: who, day: p.perday ? t.slice(0, 10) : "", pts: [] }; keys.push(k); }
+          groups[k].pts.push({ t: t, c: f.geometry.coordinates });
+        });
+        return keys.map(function (k) {
+          var g = groups[k];
+          g.pts.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : 0; });
+          var coords = g.pts.map(function (q) { return q.c; }), km = 0;
+          for (var i = 1; i < coords.length; i++) km += turf.distance(coords[i - 1], coords[i], { units: "kilometers" });
+          var t0 = Date.parse(g.pts[0].t), t1 = Date.parse(g.pts[g.pts.length - 1].t);
+          var props = { enumerator: g.who, day: g.day, interviews: coords.length, distance_km: +km.toFixed(2),
+            first: g.pts[0].t, last: g.pts[g.pts.length - 1].t, hours: isFinite(t1 - t0) ? +((t1 - t0) / 36e5).toFixed(2) : null };
+          return coords.length > 1 ? turf.lineString(coords, props) : turf.point(coords[0], props);
+        });
+      } }
   ];
   var CATS = [["Vector geoprocessing", "layers"], ["Vector geometry", "shape_line"], ["Vector analysis", "analytics"], ["Vector creation", "add_box"],
-    ["Vector selection", "select"], ["Conversion", "swap_horiz"], ["Interpolation", "blur_on"], ["Clustering", "bubble_chart"], ["Vector general", "category"]];
+    ["Vector selection", "select"], ["Conversion", "swap_horiz"], ["Interpolation", "blur_on"], ["Clustering", "bubble_chart"], ["Field data", "route"], ["Vector general", "category"]];
 
   /* ------------------------------------------------ conversion helpers */
 

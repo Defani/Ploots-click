@@ -387,12 +387,12 @@
     launch.type = "button";
     launch.className = "pb-launch";
     launch.title = "Claude";
-    launch.innerHTML = sym("smart_toy") + '<i class="pb-dot"></i><b class="pb-badge" hidden></b>';
+    launch.innerHTML = sym("auto_awesome") + '<i class="pb-dot"></i><b class="pb-badge" hidden></b>';
     var card = document.createElement("div");
     card.className = "pb-chat";
     card.hidden = true;
     card.innerHTML =
-      '<div class="pb-head"><div class="pb-avatar">' + sym("smart_toy") + '</div><div class="pb-who"><b>Claude</b><span class="pb-status"></span></div>' +
+      '<div class="pb-head"><div class="pb-avatar">' + sym("auto_awesome") + '</div><div class="pb-who"><b>Claude</b><span class="pb-status"></span></div>' +
         '<button data-pb="settings" title="Connection">' + sym("settings_ethernet") + '</button><button data-pb="clear" title="Clear chat">' + sym("delete_sweep") + '</button><button data-pb="close" title="Close">' + sym("close") + "</button></div>" +
       '<div class="pb-settings" hidden>' +
         '<div class="pb-set-row"><label>Port<input type="number" data-set="port" min="1" max="65535"></label><label>Token<input type="password" data-set="token" autocomplete="off"></label></div>' +

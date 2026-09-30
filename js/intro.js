@@ -25,6 +25,16 @@
 
   // mode: "intro" (auto-closes), "signin", "setup", "about"
   function build(mode) {
+    // Launch and lock: the full-screen showcase with sign-in at the top right.
+    if (mode !== "about" && window.GCSLanding) {
+      return window.GCSLanding.build({
+        form: mode === "signin" ? signinForm() : mode === "setup" ? setupForm() : "",
+        button: mode === "setup" ? "Set up account" : mode === "signin" ? "Sign in" : "Open the app",
+        owner: esc(OWNER),
+        privacy: desktop ? "Runs on this computer. Your files are never uploaded." : "Runs in your browser. Your files are never uploaded.",
+        version: "Version " + VERSION + (desktop ? " · Desktop" : " · Web") + " · © 2026 " + esc(OWNER)
+      });
+    }
     var el = document.createElement("div");
     el.className = "intro" + (mode === "about" ? " intro-about" : "");
     el.setAttribute("role", "dialog");
@@ -32,7 +42,7 @@
     el.innerHTML =
       '<div class="intro-card">' +
         (mode === "about" ? '<button type="button" class="intro-close" title="Close">' + sym("close") + "</button>" : "") +
-        '<div class="intro-logo"><img class="brand-logo-light" src="assets/logo_mark_light.png" alt="GIS Consultant Studio"><img class="brand-logo-dark" src="assets/logo_mark_dark.png" alt="GIS Consultant Studio"></div>' +
+        '<div class="intro-logo">' + (window.GCSLanding ? window.GCSLanding.logo(64) : "") + "</div>" +
         '<h1 class="intro-welcome">Welcome to GIS Consultant Studio</h1>' +
         '<p class="intro-tag">Personal GIS, data analysis, visualization and field monitoring</p>' +
         '<div class="intro-rule"></div>' +
@@ -114,7 +124,10 @@
         form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake");
       });
     });
-    setTimeout(function () { var f = form.querySelector("input"); if (f) f.focus(); }, 350);
+    if (el._openLogin) {
+      // Typing anywhere opens the sign-in menu.
+      document.addEventListener("keydown", function k(e) { if (!document.body.contains(el)) { document.removeEventListener("keydown", k, true); return; } if (!e.target.closest(".lp-login,.intro-dlg") && (e.key.length === 1 || e.key === "Enter")) el._openLogin(true); }, true);
+    } else setTimeout(function () { var f = form.querySelector("input"); if (f) f.focus(); }, 350);
   }
 
   function lockScreen() {
@@ -132,6 +145,7 @@
 
   function plainIntro() {
     var el = build("intro");
+    if (el._openLogin) { el.addEventListener("click", function (e) { if (e.target.closest(".lp-login-btn,.lp-start")) close(el); }); return; }
     el._key = function (e) { if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) close(el); };
     el.addEventListener("click", function () { close(el); });
     document.addEventListener("keydown", el._key, true);

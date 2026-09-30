@@ -88,9 +88,8 @@
     var c = root.querySelector('[data-thumb="chart"]'), a = root.querySelector('[data-thumb="agro"]'), m = root.querySelector('[data-thumb="map"]');
     if (c) c.innerHTML = chart();
     if (a) a.innerHTML = agro();
-    if (m && window.PlootsGIS && PlootsGIS.loadSample && window.d3) {
-      PlootsGIS.loadSample().then(function (fc) { m.innerHTML = mapSvg(fc); }).catch(function () { });
-    }
+    // Map: the app's own recording of Hansen tree cover change on the globe.
+    if (m) m.innerHTML = '<video class="ht-video" src="assets/landing/hansen.webm" muted autoplay loop playsinline></video>';
   }
   function slot(k) { return '<div class="ht-slot" data-thumb="' + k + '"></div>'; }
 

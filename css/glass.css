@@ -291,3 +291,8 @@ html:not([data-theme=dark]) .side-section, html:not([data-theme=dark]) .ag-kpi, 
 /* Home floats over the app like a pane of glass. */
 .home-screen { background: rgba(8, 12, 10, .28) !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .home-card-wrap { border: 1px solid var(--g-line-strong) !important; border-radius: 20px !important; box-shadow: var(--g-shadow-float), inset 0 1px 0 var(--g-edge) !important; }
+
+/* AI assistant launcher and avatar in the app's green, not a white tile. */
+.pb-launch { background: linear-gradient(145deg, #6fae3f, #3f7424) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .35) !important; border-radius: 50% !important; box-shadow: 0 10px 26px rgba(63, 116, 36, .45), inset 0 1px 0 rgba(255, 255, 255, .35) !important; }
+.pb-launch > .material-symbols-outlined { font-size: 23px; font-variation-settings: "FILL" 1, "wght" 400; }
+.pb-avatar { background: linear-gradient(145deg, #6fae3f, #3f7424) !important; }

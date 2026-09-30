@@ -709,5 +709,5 @@
     for (var i = 0; i < (n || 10); i++) { G3.r.render(G3.scene, G3.cam); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); }
     return (performance.now() - t0) / (n || 10);
   }
-  window.PlootsAgro = { bench: bench, open: open, close: close, importSexi: function (t) { var r = importSexi(t); crownIndices(); record(); redraw(); return r; }, exportSexi: function () { return exportSexi(); }, step: function () { step(); redraw(); }, stats: function () { return stats(); }, project: function () { return P; }, setView: function (v) { setView(v); }, camPreset: function (k) { camPreset(k); }, goYear: function (y) { restore(y); redraw(); }, renderer: function () { return G3 && G3.r; } };
+  window.PlootsAgro = { bench: bench, open: open, close: close, importSexi: function (t) { var r = importSexi(t); crownIndices(); record(); redraw(); return r; }, exportSexi: function () { return exportSexi(); }, step: function () { step(); redraw(); }, stats: function () { return stats(); }, project: function () { return P; }, setView: function (v) { setView(v); }, camPreset: function (k) { camPreset(k); }, goYear: function (y) { restore(y); redraw(); }, renderer: function () { return G3 && G3.r; }, view3d: function () { return G3; } };
 })();

@@ -38,3 +38,4 @@
 
 @media (prefers-reduced-motion: reduce) { .ht * { animation: none !important; } }
 @media (max-width: 900px) { .home-thumb { height: 120px; } }
+.ht-video { width: 100%; height: 100%; object-fit: cover; display: block; background: #050505; }

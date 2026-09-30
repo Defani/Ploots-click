@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v25";
+const CACHE_NAME = "ploots-click-v27";
 
 const PRECACHE_URLS = [
   "./",
@@ -132,6 +132,14 @@ const PRECACHE_URLS = [
   "./css/agro.css",
   "./css/home.css",
   "./js/home-thumbs.js",
+  "./js/landing.js",
+  "./css/landing.css",
+  "./assets/logo.svg",
+  "./assets/landing/defani.jpg",
+  "./assets/landing/hansen.json",
+  "./assets/landing/forest.json",
+  "./assets/landing/gayo.json",
+  "./assets/landing/survey.json",
   "./assets/home/agro-eye-1.jpg",
   "./assets/home/agro-eye-3.jpg",
   "./assets/home/agro-eye-6.jpg",
@@ -219,6 +227,8 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  // Video (range requests) goes straight to the network.
+  if (req.headers.has("range") || /\.(webm|mp4)$/i.test(url.pathname)) return;
 
   if (url.origin === self.location.origin) {
     event.respondWith(networkFirst(req));
