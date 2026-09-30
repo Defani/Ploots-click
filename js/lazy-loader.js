@@ -50,7 +50,7 @@
     // .svg() method that walks an <svg> DOM tree into real PDF vector
     // instructions, so it must load strictly after jspdf itself.
     jspdf: "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-    svg2pdf: "https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js",
+    svg2pdf: "https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js",
     // D3 fallback: vendor/d3-7.9.0.min.js is loaded eagerly by index.html,
     // so this CDN copy is only fetched if that local file failed to load.
     d3: "https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js",

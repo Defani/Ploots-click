@@ -11,7 +11,7 @@
   var ALIGNS = ['left', 'center', 'right', 'justify'];
   var ALIGN_LABEL = { left: 'left', center: 'center', right: 'right', justify: 'justify' };
   var BULLET = '• ';
-  var FX_DEFAULT_COLOR = { shadow: '#000000', lift: '#000000', outline: '#18a0fb', hollow: null, background: '#ffd84d' };
+  var FX_DEFAULT_COLOR = { shadow: '#000000', lift: '#000000', outline: '#4e8a2e', hollow: null, background: '#ffd84d' };
 
   function $(id) { return document.getElementById(id); }
 

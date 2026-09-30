@@ -30,6 +30,7 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 ## Table of Contents
 
 - [What is this?](#what-is-this)
+- [Desktop app](#desktop-app)
 - [Interface](#interface)
 - [Features](#features)
   - [Charts](#charts)
@@ -37,6 +38,9 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
   - [Data View](#data-view)
   - [Editor: toolbars, Design panel & layers](#editor-toolbars-design-panel--layers)
   - [Map workspace (GIS)](#map-workspace-gis)
+  - [KoboToolbox monitoring](#kobotoolbox-monitoring)
+  - [Files (folder browser)](#files-folder-browser)
+  - [Plugins](#plugins)
   - [Page layout & annotation](#page-layout--annotation)
   - [Export](#export)
 - [Architecture](#architecture)
@@ -63,6 +67,30 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 ## What is this?
 
 Ploots Click is a **client-side-only web app**: open the page (or visit the GitHub Pages link below) and everything — data parsing, chart rendering, maps, page layout, and export — happens locally in your browser tab (maps fetch their basemap tiles online). Nothing you paste or upload is ever sent to a server, because there is no server. The app is just static HTML, CSS, and JavaScript, deployed straight from this repository via GitHub Pages, which is why it costs nothing to run and needs zero setup.
+
+[⬆️ Back to Table of Contents](#table-of-contents)
+
+## Desktop app
+
+Ploots Click also runs as a **desktop app for Windows**, built with [Tauri 2](https://tauri.app) like GeoLibre Desktop. It uses the system's WebView2, so the installer is small.
+
+- **Nothing is hosted.** The app's code, libraries (Fabric.js, MapLibre GL, AG Grid, MathJax, SheetJS, jsPDF, Plotly, geotiff.js, …), fonts and icons are all inside the app. It makes no calls to CDNs, Google Fonts or the Iconify API. Files you open stay on your computer.
+- **Online only when you ask.** Basemap tiles, the data catalog (government ArcGIS servers, GFW, GBIF, iNaturalist), KoboToolbox and the Claude bridge (`ws://127.0.0.1:9878`, on your own computer) connect only when you use them.
+- **KoboToolbox without a proxy.** The app reads the Kobo API natively, so `tools/kobo_proxy.py` is not needed. The access setting shows "Built-in".
+- Web links open in your default browser.
+
+**Install:** download `Ploots Click_<version>_x64-setup.exe` (or the `.msi`) from the repository's Releases page, or from the "ploots-click-windows" artifact of the **Desktop app** workflow run. The setup installs for the current user only and does not need administrator rights. If WebView2 is missing, the installer gets it.
+
+**Build it yourself (Windows):**
+
+1. Install [Rust](https://rustup.rs), the [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload, Python 3, and the Tauri CLI (`cargo install tauri-cli --version "^2" --locked`, or `npm install -g @tauri-apps/cli@^2` with Node.js).
+2. Build the offline copy of the web app into `desktop/dist`. Downloads are cached in `desktop/.cache`:
+   ```bash
+   python desktop/build_dist.py
+   ```
+3. Build the installers from the `desktop` folder with `cargo tauri build` (or `tauri build` with the npm CLI). They land in `desktop/src-tauri/target/release/bundle/nsis/` and `…/msi/`.
+
+The GitHub workflow `.github/workflows/desktop.yml` runs the same steps on every push that changes the app. Pushing a `desktop-v*` tag publishes a release.
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
@@ -230,8 +258,8 @@ Pick **Map** on the Home screen (or the **Map** button in the rail) and the page
   <img src="assets/screenshots/map-workspace.png" alt="Map workspace: ASEAN countries in graduated colors with a legend, scale bar, north arrow, inset map and coordinate grid on an A4 page" width="100%">
 </p>
 
-- **Layers**: any number of **vector** layers (GeoJSON or TopoJSON from a file, a URL or pasted text), **raster** layers (**GeoTIFF**: EPSG:4326, EPSG:3857 and WGS 84 / UTM zones; single-band on a color ramp, continuous or in discrete classes, or RGB) and **XYZ tile** layers. The layer list works like the QGIS layer tree: drag to reorder, hide, expand a layer to see its classes, and optional feature counts.
-- **Layer menu** (right-click a layer or its ⋮ button), as in QGIS and ArcGIS: zoom to layer or selection, open the attribute table, layer styling, **filter** (definition query), **select by expression**, select all / invert / clear, **field calculator**, show in legend, show feature count, show labels, rename, duplicate, move to top or bottom, export GeoJSON / selected features / CSV, properties and remove. Double-click a layer for its **properties**: name, legend name, attribution, source information (features, geometry, fields, CRS, extent), opacity and **scale-dependent visibility** (minimum and maximum 1:n).
+- **Layers**: any number of **vector** layers (GeoJSON, TopoJSON, **Shapefile**, **KML / KMZ** or **GPX** from a file, a zipped shapefile, a URL or pasted text), **raster** layers (**GeoTIFF**: EPSG:4326, EPSG:3857 and WGS 84 / UTM zones; single-band on a color ramp, continuous or in discrete classes, or RGB) and **XYZ tile** layers. The layer list works like the QGIS layer tree: drag to reorder, hide, expand a layer to see its classes, and optional feature counts.
+- **Layer menu** (right-click a layer or its ⋮ button), as in QGIS and ArcGIS: zoom to layer or selection, open the attribute table, layer styling, **filter** (definition query), **select by expression**, select all / invert / clear, **field calculator**, show in legend, show feature count, show labels, rename, duplicate, move to top or bottom, export GeoJSON / selected features / CSV / **Shapefile (.zip)** / **KML** (keeps single and categorized colors) / **GPX**, properties and remove. Double-click a layer for its **properties**: name, legend name, attribution, source information (features, geometry, fields, CRS, extent), opacity and **scale-dependent visibility** (minimum and maximum 1:n).
 - **Expressions** (filter, select by expression, field calculator) use QGIS syntax, e.g. `"population" > 50 AND "subregion" = 'Maritime'`, `name LIKE 'Ma%'`, `iso3 IN ('IDN', 'MYS')`, `"area" IS NOT NULL`, `"pop" / "area" * 1000`, with a field list, a value list and a live count of matching features.
 - **Symbology** per layer, as in QGIS: **Single symbol**, **Categorized** (a color per value, each editable) and **Graduated** (natural breaks / Jenks, quantile or equal interval on a color ramp). Values come from a feature property or are **joined from the Data table**. Fill opacity, stroke, point size and line width, and solid, dashed, dotted or dash-dot outlines and lines. Vector tile layers get fill, outline, opacity, line width and style, and point size.
 - **Renderers**: plain features, **proportional symbols** (circle area or linear size by a numeric field, also at polygon centroids, with nested reference circles in the legend) or a **heatmap** (optional weight field, radius, intensity, color ramp).
@@ -249,11 +277,99 @@ Pick **Map** on the Home screen (or the **Map** button in the rail) and the page
   <img src="assets/screenshots/map-items.png" alt="Categorized map on Esri World Imagery with the scale bar selected and its properties in the Map panel" width="100%">
 </p>
 
-- **Attribute table** (a dock under the map): view and **edit** values, **select** features (rows and map stay in sync, selections shown in yellow), show selected only, search, **select by expression**, add a field, the **field calculator**, delete features, and **export GeoJSON or CSV** of all features or only the selected ones.
+- **Attribute table** (a dock under the map): view and **edit** values, **select** features (rows and map stay in sync, selections shown in yellow), show selected only, search, **select by expression**, add a field, the **field calculator**, delete features, and **export GeoJSON, CSV, Shapefile (.zip), KML or GPX** of all features or only the selected ones.
 
 <p align="center">
   <img src="assets/screenshots/map-attribute-table.png" alt="Attribute table under the map with two features selected, and the map tool bar with the Select tool active" width="100%">
 </p>
+
+### KoboToolbox monitoring
+
+The **Kobo** button in the rail (map mode) connects to a KoboToolbox server (Global, EU, OCHA or your own) with your API token and lists your forms. Pick a form and open the **monitoring dashboard**:
+
+- **Overview**: submissions, today versus yesterday, enumerators active today, average per enumerator-day, area surveyed, quality flags and the last submission; a chart of submissions per day stacked by enumerator; an **enumerator × day matrix** that shows who submitted how much on each day, with today highlighted; today's status per enumerator (active in the last hour, idle, or no submission yet); and a live feed where new submissions are highlighted.
+- **Enumerators**: submissions, today, active days, per day, median interview length, GPS coverage and median accuracy, distance walked, area, quality flags and last submission, plus the list of flagged submissions.
+- **Recap**: every question, with choice counts for select questions and statistics plus a histogram for numbers, and a per-village table.
+- **Route**: an animated route per enumerator for one day, on its own map. Play or pause, choose the speed, scrub the timeline, turn enumerators on and off, and watch a bubble pop up at each arrival. While the dashboard refreshes, new submissions animate in.
+- **Data**: the submissions table with search, CSV export and **Add to map**. Add to map creates a point layer colored by enumerator, with every answer as an attribute, ready for symbology, labels, the attribute table and the print layout. Routes can be added as a line layer too.
+
+Filters for date range and enumerator apply to every tab. **Auto refresh** (every 1 to 30 minutes) fetches only new submissions and shows a notification with who sent them. Fields for enumerator, respondent, village, area, survey date and location are detected from common names and can be changed. Quality checks flag short interviews, missing GPS and poor GPS accuracy.
+
+**Why a proxy is needed.** The KoboToolbox API does not allow requests from other websites (CORS), so a browser page cannot read it directly. Run the small proxy in `tools/` on your computer; it only forwards read-only `/api/v2/` requests to Kobo servers, listens on `127.0.0.1` only, and never stores your token:
+
+```bash
+python tools/kobo_proxy.py
+```
+
+Add `--allow-host kobo.example.org` for a self-hosted server. Add `--demo` to also serve a generated demo form, "Coffee farmer baseline (demo)": five enumerators near Takengon over the last ten days, with today's submissions arriving through the day. The demo lets you try the dashboard without an account.
+
+#### Chat with Claude
+
+The round **Claude** button opens a chat bubble. It connects Ploots Click to the **geolibre-live** MCP server (the same server used by the GeoLibre Live MCP Bridge plugin) at `ws://127.0.0.1:9878`. With that server registered in Claude Desktop or Claude Code:
+
+- Messages typed in the bubble reach Claude through `live_chat_wait` / `live_chat_inbox` (say "dengar geolibre" in Claude to start listening). Claude answers in the bubble with `live_say` (a task list with progress, then a notification when done) and `live_show_chart` (Plotly charts inside the chat).
+- Claude reads the survey from the real submissions with `live_kobo_summary`, `live_kobo_fields`, `live_kobo_rows`, `live_kobo_aggregate` and `live_kobo_load`. It gets the same derived fields as the GeoLibre Kobo Connector (`_enumerator`, `_desa`, `_tanggal`, `_submission_date`, `_luas_ha`, `_validasi`), plus `_durasi_menit`.
+- Claude can also read and drive the map: `live_get_state`, `live_list_layers`, `live_get_layer_features`, `live_get_selection`, `live_screenshot`, `live_set_view`, `live_zoom_to_layer`, `live_set_basemap`, `live_add_geojson_layer`, `live_add_tile_layer`.
+
+The server keeps one app connection and the newest one wins, so a GeoLibre window with the bridge plugin and Ploots Click take turns. If another app takes over, the bubble shows it and does not reconnect by itself. Connecting by hand turns on auto-connect for your next visit.
+
+### Files (folder browser)
+
+Like the QGIS Browser panel: **Files** in the left rail connects one or more folders on your computer. They are remembered for the next session; the browser or the desktop app asks again for permission when needed. Browse them as a tree and filter by name, then double-click (or press Enter on) a file to open it:
+
+- **CSV / TSV / TXT, Excel, JSON tables** become chart data.
+- A **CSV with latitude / longitude columns**, opened in the map workspace, becomes a point layer. This works for Kobo or GPS exports, for example.
+- **GeoJSON / TopoJSON** become vector layers and **GeoTIFF** becomes a raster layer.
+- **Shapefiles** open as layers. Only the `.shp` is listed, as in QGIS; its `.dbf`, `.prj` and `.cpg` are read with it. Coordinates are converted from UTM, any Transverse Mercator (e.g. DGN95 / Indonesia TM-3) or Web Mercator to WGS 84, and polygon holes are kept.
+- **KML / KMZ** (Google Earth, Avenza, Kobo exports) open as layers, with names, descriptions, ExtendedData and folders as attributes.
+- **GPX** opens as waypoints, one line per track segment (with its length and start / end time) and routes.
+- A **zipped shapefile / KML / GPX** is added to the map.
+- **Images** are placed on the page.
+- A **plugin .zip** is installed.
+
+**Working with files:**
+
+- **Type filter:** All, Tables, Vector, Raster or Images.
+- **Several at once:** Ctrl / Shift + click to select several files, then **Open all**.
+- **Right-click** for Open, Use as chart data, Add as points (tables with latitude / longitude), Add to map, Copy name and Copy path.
+- **Drag** files onto the page or the map to open them; images land where they are dropped.
+- **Watches** expanded folders while the app is visible. New files (a fresh Kobo export, GPS tracks just copied in) get a green dot and a notification.
+- **Recent** lists the last files opened, above the folders.
+- **Save exports to** a connected folder, or **Ask each time**, instead of Downloads. This covers every export: PNG / JPG / PDF / SVG, CSV and GeoJSON, Kobo CSV and plugin zips. Name clashes get " (2)", and the folder asks once for write access.
+
+Selecting a file shows a **preview** before it is opened: the first rows of a CSV or Excel sheet (with the list of sheets), a thumbnail map of a vector file with its feature count, geometry type and fields, an image thumbnail, or a plugin's name and description. Expanded folders are remembered.
+
+Files are read from disk when opened; nothing is copied or uploaded. This uses the File System Access API (Chrome, Edge and the desktop app). In other browsers, a folder can be read for the current session only.
+
+When the app opens, an intro says "Welcome to Ploots Click": personal GIS, data analysis, visualization and field monitoring, a private tool of Defani Arman Alfitriansyah, for personal use only and not for distribution.
+
+**Sign-in.** The intro also asks for a **username and password**.
+
+- **First launch:** you set up the account.
+- **Every launch after that:** you sign in, and the app stays covered until then.
+- **Nothing runs before sign-in.** Plugins, the Claude bridge and the Kobo auto-reopen wait until you are signed in. The bridge also disconnects while the app is locked.
+- **How the password is kept:** only a PBKDF2-SHA-256 hash (310,000 iterations, random salt) is kept on the device.
+- **Wrong attempts:** after three, each new attempt must wait longer.
+- **Locking again:** the lock button in the top bar locks the app; **About → Account** changes the username or password and sets auto-lock after 5 to 60 minutes of inactivity.
+- **Forgotten password:** it can only be reset, and resetting also removes what the app saved on that device. Files on disk are not touched.
+
+This lock protects the app on a device. It is not encryption: someone with the app's files and the know-how can get past it. To keep the software itself private, keep the repository private and turn GitHub Pages off.
+
+### Plugins
+
+Add features without changing the app, the same way as GeoLibre plugins. **Plugins** in the left rail installs a plugin from a `.zip`, a folder or a `plugin.json` URL (a `.zip` can also be dropped on the panel). Each installed plugin can be enabled, disabled, reloaded, downloaded as a `.zip` or removed. Installed plugins are kept in the browser (or the desktop app) and load at startup.
+
+A plugin is a folder with a `plugin.json` manifest and one ES module that exports `activate(app)` / `deactivate(app)`. Through `app`, a plugin can:
+
+- add top-bar buttons, rail panels, dialogs and notifications;
+- read and change map layers, the view and the basemap;
+- read and set chart data and the chart type;
+- add text and images to the page;
+- keep its own settings;
+- read the KoboToolbox data;
+- send messages to the Claude chat.
+
+Everything a plugin adds is removed when it is disabled. **New plugin** downloads a working starter to edit. The API is documented in [PLUGINS.md](./PLUGINS.md), and an example plugin is in `plugins/examples/map-coordinates/` (cursor coordinates in decimal degrees, DMS or UTM).
 
 ### Page layout & annotation
 - **Full-page canvas**, separate from the chart block: position and resize the chart anywhere on the page.
@@ -334,6 +450,12 @@ flowchart TD
 ├── manifest.json                  # Web app manifest (installable PWA)
 ├── js/
 │   ├── lazy-loader.js             # Loads CDN libraries on first use (Fabric, Papa Parse, SheetJS, AG Grid, jsPDF, ...)
+│   ├── desktop-shell.js           # Desktop app only: opens web links in the default browser
+│   ├── plugins.js                 # Plugin manager: install (.zip / folder / URL), enable, the app API, starter
+│   ├── file-browser.js            # Files panel: connected folders, tree, open files by type
+│   ├── formats.js                 # Shapefile (+ .prj reprojection), KML / KMZ and GPX readers
+│   ├── intro.js                   # Launch intro, sign-in / account setup, About and Account dialogs
+│   ├── lock.js                    # Password lock: PBKDF2 hash, attempt delays, Lock button, auto-lock, reset
 │   ├── chart-builder/             # Chart settings, data and export, in numbered load-order files
 │   │   ├── 01-config.js           #   static config: fonts, canvas templates, hatch/dash/marker defs
 │   │   ├── 02-state.js            #   shared state object, chart type list, sample data per chart type
@@ -399,7 +521,9 @@ flowchart TD
 │   │   ├── 06-panel.js            #   the Map panel
 │   │   ├── 07-home.js             #   Home screen
 │   │   ├── 08-catalog.js          #   data catalog: government ArcGIS, GFW, GBIF, iNaturalist
-│   │   └── 09-layer-menu.js       #   layer menu, filter / select by expression, field calculator, properties
+│   │   ├── 09-layer-menu.js       #   layer menu, filter / select by expression, field calculator, properties
+│   │   ├── 10-bridge.js           #   Claude bridge (geolibre-live MCP over WebSocket) and chat bubble
+│   │   └── 11-kobo.js             #   KoboToolbox connector, monitoring dashboard, route animation, data API
 │   ├── data_view.js               # Data View: AG Grid table, wide/long reshape, transpose
 │   ├── dv_shelves.js              # Data View chart-mapping shelves (drag fields onto X / Y)
 │   ├── data_formulas.js           # Data View spreadsheet formulas (=SUM, =AVERAGE, ...)
@@ -412,6 +536,14 @@ flowchart TD
 │   ├── help_search.js             # Help search: find a menu or setting by name
 │   ├── ui_sections.js             # Collapsible sidebar sections
 │   └── undo_redo.js               # Global undo/redo history
+├── PLUGINS.md                     # How to write a plugin, and the app API
+├── plugins/examples/              # Example plugin (map-coordinates)
+├── tools/
+│   └── kobo_proxy.py              # Local KoboToolbox API proxy (CORS) with an optional demo form
+├── desktop/                       # Windows desktop app (Tauri 2)
+│   ├── build_dist.py              #   offline copy of the web app into desktop/dist (libraries, fonts, icons local)
+│   ├── make_icons.py              #   app icons from the logo
+│   └── src-tauri/                 #   Rust shell: window, installers, native Kobo requests (kobo_get)
 ├── vendor/
 │   ├── d3-7.9.0.min.js            # D3.js 7.9.0, bundled locally
 │   └── topojson/                  # Natural Earth base maps (*_110m.json) for the map chart types
@@ -731,7 +863,7 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 | AG Grid Community | 35.3.0 | cdnjs |
 | marked | 16.3.0 | cdnjs — renders this README as HTML on the splash screen |
 | jsPDF | 2.5.1 | cdnjs — PDF export |
-| svg2pdf.js | 2.2.3 | cdnjs — vector charts in PDF export |
+| svg2pdf.js | 2.2.3 | jsDelivr — vector charts in PDF export |
 | iconify-icon | 2.1.0 | code.iconify.design — chart-type icons |
 | MapLibre GL JS | 5.9.0 | cdnjs — the map workspace (loaded when a map is opened) |
 | geotiff.js | 2.1.3 | jsDelivr — GeoTIFF raster layers (loaded on first raster) |
@@ -741,7 +873,7 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 ## Known limitations
 
 <details>
-<summary>Click to expand — 6 known limitations</summary>
+<summary>Click to expand — 7 known limitations</summary>
 
 > [!NOTE]
 > Everything runs in the browser tab — there's no server-side processing, so very large datasets or very high-DPI exports can be slow or memory-heavy depending on the device.
@@ -760,6 +892,9 @@ Duplicate, lock, arrange and delete are also on the floating object bar and the 
 
 > [!NOTE]
 > Maps need an internet connection for MapLibre GL and the basemap tiles. GeoTIFFs are read in EPSG:4326, EPSG:3857 or WGS 84 / UTM and downsampled to 1600 px on the long side; other projections should be reprojected first (e.g. in QGIS).
+
+> [!NOTE]
+> KoboToolbox needs the local proxy (`python tools/kobo_proxy.py`) because the Kobo API does not accept requests from other websites. The chat with Claude needs the geolibre-live MCP server running (Claude Desktop or Claude Code starts it). Submissions are kept in the browser tab only and are fetched again after a reload.
 
 > [!TIP]
 > All 25 chart types are fully functional and ready to use.

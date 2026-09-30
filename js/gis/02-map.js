@@ -37,9 +37,15 @@
   var FONT = ["Noto Sans Regular"];
   var OSM = "© OpenStreetMap contributors";
   var ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+  var MAPZEN = "Terrain Tiles: Mapzen / AWS Open Data (SRTM, GMTED, ETOPO1 and others)";
   // Yesterday (UTC): the newest complete day of NASA's daily VIIRS mosaic.
   var GIBS_DAY = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
   var BASEMAPS = [
+    // Google Maps via the Map Tiles API (js/gis/15-google-tiles.js); needs the user's own API key.
+    { id: "google-roadmap", group: "Google Maps", label: "Google Maps", google: "roadmap", attr: "Map data © Google" },
+    { id: "google-satellite", group: "Google Maps", label: "Google Satellite", google: "satellite", attr: "Imagery © Google" },
+    { id: "google-hybrid", group: "Google Maps", label: "Google Hybrid", google: "hybrid", attr: "Imagery and map data © Google" },
+    { id: "google-terrain", group: "Google Maps", label: "Google Terrain", google: "terrain", attr: "Map data © Google" },
     { id: "positron", group: "Vector (OpenFreeMap)", label: "Positron", style: "https://tiles.openfreemap.org/styles/positron", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
     { id: "bright", group: "Vector (OpenFreeMap)", label: "Bright", style: "https://tiles.openfreemap.org/styles/bright", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
     { id: "liberty", group: "Vector (OpenFreeMap)", label: "Liberty", style: "https://tiles.openfreemap.org/styles/liberty", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
@@ -61,10 +67,7 @@
     { id: "osm", group: "Streets", label: "OpenStreetMap", tiles: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", attr: OSM, maxzoom: 19 },
     { id: "osm-hot", group: "Streets", label: "OpenStreetMap Humanitarian", tiles: "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", attr: OSM + ", tiles by HOT / OSM France", maxzoom: 19 },
     { id: "cyclosm", group: "Streets", label: "CyclOSM", tiles: "https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", attr: OSM + ", CyclOSM", maxzoom: 19 },
-    { id: "carto-voyager", group: "Streets", label: "CARTO Voyager", tiles: "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
     { id: "esri-street", group: "Streets", label: "Esri World Street Map", tiles: ESRI + "World_Street_Map/MapServer/tile/{z}/{y}/{x}", attr: "Esri" },
-    { id: "carto-light", group: "Light & dark", label: "CARTO Light", tiles: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
-    { id: "carto-dark", group: "Light & dark", label: "CARTO Dark", tiles: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
     { id: "esri-lightgray", group: "Light & dark", label: "Esri Light Gray", tiles: ESRI + "Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri", maxzoom: 16 },
     { id: "esri-darkgray", group: "Light & dark", label: "Esri Dark Gray", tiles: ESRI + "Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri", maxzoom: 16 },
     { id: "gbif-classic", group: "GBIF", label: "GBIF Classic", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-classic", attr: "GBIF, " + OSM },
@@ -74,8 +77,51 @@
     { id: "gbif-tuatara", group: "GBIF", label: "GBIF Tuatara", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-tuatara", attr: "GBIF, " + OSM },
     { id: "gbif-middle", group: "GBIF", label: "GBIF Middle", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-middle", attr: "GBIF, " + OSM },
     { id: "gbif-osm-bright", group: "GBIF", label: "GBIF OSM Bright", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=osm-bright", attr: "GBIF, " + OSM },
+    {"id": "gl-osm-de", "group": "Regional", "label": "OpenStreetMap DE", "tiles": "https://tile.openstreetmap.de/{z}/{x}/{y}.png", "attr": OSM},
+    {"id": "gl-osm-ch", "group": "Regional", "label": "OpenStreetMap CH", "tiles": "https://tile.osm.ch/switzerland/{z}/{x}/{y}.png", "attr": OSM},
+    {"id": "gl-esri-world-light-gray-reference", "group": "Labels & overlays", "label": "Esri World Light Gray Reference", "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", "attr": "Esri"},
+    {"id": "gl-esri-world-dark-gray-reference", "group": "Labels & overlays", "label": "Esri World Dark Gray Reference", "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", "attr": "Esri"},
+    {"id": "gl-eox-terrain-light", "group": "Topographic", "label": "EOX Terrain Light", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/terrain-light_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-eox-terrain", "group": "Topographic", "label": "EOX Terrain", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/terrain_3857/default/g/{z}/{y}/{x}.jpg", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-eox-overlay", "group": "Labels & overlays", "label": "EOX Overlay", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/overlay_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.png", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-eox-overlay-bright", "group": "Labels & overlays", "label": "EOX Overlay Bright", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/overlay_bright_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.png", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-nasa-gibs-aster-gdem-shaded-relief", "group": "Topographic", "label": "NASA ASTER GDEM Shaded Relief", "tiles": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/ASTER_GDEM_Greyscale_Shaded_Relief/default/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpg", "attr": "Imagery provided by NASA Global Imagery Browse Services", "maxzoom": 12},
+    {"id": "gl-nasa-gibs-modis-terra-true-color", "group": "Imagery", "label": "NASA MODIS Terra True Color", "tiles": "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/MODIS_Terra_CorrectedReflectance_TrueColor/default//GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg", "attr": "Imagery provided by NASA Global Imagery Browse Services", "maxzoom": 9},
+    {"id": "gl-nasa-gibs-viirs-earth-at-night", "group": "Imagery", "label": "NASA VIIRS Earth At Night 2012", "tiles": "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/VIIRS_CityLights_2012/default//GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg", "attr": "Imagery provided by NASA Global Imagery Browse Services", "maxzoom": 8},
+    {"id": "gl-openrailwaymap", "group": "Transport", "label": "OpenRailwayMap", "tiles": "https://a.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-openrailwaymap-maxspeed", "group": "Transport", "label": "OpenRailwayMap Maxspeed", "tiles": "https://a.tiles.openrailwaymap.org/maxspeed/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-openrailwaymap-electrification", "group": "Transport", "label": "OpenRailwayMap Electrification", "tiles": "https://a.tiles.openrailwaymap.org/electrification/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-openrailwaymap-signals", "group": "Transport", "label": "OpenRailwayMap Signals", "tiles": "https://a.tiles.openrailwaymap.org/signals/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-swisstopo-national-map-color", "group": "Regional", "label": "Swiss National Map Color", "tiles": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg", "attr": "© swisstopo", "maxzoom": 18},
+    {"id": "gl-swisstopo-national-map-grey", "group": "Regional", "label": "Swiss National Map Grey", "tiles": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", "attr": "© swisstopo", "maxzoom": 18},
+    {"id": "gl-swisstopo-swissimage", "group": "Imagery", "label": "SWISSIMAGE", "tiles": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg", "attr": "© swisstopo", "maxzoom": 18},
+    {"id": "gl-topplusopen-color", "group": "Regional", "label": "TopPlusOpen Color", "tiles": "https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web/default/WEBMERCATOR/{z}/{y}/{x}.png", "attr": "Map data: © dl-de/by-2-0", "maxzoom": 18},
+    {"id": "gl-topplusopen-grey", "group": "Regional", "label": "TopPlusOpen Grey", "tiles": "https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web_grau/default/WEBMERCATOR/{z}/{y}/{x}.png", "attr": "Map data: © dl-de/by-2-0", "maxzoom": 18},
+    {"id": "gl-usgs-us-imagery", "group": "Imagery", "label": "USGS US Imagery", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-imagery-topo", "group": "Imagery", "label": "USGS US Imagery Topo", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-topo", "group": "Topographic", "label": "USGS US Topo", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-hydro", "group": "Labels & overlays", "label": "USGS US Hydrography", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSHydroCached/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-shaded-relief", "group": "Topographic", "label": "USGS US Shaded Relief", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSShadedReliefOnly/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-waymarkedtrails-hiking", "group": "Outdoor", "label": "Waymarked Trails Hiking", "tiles": "https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-waymarkedtrails-cycling", "group": "Outdoor", "label": "Waymarked Trails Cycling", "tiles": "https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-waymarkedtrails-mtb", "group": "Outdoor", "label": "Waymarked Trails MTB", "tiles": "https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-waymarkedtrails-slopes", "group": "Outdoor", "label": "Waymarked Trails Slopes", "tiles": "https://tile.waymarkedtrails.org/slopes/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-openbasiskaart", "group": "Regional", "label": "Openbasiskaart", "tiles": "https://www.openbasiskaart.nl/mapcache/wmts/1.0.0/osm-g/default/g/{z}/{y}/{x}.png", "attr": "Map data © OpenStreetMap contributors | Openbasiskaart", "maxzoom": 18},
+    { id: "mapzen-hillshade", group: "Terrain (Mapzen DEM)", label: "Mapzen Global Terrain — hillshade", dem: "hillshade", attr: MAPZEN },
+    { id: "mapzen-relief", group: "Terrain (Mapzen DEM)", label: "Mapzen Global Terrain — color relief", dem: "relief", attr: MAPZEN },
+    { id: "mapzen-relief-light", group: "Terrain (Mapzen DEM)", label: "Mapzen Global Terrain — hillshade over light gray", dem: "hillshade", over: "esri-lightgray", attr: MAPZEN + ", Esri" },
     { id: "none", group: "None", label: "None" }
   ];
+  // Menus list the basemaps group by group, in this order.
+  var GROUP_ORDER = ["Google Maps", "Vector (OpenFreeMap)", "Streets", "Light & dark", "Imagery", "Topographic", "Terrain (Mapzen DEM)", "Outdoor", "Transport", "Regional", "Labels & overlays", "GBIF", "None"];
+  BASEMAPS = BASEMAPS.map(function (b, i) { return [b, i]; }).sort(function (a, c) {
+    var ga = GROUP_ORDER.indexOf(a[0].group), gc = GROUP_ORDER.indexOf(c[0].group);
+    return (ga < 0 ? 99 : ga) - (gc < 0 ? 99 : gc) || a[1] - c[1];
+  }).map(function (x) { return x[0]; });
+  // Transparent tiles (labels, trails, railways) go over a basemap as a
+  // layer rather than replacing it.
+  var OVERLAY_GROUPS = { "Labels & overlays": 1, "Outdoor": 1, "Transport": 1 };
+  BASEMAPS.forEach(function (b) { if (OVERLAY_GROUPS[b.group]) b.overlay = true; });
   GIS.BASEMAPS = BASEMAPS;
 
   PD.dataFree = PD.dataFree || {};
@@ -85,6 +131,8 @@
 
   function styleFor(id) {
     var b = basemapDef(id);
+    if (b.google) return GIS.google ? GIS.google.style(b, styleFor) : styleFor("positron");
+    if (b.offline) return GIS.offline ? GIS.offline.style(b) : styleFor("none");
     if (b.style) return b.style;
     var bg = typeof chartBgColor === "function" ? chartBgColor() : "#ffffff";
     var style = { version: 8, glyphs: GLYPHS, sources: {}, layers: [{ id: "background", type: "background", paint: { "background-color": bg === "rgba(0,0,0,0)" ? "#ffffff" : bg } }] };
@@ -92,27 +140,110 @@
       style.sources.basemap = { type: "raster", tiles: [b.tiles], tileSize: 256, maxzoom: b.maxzoom || 19 };
       style.layers.push({ id: "basemap", type: "raster", source: "basemap" });
     }
+    if (b.dem) demStyle(style, b);
     return style;
   }
 
   GIS.styleFor = styleFor;
+  // Re-apply the basemap on every view (e.g. once a Google session is ready).
+  // Which map a view shows (js/gis/00-store.js "Maps"): the Analysis view
+  // shows the active map; the page's main frame the map chosen for it
+  // (state.layoutMapId) or else the active one; an off-screen view the
+  // map it was made for.
+  function viewMap(v) {
+    if (v && v.mapId) return GIS.mapById(v.mapId) || GIS.activeMap();
+    if (v && !v.analysis && state.layoutMapId) return GIS.mapById(state.layoutMapId) || GIS.activeMap();
+    return GIS.activeMap();
+  }
+  function viewLayers(v) { return viewMap(v || M).layers; }
+  function viewBasemap(v) { return GIS.mapBasemap(viewMap(v)); }
+  GIS.viewMapOf = viewMap;
+
+  // A picture of any map (its layers and basemap) for a map frame on the
+  // page: an off-screen MapLibre map at 2x, drawn once and removed.
+  // o: { w, h, center, zoom, bearing } in page pixels.
+  GIS.renderMapImage = function (mapId, o) {
+    var m = GIS.mapById(mapId);
+    if (!m || typeof maplibregl === "undefined") return Promise.resolve(null);
+    var div = document.createElement("div");
+    div.style.cssText = "position:fixed;left:-10000px;top:0;width:" + Math.round(o.w) + "px;height:" + Math.round(o.h) + "px;";
+    document.body.appendChild(div);
+    var map = new maplibregl.Map({ container: div, style: styleFor(GIS.mapBasemap(m)), center: o.center || [0, 0], zoom: o.zoom || 1, bearing: o.bearing || 0,
+      interactive: false, attributionControl: false, fadeDuration: 0, pixelRatio: 2, preserveDrawingBuffer: true, canvasContextAttributes: { preserveDrawingBuffer: true } });
+    var V = { map: map, keys: {}, offscreen: true, mapId: mapId, analysis: false, loaded: false };
+    return new Promise(function (res) {
+      var done = false;
+      function finish(url) { if (done) return; done = true; try { map.remove(); } catch (e) { } div.remove(); res(url); }
+      map.on("load", function () {
+        V.loaded = true;
+        if (!o.center) { var b = GIS.bounds(m.layers); if (b) map.fitBounds(b, { padding: 12, duration: 0 }); }
+        inView(V, applyLayers);
+        map.once("idle", function () { try { finish(map.getCanvas().toDataURL("image/png")); } catch (e) { finish(null); } });
+      });
+      map.on("error", function () { });
+      setTimeout(function () { try { finish(map.getCanvas().toDataURL("image/png")); } catch (e) { finish(null); } }, 20000);
+    });
+  };
+
+  GIS.refreshBasemap = function () {
+    views().forEach(function (v) { var b = viewBasemap(v); v.basemap = b; try { v.map.setStyle(styleFor(b), { diff: false }); } catch (e) { } });
+  };
+
+  // Mapzen Global Terrain: the AWS Terrain Tiles (Terrarium encoding),
+  // drawn as a hypsometric color relief and / or a hillshade.
+  var TERRARIUM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
+  GIS.TERRARIUM = TERRARIUM;
+  var RELIEF = ["interpolate", ["linear"], ["elevation"],
+    -8000, "#0b2545", -3000, "#1d4e89", -200, "#4f8fc0", -1, "#a6d0e4",
+    0, "#5f9e5a", 200, "#8fbf6a", 600, "#cfd88d", 1200, "#e3c07b", 2000, "#c08a55", 3000, "#8e6a4c", 4200, "#d9d4cf", 5500, "#ffffff"];
+  function demStyle(style, b) {
+    if (b.over) {
+      var o = basemapDef(b.over);
+      if (o.tiles) { style.sources.basemap = { type: "raster", tiles: [o.tiles], tileSize: 256, maxzoom: o.maxzoom || 19 }; style.layers.push({ id: "basemap", type: "raster", source: "basemap" }); }
+    }
+    style.sources.dem = { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15 };
+    if (b.dem === "relief") style.layers.push({ id: "dem-relief", type: "color-relief", source: "dem", paint: { "color-relief-color": RELIEF } });
+    style.layers.push({ id: "dem-hillshade", type: "hillshade", source: "dem", paint: {
+      "hillshade-exaggeration": b.dem === "relief" ? 0.45 : 0.7, "hillshade-shadow-color": "#3d3528", "hillshade-highlight-color": "#ffffff",
+      "hillshade-accent-color": "#5a4f3f" } });
+  }
 
   /* ------------------------------------------------------------- state */
 
-  var M = null;
+  // Two map views can show the layers: the layout map (the page's map
+  // frame, "Cartography") and the analysis map (full workspace,
+  // "Analysis", js/gis/12-workspace.js). Every function here works on the
+  // view in M; inView() points M at a view for one call. Outside such a
+  // call M is the layout view, as before.
+  var M = null, LAYOUT = null, ANALYSIS = null;
+  function inView(v, fn, args) {
+    if (!v) return;
+    var prev = M;
+    M = v;
+    try { return fn.apply(null, args || []); } finally { M = prev; }
+  }
+  function views() { return [LAYOUT, ANALYSIS].filter(Boolean); }
+  function activeView() { return document.body.classList.contains("gis-analysis") && ANALYSIS ? ANALYSIS : LAYOUT; }
+  // Map actions (tools, zooms, selection) act on the view on screen.
+  function onActive(fn) { return function () { return inView(activeView(), fn, arguments); }; }
+
   var viewListeners = [];
   GIS.onView = function (fn) { viewListeners.push(fn); };
-  function emitView(final) { viewListeners.forEach(function (fn) { try { fn(final); } catch (e) { console.error(e); } }); }
+  function emitView(final) { if (M && M.analysis) return; viewListeners.forEach(function (fn) { try { fn(final); } catch (e) { console.error(e); } }); }
 
-  GIS.map = function () { return M && M.map; };
-  GIS.mapReady = function () { return !!(M && M.loaded); };
+  GIS.map = function () { var v = activeView(); return v && v.map; };
+  GIS.layoutMap = function () { return LAYOUT && LAYOUT.map; };
+  GIS.mapReady = function () { var v = activeView(); return !!(v && v.loaded); };
 
-  function create(gd) {
+  // Builds a map view in `host`. opts.analysis: the full-workspace map
+  // (always interactive, no page frame, its own extent).
+  function makeView(host, opts) {
+    opts = opts || {};
     var s = state;
-    gd.innerHTML = "";
+    host.innerHTML = "";
     var wrap = document.createElement("div");
-    wrap.className = "gj-map-wrap";
-    wrap.style.cssText = "position:relative;overflow:hidden;";
+    wrap.className = "gj-map-wrap" + (opts.analysis ? " gj-analysis" : "");
+    wrap.style.cssText = opts.analysis ? "position:absolute;inset:0;overflow:hidden;" : "position:relative;overflow:hidden;";
     var mapDiv = document.createElement("div");
     mapDiv.style.cssText = "position:absolute;inset:0;";
     var overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -120,8 +251,8 @@
     overlay.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     overlay.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;";
     var tools = document.createElement("div");
-    tools.className = "gis-map-tools";
-    tools.style.display = "none";
+    tools.className = "gis-map-tools" + (opts.analysis ? " gis-map-tools-analysis" : "");
+    tools.style.display = opts.analysis ? "" : "none";
     tools.innerHTML =
       '<button data-tool="pan" title="Pan"><span class="material-symbols-outlined">pan_tool</span></button>' +
       '<button data-tool="select" title="Select features"><span class="material-symbols-outlined">arrow_selector_tool</span></button>' +
@@ -137,8 +268,7 @@
       '<button data-act="clear-sel" title="Clear selection"><span class="material-symbols-outlined">deselect</span></button>' +
       '<button data-act="prev" title="Previous extent"><span class="material-symbols-outlined">undo</span></button>' +
       '<button data-act="next" title="Next extent"><span class="material-symbols-outlined">redo</span></button>' +
-      '<span class="gis-tools-sep"></span>' +
-      '<button data-act="done" class="gis-done">Done</button>';
+      (opts.analysis ? "" : '<span class="gis-tools-sep"></span><button data-act="done" class="gis-done">Done</button>');
     var box = document.createElement("div");
     box.className = "gis-select-box";
     box.style.display = "none";
@@ -146,39 +276,44 @@
     readout.className = "gis-measure-readout";
     readout.style.display = "none";
     wrap.appendChild(mapDiv); wrap.appendChild(overlay); wrap.appendChild(box); wrap.appendChild(tools); wrap.appendChild(readout);
-    gd.appendChild(wrap);
+    host.appendChild(wrap);
 
-    var opts = {
-      container: mapDiv, style: styleFor(s.mapBasemap), attributionControl: false,
+    var view = opts.analysis ? loadAnalysisView() : s.mapView;
+    var mopts = {
+      container: mapDiv, style: styleFor(viewBasemap({ analysis: !!opts.analysis })), attributionControl: opts.analysis ? { compact: true } : false,
       canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },
       preserveDrawingBuffer: true, fadeDuration: 0, pixelRatio: window.devicePixelRatio || 1
     };
-    if (s.mapView) { opts.center = s.mapView.center; opts.zoom = s.mapView.zoom; opts.bearing = s.mapView.bearing; opts.pitch = s.mapView.pitch; }
-    var map = new maplibregl.Map(opts);
-    M = { gd: gd, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, readout: readout, basemap: s.mapBasemap,
-      keys: {}, interactive: false, tool: "pan", loaded: false, layerCount: 0, hist: [], histPos: -1, meas: null };
+    if (view) { mopts.center = view.center; mopts.zoom = view.zoom; mopts.bearing = view.bearing || 0; mopts.pitch = view.pitch || 0; }
+    var map = new maplibregl.Map(mopts);
+    var V = { gd: opts.analysis ? null : host, host: host, analysis: !!opts.analysis, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, readout: readout, basemap: viewBasemap({ analysis: !!opts.analysis }),
+      keys: {}, interactive: !!opts.analysis, tool: "pan", loaded: false, layerCount: 0, hist: [], histPos: -1, meas: null, moveListeners: [] };
+    function run(fn) { return function () { return inView(V, fn, arguments); }; }
     map.boxZoom.disable();
     map.doubleClickZoom.disable();
 
-    map.on("style.load", function () { M.keys = {}; applyLayers(); drawMeasure(); });
-    map.on("load", function () {
+    map.on("style.load", run(function () { M.keys = {}; applyLayers(); drawMeasure(); }));
+    map.on("load", run(function () {
       M.loaded = true;
-      if (!state.mapView) fitAll();
-      M.layerCount = GIS.layers.length;
-      syncRatio(); drawOverlay(); emitView(true);
-    });
+      if (!view) fitAll();
+      M.layerCount = viewLayers().length;
+      if (!M.analysis) syncRatio();
+      drawOverlay(); emitView(true);
+      if (M.analysis) setTool(M.tool);
+    }));
     var raf = 0;
     map.on("move", function () {
+      V.moveListeners.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
       if (raf) return;
-      raf = requestAnimationFrame(function () { raf = 0; drawOverlay(); emitView(false); });
+      raf = requestAnimationFrame(run(function () { raf = 0; drawOverlay(); emitView(false); }));
     });
-    map.on("moveend", function () { emitView(true); pushExtent(); });
-    map.on("zoomend", function () { if (hasScaleRange()) applyLayers(); });
-    map.on("click", onMapClick);
-    map.on("dblclick", function () { if (M.meas && !M.meas.done && M.meas.pts.length) { M.meas.done = true; M.meas.hover = null; drawMeasure(); } });
-    map.on("mousemove", onMapHover);
+    map.on("moveend", run(function () { emitView(true); pushExtent(); if (M.analysis) saveView(); }));
+    map.on("zoomend", run(function () { if (hasScaleRange()) applyLayers(); }));
+    map.on("click", run(onMapClick));
+    map.on("dblclick", run(function () { if (M.meas && !M.meas.done && M.meas.pts.length) { M.meas.done = true; M.meas.hover = null; drawMeasure(); } }));
+    map.on("mousemove", run(onMapHover));
 
-    tools.addEventListener("click", function (e) {
+    tools.addEventListener("click", run(function (e) {
       var b = e.target.closest("button");
       if (!b) return;
       if (b.dataset.tool) setTool(b.dataset.tool);
@@ -191,27 +326,66 @@
       else if (b.dataset.act === "next") stepExtent(1);
       else if (b.dataset.act === "zoom-sel") zoomToSelection();
       else if (b.dataset.act === "clear-sel") clearSelection();
-    });
+    }));
     // While moving content the wheel belongs to the map, not the page zoom.
-    wrap.addEventListener("wheel", function (e) { if (M && M.interactive) e.stopPropagation(); }, { passive: true });
-    wireBoxSelect();
-
-    gd._plootsCleanup = cleanup;
-    gd._plootsExport = exportSvg;
-    return M;
+    wrap.addEventListener("wheel", function (e) { if (V.interactive) e.stopPropagation(); }, { passive: true });
+    wireBoxSelect(V);
+    return V;
   }
 
+  function create(gd) {
+    var V = makeView(gd, {});
+    M = LAYOUT = V;
+    gd._plootsCleanup = cleanup;
+    gd._plootsExport = exportSvg;
+    return V;
+  }
+
+  // Analysis view extent, kept per device (the layout keeps its own).
+  var ANALYSIS_VIEW_KEY = "ploots-gis-analysis-view";
+  function loadAnalysisView() { try { return JSON.parse(localStorage.getItem(ANALYSIS_VIEW_KEY) || "null"); } catch (e) { return null; } }
+
+  GIS.analysis = {
+    // Creates the analysis map in `host` the first time; later calls resize.
+    mount: function (host) {
+      if (typeof maplibregl === "undefined") return PlootsLazy.ensureMapLibre().then(function () { return GIS.analysis.mount(host); });
+      if (!ANALYSIS || ANALYSIS.host !== host || !host.contains(ANALYSIS.wrap)) {
+        if (ANALYSIS) { try { ANALYSIS.map.remove(); } catch (e) { } }
+        ANALYSIS = makeView(host, { analysis: true });
+      } else {
+        ANALYSIS.map.resize();
+        if (ANALYSIS.basemap !== state.mapBasemap) { ANALYSIS.basemap = state.mapBasemap; ANALYSIS.map.setStyle(styleFor(state.mapBasemap), { diff: false }); }
+      }
+      return Promise.resolve(ANALYSIS);
+    },
+    map: function () { return ANALYSIS && ANALYSIS.map; },
+    onMove: function (fn) { if (ANALYSIS) ANALYSIS.moveListeners.push(fn); },
+    resize: function () { if (ANALYSIS) ANALYSIS.map.resize(); },
+    // Layout map extent = analysis extent (QGIS "Set to map canvas extent").
+    toLayout: function () {
+      if (!ANALYSIS || !LAYOUT) return;
+      var b = ANALYSIS.map.getBounds();
+      inView(LAYOUT, function () { M.map.fitBounds(b, { padding: 0, animate: false, bearing: ANALYSIS.map.getBearing() }); saveView(); emitView(true); });
+    },
+    fromLayout: function () {
+      if (!ANALYSIS || !LAYOUT) return;
+      ANALYSIS.map.fitBounds(LAYOUT.map.getBounds(), { padding: 0, animate: false });
+    }
+  };
+
   function cleanup() {
-    if (!M) return;
-    setInteractive(false);
-    try { M.map.remove(); } catch (e) { }
-    if (M.gd) { M.gd._plootsCleanup = null; M.gd._plootsExport = null; }
-    M = null;
+    if (!LAYOUT) return;
+    inView(LAYOUT, function () {
+      setInteractive(false);
+      try { M.map.remove(); } catch (e) { }
+      if (M.gd) { M.gd._plootsCleanup = null; M.gd._plootsExport = null; }
+    });
+    M = LAYOUT = null;
   }
 
   // Render at devicePixelRatio × canvas zoom (see header).
   function syncRatio() {
-    if (!M || M.exporting) return;
+    if (!M || M.exporting || M.analysis) return;
     var w = M.wrap.offsetWidth;
     if (!w) return;
     var k = M.wrap.getBoundingClientRect().width / w;
@@ -220,9 +394,9 @@
   }
   var stage = window.syncStageSize;
   if (typeof stage === "function") {
-    window.syncStageSize = function () { var out = stage.apply(this, arguments); syncRatio(); return out; };
+    window.syncStageSize = function () { var out = stage.apply(this, arguments); inView(LAYOUT, syncRatio); return out; };
   }
-  window.addEventListener("resize", function () { syncRatio(); });
+  window.addEventListener("resize", function () { inView(LAYOUT, syncRatio); if (ANALYSIS) ANALYSIS.map.resize(); });
 
   /* ------------------------------------------------------------ layers */
 
@@ -234,7 +408,7 @@
     else M.map.fitBounds(b, { padding: pad, animate: false, maxZoom: maxZoom || 18, bearing: M.map.getBearing() });
     saveView();
   }
-  function fitAll() { fitBounds(GIS.bounds()); }
+  function fitAll() { fitBounds(GIS.bounds(viewLayers())); }
   function zoomToLayer(layer) {
     if (!layer) return;
     if (layer.kind === "xyz") return;
@@ -263,7 +437,7 @@
   // zoomed in). Scales become zoom levels at the current view; page scale
   // and zoom differ by a constant, so the mapping holds at every zoom.
   var curRange = null;
-  function hasScaleRange() { return GIS.layers.some(function (l) { return l.minScale > 0 || l.maxScale > 0; }); }
+  function hasScaleRange() { return viewLayers().some(function (l) { return l.minScale > 0 || l.maxScale > 0; }); }
   function zoomRange(l) {
     if (!(l.minScale > 0) && !(l.maxScale > 0)) return null;
     var cur = GIS.getScale(), z0 = M.map.getZoom();
@@ -295,16 +469,17 @@
   function applyLayers() {
     if (!M) return;
     var map = M.map;
-    if (!map.isStyleLoaded()) { map.once("idle", applyLayers); return; }
+    // Deferred: run again on the same view once the style has loaded.
+    if (!map.isStyleLoaded()) { var v = M; map.once("idle", function () { inView(v, applyLayers); }); return; }
 
     // Drop layers/sources of removed layers.
-    var ids = GIS.layers.map(function (l) { return "gis-" + l.id; });
+    var LAYERS = viewLayers(), ids = LAYERS.map(function (l) { return "gis-" + l.id; });
     map.getStyle().layers.filter(function (L) { return OURS.test(L.id); }).forEach(function (L) { map.removeLayer(L.id); });
     Object.keys(map.getStyle().sources).filter(function (k) { return OURS.test(k) && !ids.some(function (id) { return k === id || k.indexOf(id + "-") === 0; }); })
       .forEach(function (k) { map.removeSource(k); delete M.keys[k]; });
 
     // Bottom of the list first, so the top layer is drawn last.
-    GIS.layers.slice().reverse().forEach(function (l) {
+    LAYERS.slice().reverse().forEach(function (l) {
       var id = "gis-" + l.id, vis = l.visible ? "visible" : "none";
       curRange = zoomRange(l);
       if (l.kind === "xyz") {
@@ -349,15 +524,19 @@
       // Under proportional circles the polygons become a neutral base.
       var baseFill = ren === "proportional" ? "#e8e6de" : color;
       put(id + "-fill", { type: "fill", source: id, filter: polys, layout: { visibility: feat }, paint: { "fill-color": baseFill, "fill-opacity": (ren === "proportional" ? 0.9 : s.fillOpacity) * op } });
-      put(id + "-outline", { type: "line", source: id, filter: polys, layout: { visibility: feat, "line-join": "round" }, paint: dashed({ "line-color": s.strokeColor, "line-width": s.strokeWidth, "line-opacity": s.strokeWidth > 0 ? op : 0 }, s.strokeDash) });
+      // Outline: polygons' edges, points' rings and (optional) a casing
+      // drawn under lines.
+      var so = s.strokeOpacity != null ? +s.strokeOpacity : 1, join = s.strokeJoin || "round";
+      put(id + "-outline", { type: "line", source: id, filter: polys, layout: { visibility: feat, "line-join": join }, paint: dashed({ "line-color": s.strokeColor, "line-width": s.strokeWidth, "line-opacity": s.strokeWidth > 0 ? op * so : 0 }, s.strokeDash) });
+      put(id + "-casing", { type: "line", source: id, filter: lines, layout: { visibility: s.lineCasing && s.strokeWidth > 0 ? feat : "none", "line-cap": "round", "line-join": join }, paint: { "line-color": s.strokeColor, "line-width": s.lineWidth + 2 * s.strokeWidth, "line-opacity": op * so } });
       put(id + "-line", { type: "line", source: id, filter: lines, layout: { visibility: feat, "line-cap": "round", "line-join": "round" }, paint: dashed({ "line-color": color, "line-width": s.lineWidth, "line-opacity": op }, s.lineDash) });
       put(id + "-point", { type: "circle", source: id, filter: points, layout: { visibility: pointVis }, paint: {
         "circle-color": color, "circle-radius": s.pointRadius, "circle-opacity": Math.max(0.05, s.fillOpacity) * op,
-        "circle-stroke-color": s.strokeColor, "circle-stroke-width": s.strokeWidth, "circle-stroke-opacity": op } });
+        "circle-stroke-color": s.strokeColor, "circle-stroke-width": s.strokeWidth, "circle-stroke-opacity": op * so } });
       if (ren === "proportional") {
         put(id + "-prop", { type: "circle", source: id + "-pts", layout: { visibility: vis, "circle-sort-key": ["-", ["get", "__r"]] }, paint: {
           "circle-color": color, "circle-radius": ["get", "__r"], "circle-opacity": Math.max(0.05, s.fillOpacity) * op,
-          "circle-stroke-color": /^#?f{3,6}$/i.test(s.strokeColor) ? "#3a3a36" : s.strokeColor, "circle-stroke-width": Math.max(0.6, s.strokeWidth), "circle-stroke-opacity": op } });
+          "circle-stroke-color": /^#?f{3,6}$/i.test(s.strokeColor) ? "#3a3a36" : s.strokeColor, "circle-stroke-width": Math.max(0.6, s.strokeWidth), "circle-stroke-opacity": op * so } });
         put(id + "-sel-prop", { type: "circle", source: id + "-pts", filter: sel, layout: { visibility: vis }, paint: {
           "circle-color": "rgba(0,0,0,0)", "circle-radius": ["get", "__r"], "circle-stroke-color": "#ffcc00", "circle-stroke-width": 2.5 } });
       }
@@ -385,6 +564,7 @@
         "text-allow-overlap": ov, "text-ignore-placement": ov, "text-keep-upright": true }, paint: lpaint });
     });
     curRange = null;
+    if (M.offscreen) return;
     drawMeasure();
     drawOverlay();
   }
@@ -585,9 +765,9 @@
 
   function attribution() {
     var parts = [];
-    var b = basemapDef(state.mapBasemap);
+    var b = basemapDef(viewBasemap());
     if (b.attr) parts.push(b.attr);
-    GIS.layers.forEach(function (l) { if ((l.kind === "xyz" || l.kind === "mvt" || l.kind === "vector") && l.visible && l.attribution && parts.indexOf(l.attribution) < 0) parts.push(l.attribution); });
+    viewLayers().forEach(function (l) { if ((l.kind === "xyz" || l.kind === "mvt" || l.kind === "vector") && l.visible && l.attribution && parts.indexOf(l.attribution) < 0) parts.push(l.attribution); });
     return parts.join(" · ");
   }
 
@@ -598,10 +778,11 @@
 
   function drawOverlay() {
     if (!M) return;
+    if (M.analysis) { while (M.overlay.firstChild) M.overlay.removeChild(M.overlay.firstChild); return; }
     var s = state, W = s.chartBox.w, H = s.chartBox.h, inner = innerRect(W, H);
     var svg = d3.select(M.overlay).attr("width", W).attr("height", H).attr("viewBox", "0 0 " + W + " " + H);
     svg.selectAll("*").remove();
-    if (!GIS.layers.length) {
+    if (!viewLayers().length) {
       svg.append("text").attr("x", inner.x + inner.w / 2).attr("y", inner.y + inner.h / 2).attr("text-anchor", "middle").attr("font-size", 13).attr("fill", "#8a8a8a")
         .attr("font-family", s.fontBody).text("Add a layer from the Map panel");
     }
@@ -711,6 +892,7 @@
 
   function onMapHover(e) {
     if (!M || !M.interactive || M.tool === "pan") return;
+    if (GIS.digitize && GIS.digitize.active()) return;
     if (M.tool === "measure" || M.tool === "area") {
       if (M.meas && !M.meas.done) { M.meas.hover = [e.lngLat.lng, e.lngLat.lat]; drawMeasure(); }
       return;
@@ -723,6 +905,7 @@
 
   function onMapClick(e) {
     if (!M || !M.interactive || M.boxDragged) return;
+    if (GIS.digitize && GIS.digitize.active()) return; // js/gis/21-digitize.js handles clicks
     if (M.tool === "measure" || M.tool === "area") {
       if (!M.meas || M.meas.done) M.meas = { kind: M.tool, pts: [], done: false };
       M.meas.pts.push([e.lngLat.lng, e.lngLat.lat]);
@@ -762,14 +945,16 @@
   function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
   // Rectangle select with the Select tool (drag on the map).
-  function wireBoxSelect() {
-    var start = null, canvas = M.map.getCanvasContainer();
+  function wireBoxSelect(V) {
+    var start = null, canvas = V.map.getCanvasContainer();
     function pt(e) { var r = canvas.getBoundingClientRect(), k = r.width / canvas.offsetWidth; return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; }
-    canvas.addEventListener("mousedown", function (e) {
+    canvas.addEventListener("mousedown", function (e) { inView(V, down, [e]); });
+    function down(e) {
       if (!M || !M.interactive || M.tool !== "select" || e.button !== 0) return;
       start = pt(e); M.boxDragged = false;
-    });
-    window.addEventListener("mousemove", function (e) {
+    }
+    window.addEventListener("mousemove", function (e) { if (start) inView(V, move, [e]); });
+    function move(e) {
       if (!start || !M) return;
       var p = pt(e);
       if (!M.boxDragged && Math.abs(p[0] - start[0]) + Math.abs(p[1] - start[1]) < 5) return;
@@ -777,8 +962,9 @@
       var b = M.box.style;
       b.display = "block"; b.left = Math.min(p[0], start[0]) + "px"; b.top = Math.min(p[1], start[1]) + "px";
       b.width = Math.abs(p[0] - start[0]) + "px"; b.height = Math.abs(p[1] - start[1]) + "px";
-    });
-    window.addEventListener("mouseup", function (e) {
+    }
+    window.addEventListener("mouseup", function (e) { if (start) inView(V, up, [e]); });
+    function up(e) {
       if (!start || !M) return;
       var p = pt(e), s0 = start;
       start = null;
@@ -791,8 +977,8 @@
           .forEach(function (h) { l.selection.add(h.properties.__i); });
         GIS.emit("selection");
       }
-      setTimeout(function () { if (M) M.boxDragged = false; }, 0);
-    });
+      setTimeout(function () { V.boxDragged = false; }, 0);
+    }
   }
 
   function onKey(e) {
@@ -804,17 +990,28 @@
   function saveView() {
     if (!M) return;
     var map = M.map, c = map.getCenter();
+    if (M.analysis) {
+      try { localStorage.setItem(ANALYSIS_VIEW_KEY, JSON.stringify({ center: [c.lng, c.lat], zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() })); } catch (e) { }
+      return;
+    }
     state.mapView = { center: [c.lng, c.lat], zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() };
   }
 
   function setInteractive(on) {
     if (!M) return;
+    if (M.analysis) return; // the analysis map is always interactive
     if (on && state.mapLock) return;
     if (M.interactive === !!on) return;
     M.interactive = !!on;
     var fc = window.fabricCanvas, wrapper = fc && (fc.wrapperEl || (fc.upperCanvasEl && fc.upperCanvasEl.parentNode));
     if (on && fc) { fc.discardActiveObject(); fc.requestRenderAll(); }
-    if (wrapper) wrapper.style.pointerEvents = on ? "none" : "";
+    // The page objects' canvas sits above the map; let pointer events reach
+    // the map while moving its content (both the Fabric container and the
+    // wrapper around it cover the map).
+    [wrapper, document.getElementById("fabricCanvasWrap")].forEach(function (el) { if (el) el.style.pointerEvents = on ? "none" : ""; });
+    // 07-selection.js gives the wrapper its events back on every mousedown
+    // on the page; this class tells it not to while the map is moving.
+    document.body.classList.toggle("gis-map-interactive", !!on);
     var block = document.getElementById("chartBlock");
     if (block) block.classList.toggle("gj-interactive", !!on);
     M.tools.style.display = on ? "" : "none";
@@ -841,26 +1038,33 @@
     var a = map.unproject([x - 50, y]), b = map.unproject([x + 50, y]);
     return d3.geoDistance([a.lng, a.lat], [b.lng, b.lat]) * 6371008.8 / 100;
   }
-  GIS.metresPerPixel = metresPerPixel;
-  GIS.getScale = function () { var m = metresPerPixel(); return m ? m / PAGE_M_PER_PX : 0; };
+  function layoutScale() { var m = metresPerPixel(); return m ? m / PAGE_M_PER_PX : 0; }
+  // Scale and rotation belong to the layout map (the printed page).
+  GIS.metresPerPixel = function () { return inView(LAYOUT, metresPerPixel) || 0; };
+  GIS.getScale = function () { return inView(LAYOUT, layoutScale) || 0; };
   GIS.setScale = function (n) {
-    if (!M || !(n > 0)) return;
-    var cur = GIS.getScale();
-    if (!cur) return;
-    M.map.setZoom(M.map.getZoom() + Math.log2(cur / n));
-    saveView(); emitView(true);
+    inView(LAYOUT, function () {
+      if (!M || !(n > 0)) return;
+      var cur = layoutScale();
+      if (!cur) return;
+      M.map.setZoom(M.map.getZoom() + Math.log2(cur / n));
+      saveView(); emitView(true);
+    });
   };
-  GIS.setRotation = function (deg) { if (!M) return; M.map.setBearing(-(+deg || 0)); saveView(); emitView(true); };
-  GIS.getRotation = function () { return M ? -M.map.getBearing() : 0; };
+  GIS.setRotation = function (deg) { inView(LAYOUT, function () { if (!M) return; M.map.setBearing(-(+deg || 0)); saveView(); emitView(true); }); };
+  GIS.getRotation = function () { return inView(LAYOUT, function () { return M ? -M.map.getBearing() : 0; }) || 0; };
 
   GIS.mapActions = {
-    setInteractive: setInteractive, isInteractive: function () { return !!(M && M.interactive); },
-    setTool: setTool, fitAll: fitAll, zoomToLayer: zoomToLayer, zoomToSelection: zoomToSelection, clearSelection: clearSelection,
-    tool: function () { return M ? M.tool : "pan"; },
-    zoomToFeatures: function (layer, idx) {
+    // Move mode is the layout map's; the analysis map is always live.
+    setInteractive: function (on) { return inView(LAYOUT, setInteractive, [on]); },
+    isInteractive: function () { var v = activeView(); return !!(v && v.interactive); },
+    setTool: onActive(setTool), fitAll: onActive(fitAll), zoomToLayer: onActive(zoomToLayer), zoomToSelection: onActive(zoomToSelection),
+    clearSelection: clearSelection,
+    tool: function () { var v = activeView(); return v ? v.tool : "pan"; },
+    zoomToFeatures: onActive(function (layer, idx) {
       if (layer && layer.kind === "vector") fitBounds(GIS.featureBounds(idx.map(function (i) { return layer.data.features[i]; }).filter(Boolean)), 16);
-    },
-    redraw: function () { if (M) { applyLayers(); } }
+    }),
+    redraw: function () { views().forEach(function (v) { inView(v, applyLayers); }); }
   };
 
   function hookFabric() {
@@ -868,7 +1072,7 @@
     if (!fc || fc._gisHooked) return;
     fc._gisHooked = true;
     fc.on("mouse:dblclick", function (opt) {
-      if (state.chartType === TYPE && opt.target && opt.target.isChartProxy) setInteractive(true);
+      if (state.chartType === TYPE && opt.target && opt.target.isChartProxy) inView(LAYOUT, setInteractive, [true]);
     });
   }
   document.addEventListener("ploots:canvasready", hookFabric);
@@ -877,12 +1081,16 @@
   // Any change in the store restyles the live map.
   GIS.on("*", function (arg, evt) {
     if (evt === "interactive" || evt === "active") return;
-    if (state.chartType !== TYPE || !M) return;
-    var grew = evt === "layers" && M.loaded && GIS.layers.length > (M.layerCount || 0);
-    M.layerCount = GIS.layers.length;
-    applyLayers();
-    // A newly added layer is framed, unless the map is locked.
-    if (grew && !state.mapLock) zoomToLayer(GIS.active());
+    views().forEach(function (v) {
+      inView(v, function () {
+        if (!M.analysis && state.chartType !== TYPE) return;
+        var grew = evt === "layers" && M.loaded && viewLayers().length > (M.layerCount || 0) && !(GIS.digitize && GIS.digitize.active());
+        M.layerCount = viewLayers().length;
+        applyLayers();
+        // A newly added layer is framed, unless the layout map is locked.
+        if (grew && (M.analysis || !state.mapLock)) zoomToLayer(GIS.active());
+      });
+    });
   });
 
   /* ------------------------------------------------------------ export */
@@ -938,7 +1146,9 @@
     M.mapDiv.style.inset = z.t + "px " + z.r + "px " + z.b + "px " + z.l + "px";
     M.map.resize();
     syncRatio();
-    if (M.basemap !== s.mapBasemap) { M.basemap = s.mapBasemap; M.map.setStyle(styleFor(s.mapBasemap), { diff: false }); return; }
+    if (ANALYSIS && ANALYSIS.basemap !== s.mapBasemap) { ANALYSIS.basemap = s.mapBasemap; ANALYSIS.map.setStyle(styleFor(s.mapBasemap), { diff: false }); }
+    var lb = viewBasemap(M);
+    if (M.basemap !== lb) { M.basemap = lb; M.map.setStyle(styleFor(lb), { diff: false }); return; }
     applyLayers();
     emitView(true);
   };

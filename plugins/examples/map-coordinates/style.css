@@ -1,0 +1,30 @@
+.mapcoords-box {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 8px;
+  background: rgba(26, 26, 26, 0.82);
+  color: #fff;
+  font: 12px ui-monospace, Consolas, monospace;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+.mapcoords-box[hidden] { display: none; }
+.mapcoords-box b { font-weight: 500; }
+.mapcoords-box button {
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: 600 10.5px Inter, "Segoe UI", Arial, sans-serif;
+  padding: 3px 7px;
+  width: auto;
+  cursor: pointer;
+}
+.mapcoords-box button:hover { background: rgba(255, 255, 255, 0.28); }

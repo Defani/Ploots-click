@@ -148,9 +148,13 @@
   var toolsBtn = button('construction', 'Tools', 'Map tools', 'tb-drop');
   var gridBtn = button('grid_4x4', 'Grid', 'Coordinate grid');
   var itemsBtn = button('dashboard_customize', 'Map items', 'Add a layout item', 'tb-drop');
-  [addBtn, bmBtn, attrBtn, moveBtn, toolsBtn, gridBtn, itemsBtn].forEach(function (b) { mapGroup.appendChild(b); });
+  var geoBtn = button('hub', 'Geoprocessing', 'Geoprocessing tools and the Processing toolbox', 'tb-drop');
+  [addBtn, bmBtn, attrBtn, moveBtn, toolsBtn, geoBtn, gridBtn, itemsBtn].forEach(function (b) { mapGroup.appendChild(b); });
+  geoBtn.addEventListener('click', function () { if (GIS.processing) GIS.processing.menu(geoBtn); });
+  // Page-only map buttons (hidden in the Analysis view).
+  [moveBtn, gridBtn, itemsBtn].forEach(function (b) { b.classList.add('tb-carto'); });
 
-  function mapPanel() { if (GIS) GIS.enterMapMode(); activateSidebarPanel('panel-map'); }
+  function mapPanel() { if (GIS && GIS.openLayersPanel) { GIS.openLayersPanel(); return; } if (GIS) GIS.enterMapMode(); activateSidebarPanel('panel-map'); }
   addBtn.addEventListener('click', function () {
     openMenu(addBtn,
       item('vector', sym('polyline'), 'Vector (GeoJSON, TopoJSON)') + item('raster', sym('grid_on'), 'Raster (GeoTIFF)') +
@@ -160,18 +164,22 @@
         if (v === 'vector' || v === 'raster') { var inp = $(v === 'vector' ? 'gisVectorFile' : 'gisRasterFile'); if (inp) inp.click(); return; }
         if (v === 'sample') { GIS.loadSampleLayer(); return; }
         if (v === 'catalog') { GIS.openCatalog(); return; }
+        if (GIS.openAddForm) { GIS.openAddForm(v); return; }
         mapPanel();
         var btn = $(v === 'xyz' ? 'gisXyzBtn' : 'gisUrlBtn'), wrap = $(v === 'xyz' ? 'gisXyzWrap' : 'gisUrlWrap');
         if (btn && wrap && wrap.style.display === 'none') btn.click();
       });
   });
   bmBtn.addEventListener('click', function () {
+    if (GIS.basemapGallery) { GIS.basemapGallery.open(bmBtn); return; }
     var html = '', group = null;
     GIS.BASEMAPS.forEach(function (b) {
       if (b.group !== group) { group = b.group; html += head(group); }
       html += item(b.id, sym(b.id === 'none' ? 'block' : b.tiles ? 'satellite_alt' : 'map'), b.label, b.id === state.mapBasemap);
     });
-    openMenu(bmBtn, html, function (v) { state.mapBasemap = v; render(); if (GIS.refreshPanel) GIS.refreshPanel(); });
+    openMenu(bmBtn, html, function (v) {
+      state.mapBasemap = v; render(); if (GIS.refreshBasemap) GIS.refreshBasemap(); if (GIS.refreshPanel) GIS.refreshPanel();
+    });
   });
   attrBtn.addEventListener('click', function () {
     if (GIS.attributeTable.isOpen()) GIS.attributeTable.hide();

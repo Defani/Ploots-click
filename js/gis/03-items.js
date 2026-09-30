@@ -23,7 +23,7 @@
   var DEFAULTS = {
     legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true, boxW: 0, boxH: 0, hidden: [], hiddenEntries: {}, onlyVisible: true },
     scalebar: { style: "single", segments: 4, units: "auto", width: 170, height: 6, fontSize: 10, frame: false, color: INK, labels: "all" },
-    north: { style: "arrow", size: 56, color: INK, followMap: true },
+    north: { style: "arrow", size: 56, color: INK, fill2: "#ffffff", label: true, followMap: true },
     inset: { basemap: "positron", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 },
     colorbar: { layerId: null, mode: "auto", classes: 6, orientation: "horizontal", length: 220, thickness: 12, extend: "neither", ticks: 5, decimals: -1, title: "", fontSize: 10, frame: true, color: INK }
   };
@@ -55,29 +55,107 @@
     var S = o.size, R = S / 2, c = o.color, deg = o.followMap && GIS.map() ? -GIS.map().getBearing() : 0;
     var cx = R, cy = R + S * 0.18, parts = [rect(0, 0, S, S * 1.18, "rgba(0,0,0,0)")];
     var fs = Math.max(9, S * 0.24);
+    var F = o.fill2 || "#ffffff";
+    function tri(pts, fill, stroke, sw, d) { parts.push(path(poly(pts, d == null ? deg : d, cx, cy), fill, stroke, sw)); }
+    function circ(r, fill, stroke, sw) { parts.push(new fabric.Circle({ left: cx, top: cy, radius: r, originX: "center", originY: "center", fill: fill || "rgba(0,0,0,0)", stroke: stroke || null, strokeWidth: stroke ? (sw || 1) : 0, selectable: false, evented: false })); }
+    function seg(p1, p2, w, d) { var l = rot([p1, p2], d == null ? deg : d); parts.push(new fabric.Line([l[0][0] + cx, l[0][1] + cy, l[1][0] + cx, l[1][1] + cy], { stroke: c, strokeWidth: w, selectable: false, evented: false, strokeLineCap: "round" })); }
+    // One compass point: two halves, dark on the right or the left.
+    function point(len, w, d, darkRight) { tri([[0, -len], [w, 0], [0, 0]], darkRight ? c : F, c, 0.7, d); tri([[0, -len], [-w, 0], [0, 0]], darkRight ? F : c, c, 0.7, d); }
+    function cardinals() {
+      if (o.label === false) return;
+      ["N", "E", "S", "W"].forEach(function (L, i) {
+        var p = rot([[0, -R * 0.98]], deg + i * 90)[0];
+        parts.push(text(L, cx + p[0], cy + p[1], i ? fs * 0.7 : fs, { originX: "center", originY: "center", fontWeight: "bold", fill: c }));
+      });
+    }
     function nLabel(x, y) {
+      if (o.label === false) return;
       var p = rot([[0, -R * 0.98]], deg)[0];
       parts.push(text("N", cx + p[0], cy + p[1] - fs * 0.35, fs, { originX: "center", originY: "center", fontWeight: "bold", fill: c }));
     }
     var a = R * 0.72, b = R * 0.24;
     switch (o.style) {
+      case "diamond":
+        tri([[0, -a], [b, 0], [0, 0]], c); tri([[0, -a], [-b, 0], [0, 0]], F, c, 1);
+        tri([[0, a], [b, 0], [0, 0]], F, c, 1); tri([[0, a], [-b, 0], [0, 0]], c);
+        nLabel(); break;
+      case "needle":
+        var nw = b * 0.55;
+        tri([[0, -a], [nw, 0], [-nw, 0]], c); tri([[0, a], [nw, 0], [-nw, 0]], F, c, 1);
+        circ(b * 0.28, F, c, 1); nLabel(); break;
+      case "chevron":
+        tri([[0, -a], [a * 0.62, a * 0.6], [0, a * 0.12], [-a * 0.62, a * 0.6]], c); nLabel(); break;
+      case "block":
+        tri([[0, -a], [b * 1.5, -a + b * 1.8], [b * 0.5, -a + b * 1.8], [b * 0.5, a], [-b * 0.5, a], [-b * 0.5, -a + b * 1.8], [-b * 1.5, -a + b * 1.8]], c); nLabel(); break;
+      case "arrowN":
+        tri([[0, -a], [b, -a * 0.2], [0, -a * 0.38]], c); tri([[0, -a], [-b, -a * 0.2], [0, -a * 0.38]], F, c, 1);
+        var np = rot([[0, a * 0.42]], deg)[0];
+        parts.push(text("N", cx + np[0], cy + np[1], fs * 1.7, { originX: "center", originY: "center", fontWeight: "bold", fill: c, angle: deg }));
+        break;
+      case "minimal":
+        tri([[0, -a], [b * 0.8, -a + b * 1.4], [-b * 0.8, -a + b * 1.4]], c);
+        var mp = rot([[0, a * 0.25]], deg)[0];
+        parts.push(text("N", cx + mp[0], cy + mp[1], fs * 1.9, { originX: "center", originY: "center", fontWeight: "bold", fill: c, angle: deg }));
+        break;
+      case "compass16":
+        [[22.5, 0.46, 0.34], [67.5, 0.46, 0.34], [112.5, 0.46, 0.34], [157.5, 0.46, 0.34], [202.5, 0.46, 0.34], [247.5, 0.46, 0.34], [292.5, 0.46, 0.34], [337.5, 0.46, 0.34]].forEach(function (q) { point(a * q[1], b * q[2], deg + q[0], false); });
+        [45, 135, 225, 315].forEach(function (q) { point(a * 0.68, b * 0.5, deg + q, true); });
+        [0, 90, 180, 270].forEach(function (q, i) { point(a, b * 0.7, deg + q, i % 2 === 0); });
+        cardinals(); break;
+      case "nautical":
+        circ(a * 0.95, null, c, Math.max(1, S * 0.02)); circ(a * 0.8, null, c, Math.max(0.6, S * 0.012));
+        for (var t = 0; t < 360; t += 10) { var lg = t % 30 === 0; seg([0, -a * 0.95], [0, -a * (lg ? 0.8 : 0.87)], Math.max(0.6, S * 0.012), deg + t); }
+        [45, 135, 225, 315].forEach(function (q) { point(a * 0.45, b * 0.4, deg + q, true); });
+        [0, 90, 180, 270].forEach(function (q, i) { point(a * 0.78, b * 0.55, deg + q, i % 2 === 0); });
+        cardinals(); break;
+      case "ring":
+        circ(a * 0.95, null, c, Math.max(1.2, S * 0.035)); circ(a * 0.8, null, c, Math.max(0.6, S * 0.015));
+        tri([[0, -a * 0.72], [b * 0.85, a * 0.5], [0, a * 0.25]], c); tri([[0, -a * 0.72], [-b * 0.85, a * 0.5], [0, a * 0.25]], F, c, 0.8);
+        nLabel(); break;
+      case "disc":
+        circ(a * 0.92, c);
+        tri([[0, -a * 0.72], [b * 0.9, a * 0.5], [0, a * 0.22], [-b * 0.9, a * 0.5]], F);
+        nLabel(); break;
+      case "badge":
+        parts.push(new fabric.Rect({ left: cx - a, top: cy - a, width: 2 * a, height: 2 * a, rx: S * 0.1, ry: S * 0.1, fill: F, stroke: c, strokeWidth: Math.max(1, S * 0.03), selectable: false, evented: false }));
+        tri([[0, -a * 0.75], [b * 0.9, a * 0.55], [0, a * 0.25], [-b * 0.9, a * 0.55]], c);
+        nLabel(); break;
+      case "tail":
+        seg([0, -a * 0.4], [0, a * 0.95], Math.max(1.4, S * 0.05));
+        tri([[0, -a], [b, -a * 0.35], [-b, -a * 0.35]], c);
+        tri([[0, a * 0.5], [b * 0.8, a * 0.95], [b * 0.8, a * 0.72], [0, a * 0.28]], c); tri([[0, a * 0.5], [-b * 0.8, a * 0.95], [-b * 0.8, a * 0.72], [0, a * 0.28]], c);
+        nLabel(); break;
+      case "shaded":
+        tri([[0, -a], [b * 1.2, a * 0.7], [0, a * 0.35]], c);
+        parts.push(path(poly([[0, -a], [-b * 1.2, a * 0.7], [0, a * 0.35]], deg, cx, cy), c)); parts[parts.length - 1].set("opacity", 0.45);
+        nLabel(); break;
+      case "trueMag":
+        seg([0, a * 0.95], [0, -a * 0.62], Math.max(1, S * 0.03));
+        var sp = [], st = -a * 0.8;
+        for (var k = 0; k < 10; k++) { var rr = k % 2 ? b * 0.22 : b * 0.55, an = k * Math.PI / 5; sp.push([Math.sin(an) * rr, st - Math.cos(an) * rr]); }
+        tri(sp, c);
+        seg([0, a * 0.95], [0, -a * 0.55], Math.max(1, S * 0.025), deg + 10);
+        tri([[0, -a * 0.72], [b * 0.4, -a * 0.45], [0, -a * 0.5]], c, null, 0, deg + 10);
+        var mn = rot([[0, -a * 0.95]], deg + 16)[0];
+        parts.push(text("MN", cx + mn[0] + fs * 0.5, cy + mn[1], fs * 0.55, { originX: "center", originY: "center", fontWeight: "bold", fill: c }));
+        break;
       case "half":
         parts.push(path(poly([[0, -a], [b, a], [0, a * 0.55]], deg, cx, cy), c));
-        parts.push(path(poly([[0, -a], [-b, a], [0, a * 0.55]], deg, cx, cy), "#fff", c, 1));
+        parts.push(path(poly([[0, -a], [-b, a], [0, a * 0.55]], deg, cx, cy), F, c, 1));
         nLabel(); break;
       case "compass4":
         [[0, 1], [90, 0], [180, 1], [270, 0]].forEach(function (q) {
-          parts.push(path(poly([[0, -a], [b * 0.8, 0], [0, 0]], deg + q[0], cx, cy), q[1] ? c : "#fff", c, 0.8));
-          parts.push(path(poly([[0, -a], [-b * 0.8, 0], [0, 0]], deg + q[0], cx, cy), q[1] ? "#fff" : c, c, 0.8));
+          parts.push(path(poly([[0, -a], [b * 0.8, 0], [0, 0]], deg + q[0], cx, cy), q[1] ? c : F, c, 0.8));
+          parts.push(path(poly([[0, -a], [-b * 0.8, 0], [0, 0]], deg + q[0], cx, cy), q[1] ? F : c, c, 0.8));
         });
         nLabel(); break;
       case "compass8":
         [45, 135, 225, 315].forEach(function (q) {
-          parts.push(path(poly([[0, -a * 0.62], [b * 0.55, 0], [-b * 0.55, 0]], deg + q, cx, cy), "#fff", c, 0.7));
+          parts.push(path(poly([[0, -a * 0.62], [b * 0.55, 0], [-b * 0.55, 0]], deg + q, cx, cy), F, c, 0.7));
         });
         [0, 90, 180, 270].forEach(function (q, i) {
-          parts.push(path(poly([[0, -a], [b * 0.7, 0], [0, 0]], deg + q, cx, cy), i % 2 ? "#fff" : c, c, 0.8));
-          parts.push(path(poly([[0, -a], [-b * 0.7, 0], [0, 0]], deg + q, cx, cy), i % 2 ? c : "#fff", c, 0.8));
+          parts.push(path(poly([[0, -a], [b * 0.7, 0], [0, 0]], deg + q, cx, cy), i % 2 ? F : c, c, 0.8));
+          parts.push(path(poly([[0, -a], [-b * 0.7, 0], [0, 0]], deg + q, cx, cy), i % 2 ? c : F, c, 0.8));
         });
         ["N", "E", "S", "W"].forEach(function (L, i) {
           var p = rot([[0, -R * 0.98]], deg + i * 90)[0];
@@ -95,18 +173,18 @@
       case "circle":
         parts.push(new fabric.Circle({ left: cx, top: cy, radius: a * 0.95, originX: "center", originY: "center", fill: "rgba(0,0,0,0)", stroke: c, strokeWidth: Math.max(1, S * 0.03), selectable: false, evented: false }));
         parts.push(path(poly([[0, -a * 0.85], [b, a * 0.5], [0, a * 0.25]], deg, cx, cy), c));
-        parts.push(path(poly([[0, -a * 0.85], [-b, a * 0.5], [0, a * 0.25]], deg, cx, cy), "#fff", c, 0.8));
+        parts.push(path(poly([[0, -a * 0.85], [-b, a * 0.5], [0, a * 0.25]], deg, cx, cy), F, c, 0.8));
         nLabel(); break;
       case "star":
         parts.push(new fabric.Circle({ left: cx, top: cy, radius: a * 0.55, originX: "center", originY: "center", fill: "rgba(0,0,0,0)", stroke: c, strokeWidth: 1, selectable: false, evented: false }));
         [0, 90, 180, 270].forEach(function (q, i) {
-          parts.push(path(poly([[0, -a], [b * 0.45, -b * 0.45], [0, 0]], deg + q, cx, cy), i ? "#fff" : c, c, 0.7));
+          parts.push(path(poly([[0, -a], [b * 0.45, -b * 0.45], [0, 0]], deg + q, cx, cy), i ? F : c, c, 0.7));
           parts.push(path(poly([[0, -a], [-b * 0.45, -b * 0.45], [0, 0]], deg + q, cx, cy), c, c, 0.7));
         });
         nLabel(); break;
       default: // "arrow": split arrow
         parts.push(path(poly([[0, -a], [b, a], [0, a * 0.6]], deg, cx, cy), c));
-        parts.push(path(poly([[0, -a], [-b, a], [0, a * 0.6]], deg, cx, cy), "#fff", c, 1));
+        parts.push(path(poly([[0, -a], [-b, a], [0, a * 0.6]], deg, cx, cy), F, c, 1));
         nLabel();
     }
     return parts;
@@ -203,7 +281,8 @@
   };
 
   function buildLegend(o) {
-    var fs = o.fontSize, row = fs + 8, sw = 18, pad = 10, parts = [], y = pad, maxW = 0;
+    // Spacing (Legend ▸ Spacing): rows, symbol size, symbol-label gap, columns, padding.
+    var fs = o.fontSize, row = fs + (o.rowGap != null ? +o.rowGap : 8), sw = +o.symbolW || 18, lg = o.labelGap != null ? +o.labelGap : 8, pad = o.pad != null ? +o.pad : 10, parts = [], y = pad, maxW = 0;
     var bg = rect(0, 0, 10, 10, o.background || "rgba(0,0,0,0)", o.frame ? "#9a978c" : null, 0.8);
     parts.push(bg);
     if (o.title) {
@@ -270,9 +349,9 @@
       }
       if (entries.length === 1 && !entries[0].label) {
         newBlock();
-        var one = text(lname(l), pad + sw + 8, y + row / 2 - 2 - fs * 0.62, fs);
+        var one = text(lname(l), pad + sw + lg, y + row / 2 - 2 - fs * 0.62, fs);
         drawSwatch(entries[0].color, l, kind, pad, y + row / 2 - 2);
-        add(one); maxW = Math.max(maxW, sw + 8 + one.width); y += row;
+        add(one); maxW = Math.max(maxW, sw + lg + one.width); y += row;
         return;
       }
       if (o.showLayerNames) {
@@ -286,8 +365,8 @@
           newBlock();
           var i = dl.classColors.length - 1 - ri, cy2 = y + row / 2 - 2;
           add(new fabric.Rect({ left: pad, top: cy2 - 6, width: sw, height: 12, fill: c, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false }));
-          var tl = text(numFmt(dl.breaks[i]) + " – " + numFmt(dl.breaks[i + 1]), pad + sw + 8, cy2 - fs * 0.62, fs);
-          add(tl); maxW = Math.max(maxW, sw + 8 + tl.width); y += row;
+          var tl = text(numFmt(dl.breaks[i]) + " – " + numFmt(dl.breaks[i + 1]), pad + sw + lg, cy2 - fs * 0.62, fs);
+          add(tl); maxW = Math.max(maxW, sw + lg + tl.width); y += row;
         });
         return;
       }
@@ -306,21 +385,30 @@
         newBlock();
         var cy = y + row / 2 - 2;
         if (e.color) drawSwatch(e.color, l, kind, pad, cy);
-        var t2 = text(e.label || lname(l), pad + (e.color ? sw + 8 : 0), cy - fs * 0.62, fs);
-        add(t2); maxW = Math.max(maxW, (e.color ? sw + 8 : 0) + t2.width); y += row;
+        var t2 = text(e.label || lname(l), pad + (e.color ? sw + lg : 0), cy - fs * 0.62, fs);
+        add(t2); maxW = Math.max(maxW, (e.color ? sw + lg : 0) + t2.width); y += row;
       });
       if (sizes) { y += 4; drawSizes(null); }
     });
     function drawSwatch(color, l, kind, x, cy) {
       var s = l.style || { fillOpacity: 0.45, strokeWidth: 0.8, strokeColor: "#9a978c", lineWidth: 1, pointRadius: 4, renderer: "simple" };
       if (s && s.renderer === "proportional") kind = "point";
-      if (kind === "line") add(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), selectable: false, evented: false }));
-      else if (kind === "point") add(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeColor, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));
-      else add(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: color, opacity: Math.max(0.15, s.fillOpacity), stroke: s.strokeWidth > 0 ? (/^#?f{3,6}$/i.test(s.strokeColor) ? "#9a978c" : s.strokeColor) : null, strokeWidth: 0.8, selectable: false, evented: false }));
+      var so = s.strokeOpacity != null ? +s.strokeOpacity : 1;
+      if (kind === "line") {
+        if (s.lineCasing && s.strokeWidth > 0) add(new fabric.Line([x, cy, x + sw, cy], { stroke: s.strokeColor, opacity: so, strokeWidth: Math.min(10, s.lineWidth + 1 + 2 * s.strokeWidth), strokeLineCap: "round", selectable: false, evented: false }));
+        add(new fabric.Line([x, cy, x + sw, cy], { stroke: color, strokeWidth: Math.min(6, s.lineWidth + 1), strokeLineCap: "round", selectable: false, evented: false }));
+      }
+      else if (kind === "point") add(new fabric.Circle({ left: x + sw / 2, top: cy, originX: "center", originY: "center", radius: Math.min(7, s.pointRadius), fill: color, stroke: s.strokeWidth > 0 ? s.strokeColor : null, strokeWidth: Math.min(2, s.strokeWidth), selectable: false, evented: false }));
+      else {
+        // The patch's fill takes the fill opacity; its outline follows the
+        // layer's outline (a white one shows grey on the white legend).
+        add(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: color, opacity: Math.max(0.15, s.fillOpacity), selectable: false, evented: false }));
+        if (s.strokeWidth > 0) add(new fabric.Rect({ left: x, top: cy - 6, width: sw, height: 12, fill: "rgba(0,0,0,0)", opacity: so, stroke: /^#?f{3,6}$/i.test(s.strokeColor) ? "#9a978c" : s.strokeColor, strokeWidth: Math.min(3, Math.max(0.6, s.strokeWidth)), strokeDashArray: s.strokeDash && s.strokeDash !== "solid" ? (s.strokeDash === "dot" ? [1, 2] : [4, 2]) : null, strokeUniform: true, selectable: false, evented: false }));
+      }
     }
     if (!layers.length) { var e0 = text("No layers", pad, y, fs, { fill: "#8a8a8a" }); parts.push(e0); maxW = e0.width; y += row; }
     blockTop.push(y);
-    var avail = o.boxH > 0 ? Math.max(row, o.boxH - titleBottom - pad) : Infinity, gap = 16;
+    var avail = o.boxH > 0 ? Math.max(row, o.boxH - titleBottom - pad) : Infinity, gap = o.colGap != null ? +o.colGap : 16;
     var col = 0, colY = 0, colOf = [], shiftY = [], colW = [0], colH = [0];
     for (var k = 0; k <= blk; k++) {
       var h = blockTop[k + 1] - blockTop[k];
@@ -546,6 +634,7 @@
   function rebuild(obj) {
     if (!fc() || !obj || !obj.gisItem) return;
     var type = obj.gisItem, o = obj.gisOpts;
+    if (type === "mapframe") { if (GIS.mapFrames) GIS.mapFrames.rebuild(obj); return; }
     if (type === "inset") {
       renderInset(o).then(function (url) {
         if (!url || fc().getObjects().indexOf(obj) < 0) return;
@@ -621,7 +710,7 @@
     //   north      proportional size, redrawn crisp
     canvas.on("object:modified", function (e) {
       var o = e.target;
-      if (!o || !o.gisItem || o.gisItem === "inset") return;
+      if (!o || !o.gisItem || o.gisItem === "inset" || o.gisItem === "mapframe") return;
       var sx = o.scaleX || 1, sy = o.scaleY || 1;
       if (Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) return;
       var w = o.width, h = o.height, dw = w * sx - w, dh = h * sy - h, p = o.gisOpts, patch = {};
@@ -655,5 +744,10 @@
   document.addEventListener("ploots:canvasready", wireCanvas);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wireCanvas); else wireCanvas();
 
-  GIS.items = { add: add, update: update, rebuild: rebuild, all: items, UNITS: Object.keys(UNITS) };
+  // A north arrow drawn as SVG (for the style picker).
+  function northSVG(style, color, fill2) {
+    var g = new fabric.Group(buildNorth({ style: style, size: 56, color: color || INK, fill2: fill2 || "#ffffff", label: true, followMap: false }));
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + [g.left, g.top, g.width, g.height].join(" ") + '">' + g.toSVG() + "</svg>";
+  }
+  GIS.items = { add: add, update: update, rebuild: rebuild, all: items, UNITS: Object.keys(UNITS), northSVG: northSVG };
 })();

@@ -27,12 +27,28 @@
       '<div class="side-section-body" id="' + id + '">' + (body || "") + "</div></div>";
   }
 
+  function sym(n) { return '<span class="material-symbols-outlined">' + n + "</span>"; }
   function field(label, control) { return '<label class="field-label">' + label + "</label>" + control; }
   function pair(a, b) { return '<div class="num-pair" style="margin-top:8px;"><div>' + a + "</div><div>" + b + "</div></div>"; }
   function num(bind, v, min, max, step) { return '<input type="number" data-bind="' + bind + '" value="' + esc(v) + '"' + (min != null ? ' min="' + min + '"' : "") + (max != null ? ' max="' + max + '"' : "") + ' step="' + (step || "any") + '">'; }
   function color(bind, v) { return '<input type="color" class="full-color-picker" data-bind="' + bind + '" value="' + esc(v) + '">'; }
   function check(bind, v, label) { var id = "gb_" + bind.replace(/\W/g, "_"); return '<div class="check-row"><input type="checkbox" id="' + id + '" data-bind="' + bind + '"' + (v ? " checked" : "") + '><label for="' + id + '">' + label + "</label></div>"; }
   function select(bind, list, v) { return '<select data-bind="' + bind + '">' + options(list, v) + "</select>"; }
+  // A ramp list; js/gis/14-ramp-picker.js turns it into a picker with previews.
+  function rampSelect(bind, v, kind) {
+    var h = kind === "qual" ? opt("", "Active chart palette", !v) : "";
+    GIS.sym.RAMP_GROUPS.forEach(function (g) {
+      h += '<optgroup label="' + esc(g.label) + '">' + options(g.names.map(function (x) { return [x, x.replace(/^ColorBrewer /, "")]; }), v) + "</optgroup>";
+    });
+    return '<select data-bind="' + bind + '" data-ramp="' + (kind || "ramp") + '">' + h + "</select>";
+  }
+  // A slider with its number beside it; both edit the same value live.
+  function slideNum(bind, v, min, max, step) {
+    return '<div class="gis-slidenum">' + range(bind, v, min, max, step) + num(bind, v, 0, null, step) + "</div>";
+  }
+  var JOINS = [["round", "Round"], ["miter", "Miter"], ["bevel", "Bevel"]];
+  // Quick outline presets: [id, label, color, width].
+  var OUTLINE_PRESETS = [["none", "None", "#bbbbbb", 0], ["hair", "Hairline", "#ffffff", 0.4], ["white", "White", "#ffffff", 1], ["dark", "Dark", "#333333", 1], ["bold", "Bold", "#111111", 2.5]];
   function range(bind, v, min, max, step) { return '<input type="range" data-bind="' + bind + '" value="' + esc(v) + '" min="' + min + '" max="' + max + '" step="' + step + '">'; }
   function text(bind, v, ph) { return '<input type="text" data-bind="' + bind + '" value="' + esc(v) + '" placeholder="' + esc(ph || "") + '">'; }
 
@@ -49,7 +65,7 @@
         '<span class="material-symbols-outlined">keyboard_double_arrow_left</span></button></div>' +
       section("gisLayers", "layers", "Layers",
         '<div class="gis-layer-actions">' +
-          '<button class="file-btn" title="Add vector layer (GeoJSON, TopoJSON)"><span class="material-symbols-outlined">polyline</span>Vector<input type="file" id="gisVectorFile" accept=".json,.geojson,.topojson,application/json,application/geo+json" multiple></button>' +
+          '<button class="file-btn" title="Add vector layer (GeoJSON, TopoJSON, Shapefile, KML/KMZ, GPX)"><span class="material-symbols-outlined">polyline</span>Vector<input type="file" id="gisVectorFile" accept=".json,.geojson,.topojson,.shp,.shx,.dbf,.prj,.cpg,.kml,.kmz,.gpx,.zip,application/json,application/geo+json" multiple></button>' +
           '<button class="file-btn" title="Add raster layer (GeoTIFF)"><span class="material-symbols-outlined">grid_on</span>Raster<input type="file" id="gisRasterFile" accept=".tif,.tiff,image/tiff"></button>' +
           '<button id="gisXyzBtn" title="Add XYZ tile layer"><span class="material-symbols-outlined">travel_explore</span>XYZ</button>' +
         "</div>" +
@@ -164,6 +180,38 @@
     return '<span class="gis-sw gis-sw-' + kind + '" style="--c:' + esc(color) + '"></span>';
   }
 
+  // Rename a layer in the list: the name becomes a text box; Enter or
+  // leaving it saves, Escape cancels.
+  function renameInline(id) {
+    var l = GIS.get(id), row = document.querySelector('#gisLayerList .gis-layer[data-id="' + id + '"]');
+    var span = row && row.querySelector(".gis-layer-name");
+    if (!l || !span) return;
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "gis-layer-rename";
+    inp.value = l.name;
+    span.replaceWith(inp);
+    row.draggable = false;
+    inp.focus();
+    inp.select();
+    var done = false;
+    function finish(save) {
+      if (done) return;
+      done = true;
+      var v = inp.value.trim();
+      if (save && v && v !== l.name) { l.name = v; GIS.emit("layers"); if (typeof historyNotifyChange === "function") historyNotifyChange(); }
+      else renderLayerList();
+    }
+    inp.addEventListener("keydown", function (e) {
+      e.stopPropagation();
+      if (e.key === "Enter") finish(true);
+      else if (e.key === "Escape") finish(false);
+    });
+    inp.addEventListener("blur", function () { finish(true); });
+    ["click", "dblclick", "mousedown"].forEach(function (ev) { inp.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+  }
+  GIS.renameLayer = renameInline;
+
   function wireLayerList() {
     var box = $("gisLayerList"), dragId = null;
     box.addEventListener("click", function (e) {
@@ -179,11 +227,17 @@
       var row = t.closest(".gis-layer");
       if (row) GIS.setActive(row.dataset.id);
     });
-    // Double-click a layer: properties (QGIS); right-click: layer menu.
+    // Double-click the name: rename in place; elsewhere on the row:
+    // properties (QGIS). F2 renames the active layer. Right-click: menu.
     box.addEventListener("dblclick", function (e) {
       var r = e.target.closest(".gis-layer");
       if (!r || e.target.closest("button,input")) return;
+      if (e.target.closest(".gis-layer-name")) { renameInline(r.dataset.id); return; }
       GIS.layerProperties(GIS.get(r.dataset.id));
+    });
+    box.tabIndex = 0;
+    box.addEventListener("keydown", function (e) {
+      if (e.key === "F2" && GIS.active() && !e.target.closest("input")) { e.preventDefault(); renameInline(GIS.active().id); }
     });
     box.addEventListener("contextmenu", function (e) {
       var r = e.target.closest(".gis-layer");
@@ -231,7 +285,7 @@
         h += field("Blue", select("rasterRgb:2", bands, r.rgb[2]));
       } else {
         h += field("Band", select("raster:band", bands, r.band));
-        h += field("Color ramp", select("raster:ramp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), r.ramp));
+        h += field("Color ramp", rampSelect("raster:ramp", r.ramp));
         h += check("raster:reverse", r.reverse, "Invert ramp");
         h += pair(field("Color mode", select("raster:classMode", [["continuous", "Continuous"], ["discrete", "Discrete"]], r.classMode)),
           r.classMode === "discrete" ? field("Classes", num("raster:classes", r.classes, 2, 20, 1)) : "");
@@ -250,7 +304,7 @@
     if (ren === "heatmap") {
       h += field("Weight", '<select data-bind="layer:heatField">' + opt("", "Equal weight", !s.heatField) + options(numList, s.heatField) + "</select>");
       h += pair(field("Radius (px)", num("layer:heatRadius", s.heatRadius, 2, 150, 1)), field("Intensity", num("layer:heatIntensity", s.heatIntensity, 0.1, 10, 0.1)));
-      h += field("Color ramp", select("layer:heatRamp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), s.heatRamp));
+      h += field("Color ramp", rampSelect("layer:heatRamp", s.heatRamp));
       h += field("Opacity", range("layer:heatOpacity", s.heatOpacity, 0, 1, 0.05));
       box.innerHTML = h;
       return;
@@ -267,6 +321,7 @@
       h += field("Value", '<select data-bind="layer:field">' + opt("", "— Select field —", !s.field) + options(list, s.field) + "</select>");
       if (s.field === GIS.TABLE_FIELD) h += field("Join field", select("layer:joinField", f.all.map(function (k) { return [k, k]; }), s.joinField));
       if (s.symbology === "categorized") {
+        h += field("Palette", rampSelect("layer:catPalette", s.catPalette || "", "qual"));
         var cats = GIS.sym.categories(l);
         h += '<div class="gj-class-list">' + (cats.length ? cats.slice(0, 80).map(function (c, i) {
           return '<div class="gj-class-row"><input type="color" data-cat="' + i + '" value="' + c.color + '"><span title="' + esc(c.value) + '">' + esc(c.value) + "</span><em>" + c.count + "</em></div>";
@@ -274,7 +329,7 @@
         h += '<button id="gisRecolor" style="width:100%;margin-top:6px;">Classify with active palette</button>';
       } else if (s.symbology === "graduated") {
         h += pair(field("Classes", num("layer:classes", s.classes, 2, 9, 1)), field("Mode", select("layer:method", METHODS, s.method)));
-        h += field("Color ramp", select("layer:ramp", GIS.sym.RAMPS.map(function (x) { return [x, x]; }), s.ramp));
+        h += field("Color ramp", rampSelect("layer:ramp", s.ramp));
         h += check("layer:reverse", s.reverse, "Invert ramp");
         var cls = GIS.sym.classes(l);
         h += '<div class="gj-class-list">' + (cls.colors.length ? cls.labels.map(function (lb, i) {
@@ -285,10 +340,21 @@
     }
     var kind = GIS.geometryKind(l);
     if (kind === "polygon") h += field("Fill opacity", range("layer:fillOpacity", s.fillOpacity, 0, 1, 0.05));
-    h += pair(field("Stroke color", color("layer:strokeColor", s.strokeColor)), field("Stroke width", num("layer:strokeWidth", s.strokeWidth, 0, 20, 0.1)));
-    if (kind === "polygon") h += field("Stroke style", select("layer:strokeDash", DASHES, s.strokeDash));
-    if (kind === "point") h += field("Point size", num("layer:pointRadius", s.pointRadius, 1, 50, 0.5));
-    if (kind === "line") h += pair(field("Line width", num("layer:lineWidth", s.lineWidth, 0.2, 30, 0.2)), field("Line style", select("layer:lineDash", DASHES, s.lineDash)));
+    if (kind === "point") h += field("Point size", slideNum("layer:pointRadius", s.pointRadius, 1, 40, 0.5));
+    if (kind === "line") h += field("Line width", slideNum("layer:lineWidth", s.lineWidth, 0.2, 20, 0.2)) + field("Line style", select("layer:lineDash", DASHES, s.lineDash));
+    // Outline: one group for polygon edges, point rings and line casings.
+    // Every control applies as it changes.
+    h += '<div class="gis-subhead">' + (kind === "point" ? "Outline (ring)" : kind === "line" ? "Outline (casing)" : "Outline") + "</div>";
+    if (kind === "line") h += check("layer:lineCasing", s.lineCasing, "Draw an outline around the line");
+    if (kind !== "line" || s.lineCasing) {
+      h += pair(field("Color", color("layer:strokeColor", s.strokeColor)), field("Opacity", range("layer:strokeOpacity", s.strokeOpacity != null ? s.strokeOpacity : 1, 0, 1, 0.05)));
+      h += field("Width", slideNum("layer:strokeWidth", s.strokeWidth, 0, 10, 0.1));
+      if (kind === "polygon") h += pair(field("Style", select("layer:strokeDash", DASHES, s.strokeDash)), field("Join", select("layer:strokeJoin", JOINS, s.strokeJoin || "round")));
+      else if (kind === "line") h += field("Join", select("layer:strokeJoin", JOINS, s.strokeJoin || "round"));
+      h += '<div class="gis-outline-presets">' + OUTLINE_PRESETS.map(function (p) {
+        return '<button type="button" data-outline="' + p[0] + '" title="' + p[1] + '"><i style="border:' + Math.max(1, Math.min(3, p[3])) + "px solid " + p[2] + '"></i>' + p[1] + "</button>";
+      }).join("") + "</div>";
+    }
     h += field("Labels", '<select data-bind="layer:labelField">' + opt("", "No labels", !s.labelField) + options(f.all.map(function (k) { return [k, k]; }), s.labelField) + "</select>");
     h += field("Label template", text("layer:labelTemplate", s.labelTemplate, "{name} ({value})"));
     if (s.labelField || s.labelTemplate) {
@@ -306,6 +372,7 @@
   function renderView() {
     var v = $("gisView");
     if (v) v.innerHTML =
+      (GIS.maps.length > 1 ? field("Map in this frame", select("map:layoutMapId", [["", "Active map (" + GIS.activeMap().name + ")"]].concat(GIS.maps.map(function (m) { return [m.id, m.name]; })), state.layoutMapId || "")) : "") +
       pair(field("Scale 1:", '<input type="number" id="gisScale" min="1" step="1">'), field("Rotation (°)", '<input type="number" id="gisRotation" step="1">')) +
       check("map:mapLock", state.mapLock, "Lock map (no pan / zoom)") +
       '<button id="gisMoveBtn" class="btn-primary" style="width:100%;margin-top:10px;"' + (state.mapLock ? " disabled" : "") + '><span class="material-symbols-outlined">open_with</span>Move content</button>' +
@@ -344,7 +411,9 @@
 
   var SCALE_STYLES = [["single", "Single box"], ["double", "Double box"], ["ticks-middle", "Line ticks middle"], ["ticks-down", "Line ticks down"], ["ticks-up", "Line ticks up"], ["stepped", "Stepped line"], ["hollow", "Hollow"], ["numeric", "Numeric (1:n)"]];
   var SCALE_UNITS = [["auto", "Auto (m / km)"], ["auto-imperial", "Auto (ft / mi)"], ["m", "Meters"], ["km", "Kilometers"], ["ft", "Feet"], ["mi", "Miles"], ["nmi", "Nautical miles"]];
-  var NORTH_STYLES = [["arrow", "Split arrow"], ["half", "Half arrow"], ["triangle", "Solid triangle"], ["line", "Line arrow"], ["circle", "Circle arrow"], ["compass4", "Compass rose (4)"], ["compass8", "Compass rose (8)"], ["star", "Star"]];
+  var NORTH_STYLES = [["arrow", "Split arrow"], ["half", "Half arrow"], ["triangle", "Solid triangle"], ["line", "Line arrow"], ["circle", "Circle arrow"], ["compass4", "Compass rose (4)"], ["compass8", "Compass rose (8)"], ["star", "Star"],
+    ["diamond", "Diamond"], ["needle", "Compass needle"], ["chevron", "Chevron"], ["block", "Block arrow"], ["arrowN", "Arrow over N"], ["minimal", "Minimal N"], ["compass16", "Compass rose (16)"],
+    ["nautical", "Nautical rose"], ["ring", "Ring arrow"], ["disc", "Disc"], ["badge", "Badge"], ["tail", "Fletched arrow"], ["shaded", "Shaded arrow"], ["trueMag", "True and magnetic north"]];
 
   function selectedItem() {
     var fc = window.fabricCanvas, o = fc && fc.getActiveObject();
@@ -362,6 +431,10 @@
       h += check("item:frame", p.frame, "Frame") + check("item:showLayerNames", p.showLayerNames, "Layer headings");
       h += check("item:onlyVisible", p.onlyVisible !== false, "Only visible layers");
       if (p.boxW || p.boxH) h += '<button id="gisLegendFit" style="width:100%;margin-top:8px;">Fit to content</button>';
+      h += '<div class="gis-subhead">Spacing</div>' +
+        pair(field("Between rows", num("item:rowGap", p.rowGap != null ? p.rowGap : 8, 0, 60, 1)), field("Symbol width", num("item:symbolW", p.symbolW || 18, 6, 80, 1))) +
+        pair(field("Symbol to label", num("item:labelGap", p.labelGap != null ? p.labelGap : 8, 0, 60, 1)), field("Between columns", num("item:colGap", p.colGap != null ? p.colGap : 16, 0, 120, 1))) +
+        field("Padding", num("item:pad", p.pad != null ? p.pad : 10, 0, 60, 1));
       h += '<label class="field-label">Legend items</label><div class="gis-legend-pick">' + legendPick(p) + "</div>";
     } else if (o.gisItem === "scalebar") {
       h += field("Style", select("item:style", SCALE_STYLES, p.style)) + field("Units", select("item:units", SCALE_UNITS, p.units));
@@ -370,8 +443,12 @@
       h += pair(field("Labels", select("item:labels", [["all", "Every segment"], ["ends", "Ends only"]], p.labels)), field("Color", color("item:color", p.color)));
       h += check("item:frame", p.frame, "Background frame");
     } else if (o.gisItem === "north") {
-      h += field("Style", select("item:style", NORTH_STYLES, p.style)) + pair(field("Size", num("item:size", p.size, 16, 300, 1)), field("Color", color("item:color", p.color)));
-      h += check("item:followMap", p.followMap, "Follow map rotation");
+      h += '<label class="field-label">Style</label><div class="north-grid">' + NORTH_STYLES.map(function (s) {
+        return '<button type="button" data-north="' + s[0] + '" title="' + esc(s[1]) + '"' + (s[0] === p.style ? ' class="active"' : "") + ">" + (GIS.items.northSVG ? GIS.items.northSVG(s[0], p.color, p.fill2) : esc(s[1])) + "</button>";
+      }).join("") + "</div>";
+      h += pair(field("Size", num("item:size", p.size, 16, 300, 1)), field("Color", color("item:color", p.color)));
+      h += field("Accent (light parts)", color("item:fill2", p.fill2 || "#ffffff"));
+      h += check("item:label", p.label !== false, "Show the N (and E S W) letters") + check("item:followMap", p.followMap, "Follow map rotation");
     } else if (o.gisItem === "colorbar") {
       var srcs = GIS.layers.filter(function (l) { return l.kind === "raster" || (l.kind === "vector" && l.style.symbology === "graduated"); });
       h += field("Layer", '<select data-bind="item:layerId">' + opt("", "Auto", !p.layerId) + options(srcs.map(function (l) { return [l.id, l.name]; }), p.layerId) + "</select>");
@@ -383,6 +460,11 @@
       h += pair(field("Ticks", num("item:ticks", p.ticks, 2, 12, 1)), field("Decimals", select("item:decimals", [[-1, "Auto"], [0, "0"], [1, "1"], [2, "2"], [3, "3"]], p.decimals)));
       h += pair(field("Font size", num("item:fontSize", p.fontSize, 6, 30, 1)), field("Color", color("item:color", p.color)));
       h += check("item:frame", p.frame, "Background frame");
+    } else if (o.gisItem === "mapframe") {
+      h += field("Map", select("item:mapId", GIS.maps.map(function (m) { return [m.id, m.name]; }), p.mapId));
+      h += '<div class="gis-layer-actions" style="margin-top:8px;"><button data-mf="view" title="Show the extent of the Analysis map">' + sym("travel_explore") + 'Analysis view</button><button data-mf="fit">' + sym("fit_screen") + "Fit layers</button></div>" +
+        '<div class="gis-layer-actions"><button data-mf="in">' + sym("zoom_in") + 'Zoom in</button><button data-mf="out">' + sym("zoom_out") + "Zoom out</button></div>";
+      h += pair(field("Frame width", num("item:frameWidth", p.frameWidth, 0, 8, 0.5)), field("Frame color", color("item:frameColor", p.frameColor)));
     } else if (o.gisItem === "inset") {
       h += field("Basemap", select("item:basemap", GIS.BASEMAPS.map(function (b) { return [b.id, b.label]; }), p.basemap));
       h += pair(field("Zoom offset", num("item:zoomOffset", p.zoomOffset, -12, 0, 1)), field("Extent color", color("item:extentColor", p.extentColor)));
@@ -439,12 +521,14 @@
 
   function onBind(el) {
     var b = el.dataset.bind.split(":"), scope = b[0], key = b[1], v = parse(el), l = GIS.active();
+    // Keep twin controls (slider + number) in step.
+    document.querySelectorAll('[data-bind="' + el.dataset.bind + '"]').forEach(function (t) { if (t !== el && t.type !== "checkbox" && t.value !== el.value) t.value = el.value; });
     if (scope === "layer" && l) {
       var prevTemplate = l.style.labelTemplate;
-      if (key === "field" || key === "joinField") l.style.catColors = {};
+      if (key === "field" || key === "joinField" || key === "catPalette") l.style.catColors = {};
       l.style[key] = v;
       GIS.emit("style");
-      if (/^(field|joinField|classes|method|ramp|reverse|labelField|renderer|sizeField)$/.test(key) || (key === "labelTemplate" && !!v !== !!prevTemplate)) renderStyle();
+      if (/^(field|joinField|classes|method|ramp|reverse|labelField|renderer|sizeField|catPalette|lineCasing)$/.test(key) || (key === "labelTemplate" && !!v !== !!prevTemplate)) renderStyle();
     } else if (scope === "layerTop" && l) {
       l[key] = v;
       GIS.emit(key === "url" ? "layers" : "style");
@@ -461,7 +545,7 @@
       if (key === "mapGridUtmZone") state[key] = +v;
       if (key === "mapGridType") state.mapGridInterval = 0; // degrees vs metres
       if (key === "mapLock") { if (v && GIS.mapActions) GIS.mapActions.setInteractive(false); renderView(); }
-      if (key === "mapGridType") renderView();
+      if (key === "mapGridType" || key === "layoutMapId") renderView();
       if (typeof render === "function" && state.chartType === TYPE) render();
       if (typeof historyNotifyChange === "function") historyNotifyChange();
     } else if (scope === "item") {
@@ -471,8 +555,11 @@
     }
   }
 
-  function wireStatic() {
-    var panel = $(PANEL_ID);
+  // Delegated input handling for the panel and for its sections that the
+  // GIS workspace (12-workspace.js) moves into the right dock.
+  function wireRoot(panel) {
+    if (!panel || panel._gisWired) return;
+    panel._gisWired = true;
     panel.addEventListener("input", function (e) { if (e.target.dataset && e.target.dataset.bind && e.target.type !== "checkbox" && e.target.tagName !== "SELECT") onBind(e.target); });
     panel.addEventListener("change", function (e) {
       var t = e.target;
@@ -495,7 +582,15 @@
         if (b.dataset.sym === "categorized" && !l.style.field) l.style.field = f.all[0] || "";
         GIS.emit("style"); renderStyle();
       } else if (b.id === "gisRecolor" && l) { l.style.catColors = {}; GIS.emit("style"); renderStyle(); }
+      else if (b.dataset.outline && l) {
+        var pr = OUTLINE_PRESETS.filter(function (p) { return p[0] === b.dataset.outline; })[0];
+        l.style.strokeWidth = pr[3];
+        if (pr[3] > 0) { l.style.strokeColor = pr[2]; l.style.strokeOpacity = 1; }
+        GIS.emit("style"); renderStyle();
+      }
       else if (b.dataset.add) { enterMapMode(); GIS.items.add(b.dataset.add); }
+      else if (b.dataset.mf) { var mfo = selectedItem(); if (mfo && GIS.mapFrames) GIS.mapFrames.action(mfo, b.dataset.mf); }
+      else if (b.dataset.north) { var no = selectedItem(); if (no) { GIS.items.update(no, { style: b.dataset.north }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisLegendFit") { var lo = selectedItem(); if (lo) { GIS.items.update(lo, { boxW: 0, boxH: 0 }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisMoveBtn") GIS.mapActions && GIS.mapActions.setInteractive(true);
       else if (b.id === "gisZoomAll") GIS.mapActions && GIS.mapActions.fitAll();
@@ -510,10 +605,26 @@
       if (e.target.id === "gisScale" && e.target.value) GIS.setScale(parseFloat(e.target.value));
       if (e.target.id === "gisRotation") GIS.setRotation(parseFloat(e.target.value));
     });
+  }
+  GIS.wirePanelRoot = wireRoot;
+
+  function wireStatic() {
+    wireRoot($(PANEL_ID));
 
     $("gisVectorFile").addEventListener("change", function () {
       var files = Array.prototype.slice.call(this.files || []);
       this.value = "";
+      // Shapefile parts, KML / KMZ, GPX and zips go through PlootsFormats.
+      var other = files.filter(function (f) { return /\.(shp|shx|dbf|prj|cpg|kml|kmz|gpx|zip)$/i.test(f.name); });
+      files = files.filter(function (f) { return other.indexOf(f) < 0; });
+      if (other.length && window.PlootsFormats) {
+        setStatus("Reading " + other.length + " file" + (other.length === 1 ? "" : "s") + "…", true);
+        window.PlootsFormats.read(other).then(function (layers) {
+          enterMapMode();
+          layers.forEach(function (x) { GIS.addVector(x.geojson, x.name); });
+          setStatus(layers.map(function (x) { return x.note; }).filter(Boolean).join(" ") || "", true);
+        }).catch(function (err) { setStatus(err.message, false); });
+      }
       files.forEach(function (file) {
         var reader = new FileReader();
         reader.onload = function () {
@@ -565,7 +676,9 @@
       if (GIS.attributeTable.isOpen()) GIS.attributeTable.hide();
       else { var l = GIS.active(); GIS.attributeTable.show(l && l.kind === "vector" ? l.id : null); }
     });
-    $("gisBasemap").addEventListener("change", function () { state.mapBasemap = this.value; if (state.chartType === TYPE) render(); });
+    $("gisBasemap").addEventListener("change", function () {
+      state.mapBasemap = this.value; if (state.chartType === TYPE) render(); if (GIS.refreshBasemap) GIS.refreshBasemap();
+    });
     wireLayerList();
   }
 

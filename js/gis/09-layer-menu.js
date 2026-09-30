@@ -68,15 +68,19 @@
       h += row("count", "", "Show feature count", { check: !!l.showCount });
       h += row("labels", "", "Show labels", { check: GIS.sym.hasLabels(l) });
     }
-    h += SEP + row("rename", "edit", "Rename…") + row("dup", "content_copy", "Duplicate layer");
+    h += SEP + row("rename", "edit", "Rename (F2)") + row("dup", "content_copy", "Duplicate layer");
     h += row("top", "vertical_align_top", "Move to top", { disabled: i === 0 }) + row("bottom", "vertical_align_bottom", "Move to bottom", { disabled: i === n - 1 });
-    if (vec) h += SEP + row("xgeo", "download", "Export GeoJSON") + row("xgeosel", "download", "Export selected features", { disabled: !l.selection.size }) + row("xcsv", "download", "Export CSV");
+    if (vec) h += SEP + '<div class="gis-ctx-sub"><button type="button" class="gis-ctx-subbtn">' + sym("ios_share") + '<span>Export</span><span class="material-symbols-outlined gis-ctx-arrow">chevron_right</span></button><div class="gis-ctx-subm">' +
+      row("xgeo", "data_object", "GeoJSON") + row("xshp", "folder_zip", "Shapefile (.zip)") + row("xkml", "travel_explore", "KML (Google Earth)") + row("xgpx", "route", "GPX") + row("xcsv", "csv", "CSV") +
+      SEP + row("xgeosel", "select", "Selected features (GeoJSON)", { disabled: !l.selection.size }) + SEP + row("xsld", "palette", "Style as SLD (QGIS, GeoServer)") + "</div></div>";
     h += SEP + row("props", "tune", "Properties…") + row("remove", "delete", "Remove layer", { danger: true });
     menu.innerHTML = h;
     menu.classList.add("open");
     var w = menu.offsetWidth, hh = menu.offsetHeight;
     menu.style.left = Math.max(6, Math.min(window.innerWidth - w - 6, x)) + "px";
     menu.style.top = Math.max(6, Math.min(window.innerHeight - hh - 6, y)) + "px";
+    // Submenus open to the side with room.
+    menu.classList.toggle("sub-left", x + w + 220 > window.innerWidth);
     menu.onclick = function (e) {
       var b = e.target.closest("button[data-act]");
       if (!b || b.disabled) return;
@@ -103,19 +107,26 @@
       case "legend": l.legend = l.legend === false; GIS.emit("style"); GIS.emit("layers"); break;
       case "count": l.showCount = !l.showCount; GIS.emit("layers"); break;
       case "labels": toggleLabels(l); break;
-      case "rename": var nm = (window.prompt("Layer name", l.name) || "").trim(); if (nm) { l.name = nm; GIS.emit("layers"); } break;
+      case "rename":
+        if (GIS.renameLayer && document.querySelector('#gisLayerList .gis-layer[data-id="' + l.id + '"]')) { GIS.openLayersPanel && GIS.openLayersPanel(); GIS.renameLayer(l.id); break; }
+        var nm = (window.prompt("Layer name", l.name) || "").trim(); if (nm) { l.name = nm; GIS.emit("layers"); } break;
       case "dup": GIS.duplicate(l.id); break;
       case "top": GIS.move(l.id, 0); break;
       case "bottom": GIS.move(l.id, GIS.layers.length - 1); break;
       case "xgeo": GIS.exportGeoJSON(l, false); break;
       case "xgeosel": GIS.exportGeoJSON(l, true); break;
       case "xcsv": GIS.exportCSV(l, false); break;
+      case "xshp": case "xkml": case "xgpx":
+        try { GIS.exportFormat(l, act.slice(1), false); } catch (e) { if (window.PlootsKobo) window.PlootsKobo.toast(e.message); }
+        break;
+      case "xsld": try { GIS.exportSLD(l); } catch (e) { if (window.PlootsKobo) window.PlootsKobo.toast(e.message); } break;
       case "props": layerProperties(l); break;
       case "remove": GIS.remove(l.id); break;
     }
   }
 
   function openStyling() {
+    if (GIS.openStylingPanel) { GIS.openStylingPanel(); return; }
     if (GIS.enterMapMode) GIS.enterMapMode();
     if (typeof activateSidebarPanel === "function") activateSidebarPanel("panel-map");
     var sec = document.querySelector('#panel-map [data-section="gisStyle"]');
@@ -159,7 +170,7 @@
 
   /* ------------------------------------------------ expression builder */
 
-  var OPS = ["=", "!=", "<", ">", "<=", ">=", "AND", "OR", "NOT", "LIKE", "IN ( )", "IS NULL", "( )", "%", "+", "-", "*", "/", "||"];
+  var OPS = ["=", "!=", "<", ">", "<=", ">=", "AND", "OR", "NOT", "LIKE", "IN ( )", "IS NULL", "( )", "%", "+", "-", "*", "/", "||", "$area", "$length", "$perimeter", "$x", "$y", "$id"];
 
   function uniqueValues(l, field, limit) {
     var seen = new Map();

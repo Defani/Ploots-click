@@ -20,7 +20,7 @@ var CP_LIB_KEY = "simplePlotsColorLibSource";
 var CP_RECENT_MAX = 16;
 var CP_PRESETS = [
   "#000000", "#434343", "#666666", "#999999", "#b7b7b7", "#d9d9d9", "#efefef", "#ffffff",
-  "#e2555a", "#e08a3c", "#e8c14a", "#8fbf4f", "#7fc2d9", "#3f8f8a", "#18a0fb", "#c96fa8",
+  "#e2555a", "#e08a3c", "#e8c14a", "#8fbf4f", "#7fc2d9", "#3f8f8a", "#4e8a2e", "#c96fa8",
   "#0d3b66", "#1d3557", "#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51", "#6d597a"
 ];
 
