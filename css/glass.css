@@ -206,3 +206,30 @@ button .material-symbols-outlined, .gis-ctx .material-symbols-outlined, .tb-item
 .topbar-center::-webkit-scrollbar, #mainTools::-webkit-scrollbar, .carto-bar::-webkit-scrollbar { display: none; }
 /* A soft fade shows that the tools continue past the right edge. */
 .topbar-center { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); padding-right: 28px; }
+
+/* ------------------------------------------------- active = just green */
+/* An active menu, tab, tool or segment is shown by its green icon and
+   label only: no background, no pill, no shadow. Selected cards and rows
+   (layers, templates, palettes, basemaps) keep their own marking. */
+.nav-btn.active, .sidebar-container .nav-btn.active,
+.nav-btn.active .material-symbols-outlined, .sidebar-container .nav-btn.active .material-symbols-outlined,
+.tool-btn.active, .tb-btn.active, .tb-btn.on, .tfb-bar .tool-btn.active, .tfb-text-btn.active,
+.toggle-group button.active, .sidebar-container .toggle-group button.active, .tfb-bar .toggle-group button.active,
+.gisw-seg button.active, .ag-seg button.active, .gis-attr-mode button.active, .data-view-wrap .dv-top-toolbar .dv-seg button.active,
+.gis-map-tools button.active, .gis-attr-bar > button.active, .gis-expr-list button.active,
+.dp-seg button.active, .dp-icon-btn.active, .sym-cat-tabs button.active, .rp-tab.active, .draw-mode-btn.active,
+.dv-ribbon-btn.active, .data-view-wrap .dv-top-toolbar .dv-ribbon-btn.active, .dv-sort-btn.active, .data-view-wrap .dv-header .dv-sort-btn.active,
+.gisw-dock-tabs [data-tab].active, .gproc-tool.active, .tb-item.checked, .ag-left button.active,
+.anim-tabs button.active, .gfw-tabs button.active, .cat-tabs button.active, .kobo-auth button.active {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  color: var(--accent) !important;
+}
+.nav-btn.active .nav-lbl { color: var(--accent) !important; font-weight: 600 !important; }
+.toggle-group button.active, .gisw-seg button.active, .ag-seg button.active, .gis-attr-mode button.active,
+.gisw-dock-tabs [data-tab].active, .anim-tabs button.active, .gfw-tabs button.active, .cat-tabs button.active { font-weight: 600 !important; }
+/* The dock tabs keep a thin green underline as their only mark. */
+.gisw-dock-tabs [data-tab].active { border-bottom: 2px solid var(--accent) !important; }
+/* Editing mode stays red in the attribute table. */
+.gis-attr-dock.editing .gis-attr-mode button.active { background: transparent !important; color: #e5484d !important; }
