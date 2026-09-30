@@ -1,0 +1,85 @@
+/* Agroforestry simulator (js/agro/agroforestry.js): a full-window workspace
+   using the glass design tokens of css/glass.css. */
+
+.agro-app {
+  position: fixed; inset: 0; z-index: 1500; display: none;
+  grid-template-columns: 300px 1fr 270px; grid-template-rows: 56px 1fr;
+  grid-template-areas: "head head head" "left main right";
+  background: var(--g-field);
+  background-image: radial-gradient(60vw 50vh at 10% 0%, rgba(120, 170, 80, .16), transparent 70%), radial-gradient(50vw 50vh at 100% 100%, rgba(138, 90, 43, .14), transparent 70%);
+  color: var(--ink); font-family: Inter, 'Segoe UI', Arial, sans-serif;
+}
+.agro-app.show { display: grid; }
+.ag-head, .ag-left, .ag-right {
+  background: var(--g-glass); -webkit-backdrop-filter: blur(var(--g-blur)) saturate(160%); backdrop-filter: blur(var(--g-blur)) saturate(160%);
+  border-color: var(--g-line);
+}
+.ag-head { grid-area: head; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--g-line); }
+.ag-head > .material-symbols-outlined { font-size: 24px; color: #5b8c2a; }
+.ag-title { display: flex; flex-direction: column; line-height: 1.2; }
+.ag-title b { font-size: 14px; font-weight: 600; }
+.ag-title span { font-size: 11.5px; color: var(--ink-soft); }
+.ag-views { margin-left: 18px; }
+.ag-year { margin-left: auto; padding: 4px 12px; border-radius: 20px; background: var(--g-hover); font: 600 12.5px Inter, Arial; font-variant-numeric: tabular-nums; }
+.ag-close { width: 34px !important; height: 34px; padding: 0 !important; display: flex; align-items: center; justify-content: center; border: none !important; background: none !important; color: var(--ink-soft); }
+.ag-close:hover { background: var(--g-hover) !important; color: var(--ink); }
+
+.ag-left { grid-area: left; overflow-y: auto; border-right: 1px solid var(--g-line); padding: 6px 14px 20px; }
+.ag-right { grid-area: right; overflow-y: auto; border-left: 1px solid var(--g-line); padding: 12px 14px 20px; }
+.ag-left section { padding: 10px 0 12px; border-bottom: 1px solid var(--g-line); }
+.ag-left h4, .ag-right h4 { display: flex; align-items: center; gap: 7px; margin: 4px 0 2px; font-size: 12.5px; font-weight: 600; }
+.ag-left h4 .material-symbols-outlined, .ag-right h4 .material-symbols-outlined { font-size: 18px; color: #5b8c2a; }
+.ag-left .anim-row button, .ag-left button { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.ag-left button.active { background: var(--accent-soft) !important; color: var(--accent); border-color: var(--accent) !important; }
+.ag-left input[type=range] { width: 100%; }
+.ag-note { margin: 8px 0 0; font-size: 11px; line-height: 1.45; color: var(--ink-soft); }
+.ag-note code { font-size: 10.5px; background: var(--g-hover); padding: 1px 4px; border-radius: 4px; word-break: break-word; }
+#agAddSp { margin-top: 8px; }
+
+.ag-spec { margin-top: 6px; border: 1px solid var(--g-line); border-radius: var(--g-radius); background: var(--g-input); }
+.ag-spec summary { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; font-size: 12.5px; font-weight: 500; list-style: none; }
+.ag-spec summary::-webkit-details-marker { display: none; }
+.ag-spec summary i, .ag-sp i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.ag-spec summary em { margin-left: auto; font-style: normal; font-size: 11px; color: var(--ink-soft); }
+.ag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; padding: 2px 10px 10px; }
+.ag-grid label { display: flex; flex-direction: column; gap: 3px; font-size: 10.5px; color: var(--ink-soft); }
+.ag-grid input { min-height: 28px !important; padding: 4px 6px !important; font-size: 12px; }
+.ag-grid input[type=color] { padding: 2px !important; height: 28px; }
+
+.ag-main { grid-area: main; position: relative; min-width: 0; min-height: 0; }
+.ag-view { position: absolute; inset: 0; }
+.ag-view[hidden] { display: none; }
+#agCanvas { display: block; }
+.ag-float, .ag-info {
+  position: absolute; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px;
+  background: var(--g-glass-strong); -webkit-backdrop-filter: blur(var(--g-blur)); backdrop-filter: blur(var(--g-blur));
+  border: 1px solid var(--g-line-strong); border-radius: var(--g-radius); box-shadow: var(--g-shadow-float);
+}
+.ag-float { left: 16px; top: 14px; }
+.ag-float[hidden], .ag-info[hidden] { display: none; }
+.ag-float input[type=range] { width: 160px; }
+.ag-float b { font-variant-numeric: tabular-nums; }
+.ag-float .material-symbols-outlined { color: #d98a1c; }
+.ag-info { right: 16px; bottom: 16px; flex-direction: column; align-items: flex-start; gap: 2px; max-width: 280px; }
+.ag-info b { font-size: 12.5px; }
+.ag-info span { color: var(--ink-soft); }
+.ag-info em { font-style: normal; font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+
+.ag-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 10px; }
+.ag-kpi { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--g-line); border-radius: var(--g-radius); background: var(--g-input); }
+.ag-kpi span { font-size: 10.5px; color: var(--ink-soft); letter-spacing: .03em; }
+.ag-kpi b { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ag-sp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 7px 0; border-top: 1px solid var(--g-line); font-size: 12px; }
+.ag-sp span { width: 100%; padding-left: 20px; font-size: 11px; color: var(--ink-soft); }
+.ag-chart { margin-top: 10px; padding: 10px; border: 1px solid var(--g-line); border-radius: var(--g-radius); background: var(--g-input); }
+.ag-chart svg { width: 100%; height: 110px; display: block; }
+.ag-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--ink-soft); }
+.ag-legend span::before { content: ""; display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: middle; border-radius: 2px; background: var(--c); }
+
+body.agro-open { overflow: hidden; }
+.home-cards { grid-template-columns: repeat(3, 1fr) !important; }
+@media (max-width: 900px) { .home-cards { grid-template-columns: 1fr !important; } .agro-app { grid-template-columns: 260px 1fr; grid-template-areas: "head head" "left main"; } .ag-right { display: none; } }
+.ag-seg { display: flex; gap: 2px; padding: 2px; border-radius: var(--g-radius); border: 1px solid var(--g-line); background: var(--g-hover); }
+.ag-seg button { display: flex; align-items: center; gap: 5px; padding: 4px 11px !important; border: none !important; background: transparent !important; border-radius: var(--g-radius-sm); font: 500 12.5px Inter, 'Segoe UI', Arial, sans-serif; color: var(--ink-soft); cursor: pointer; }
+.ag-seg button .material-symbols-outlined { font-size: 18px; }
+.ag-seg button.active { background: var(--g-glass-strong) !important; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12), inset 0 1px 0 var(--g-edge); }

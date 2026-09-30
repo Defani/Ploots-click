@@ -30,6 +30,11 @@
             "<h2>Map</h2><p>Spatial data: vector and raster layers, symbology, map layout.</p>" +
             '<div class="home-actions"><button data-go="map-blank">Blank</button><button data-go="map-sample" class="btn-primary">Sample map</button></div>' +
           "</div>" +
+          '<div class="home-card" data-mode="agro">' +
+            '<span class="material-symbols-outlined home-icon">forest</span>' +
+            "<h2>Agroforestry</h2><p>Gayo coffee under lamtoro shade: plant, grow and see the plot in 2D and 3D; SExI-FS data.</p>" +
+            '<div class="home-actions"><button data-go="agro" class="btn-primary">Open simulator</button></div>' +
+          "</div>" +
         "</div>" +
         '<div class="home-foot"><button type="button" data-files><span class="material-symbols-outlined">folder_open</span>Open from a folder</button>' +
           '<span>Private tool of <b>Defani Arman Alfitriansyah</b></span><button type="button" data-about>About</button></div>' +
@@ -52,6 +57,7 @@
 
   function go(what) {
     hide();
+    if (what === "agro") { if (window.PlootsAgro) window.PlootsAgro.open(); return; }
     if (what.indexOf("chart") === 0) {
       if (state.chartType === GIS.TYPE) selectChartType("bar-group");
       if (what === "chart-sample") { var s = document.getElementById("loadSampleBtn"); if (s) s.click(); }
