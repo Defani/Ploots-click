@@ -3,7 +3,7 @@
 
    Toolbox      a left panel with the tools in category folders (Vector
                 geoprocessing, geometry, analysis, creation, selection,
-                interpolation, clustering, general), a search box and a
+                conversion, interpolation, clustering, general), a search box and a
                 "Recently used" folder.
    Geoprocessing  the top bar menu with the common overlay tools (buffer,
                 clip, difference, intersection, union, dissolve, convex
@@ -182,6 +182,26 @@
         return h ? [h] : [];
       } },
 
+    { id: "concave", cat: "Vector geoprocessing", name: "Concave hull", icon: "hexagon", geo: true,
+      help: "A hull that follows the points more closely than a convex hull.",
+      params: [P_in(), { id: "edge", type: "number", label: "Maximum edge length", value: 50, step: "any" }, P_units()],
+      run: function (p) {
+        var pts = [];
+        feats(p.input, p.input_sel).forEach(function (f) { turf.explode(f).features.forEach(function (v) { pts.push(v); }); });
+        var h = turf.concave(fc(pts), { maxEdge: +p.edge, units: p.units });
+        if (!h) throw new Error("No hull with that edge length; try a larger value.");
+        h.properties = { points: pts.length };
+        return [h];
+      } },
+    { id: "bufferfield", cat: "Vector geoprocessing", name: "Buffer by field (variable distance)", icon: "radio_button_partial", geo: true,
+      params: [P_in(), { id: "field", type: "field", label: "Distance field", of: "input", numeric: true }, P_units(), { id: "dissolve", type: "check", label: "Dissolve result" }],
+      run: function (p) {
+        var out = feats(p.input, p.input_sel).map(function (f) { var d = Number(f.properties[p.field]); if (!(d > 0)) return null; var b = turf.buffer(f, d, { units: p.units }); if (b) b.properties = f.properties; return b; }).filter(Boolean);
+        if (p.dissolve) { var u = unionAll(out); out = u ? [u] : []; }
+        return out;
+      } },
+
+
     /* Vector geometry */
     { id: "centroids", cat: "Vector geometry", name: "Centroids", icon: "adjust",
       params: [P_in()],
@@ -291,6 +311,32 @@
         return { rows: [["Count", n], ["Sum", sum], ["Mean", mean], ["Median", q(0.5)], ["Std. deviation", sd], ["Minimum", v[0]], ["Maximum", v[n - 1]], ["Range", v[n - 1] - v[0]], ["1st quartile", q(0.25)], ["3rd quartile", q(0.75)], ["IQR", q(0.75) - q(0.25)], ["Coefficient of variation", mean ? sd / mean : NaN]] };
       } },
 
+    { id: "sumlines", cat: "Vector analysis", name: "Sum line lengths in polygons", icon: "polyline",
+      params: [{ id: "polys", type: "layer", label: "Polygons", geom: "polygon", sel: true }, { id: "lines", type: "layer", label: "Lines", geom: "line", sel: true }, P_units()],
+      run: function (p) {
+        var lines = single(only(feats(p.lines, p.lines_sel), "line", p.lines.name));
+        return only(feats(p.polys, p.polys_sel), "polygon").map(function (f) {
+          var bb = turf.bbox(f), len = 0, n = 0;
+          cutLines(lines.filter(function (l) { return bboxOverlap(bb, turf.bbox(l)); }), f, true).forEach(function (piece) { len += turf.length(piece, { units: p.units }); n++; });
+          f.properties = Object.assign({}, f.properties, { line_len: +len.toFixed(4), line_count: n });
+          return f;
+        });
+      } },
+    { id: "meancoords", cat: "Vector analysis", name: "Mean coordinate(s)", icon: "center_focus_weak",
+      params: [P_in(), { id: "group", type: "field", label: "Per value of (optional)", of: "input", optional: true }, { id: "weight", type: "field", label: "Weight field (optional)", of: "input", numeric: true, optional: true }],
+      run: function (p) {
+        var groups = {}, keys = [];
+        feats(p.input, p.input_sel).forEach(function (f) { var k = p.group ? String(f.properties[p.group]) : "all"; if (!groups[k]) { groups[k] = []; keys.push(k); } groups[k].push(f); });
+        return keys.map(function (k) {
+          var sx = 0, sy = 0, sw = 0;
+          groups[k].forEach(function (f) { var c = turf.centroid(f).geometry.coordinates, w = p.weight ? Number(f.properties[p.weight]) || 0 : 1; sx += c[0] * w; sy += c[1] * w; sw += w; });
+          if (!sw) return null;
+          var pr = { count: groups[k].length };
+          if (p.group) pr[p.group] = groups[k][0].properties[p.group];
+          return turf.point([sx / sw, sy / sw], pr);
+        }).filter(Boolean);
+      } },
+
     /* Vector creation */
     { id: "grid", cat: "Vector creation", name: "Create grid", icon: "grid_4x4",
       help: "Square, hexagon, triangle or point grid over a layer's extent (or the current map view).",
@@ -374,16 +420,176 @@
       params: [P_in("point", "Points"), { id: "k", type: "number", label: "Number of clusters", value: 5, min: 1 }],
       run: function (p) { return turf.clustersKmeans(fc(single(only(feats(p.input, p.input_sel), "point"))), { numberOfClusters: +p.k }).features.map(function (f) { delete f.properties.centroid; return f; }); } },
 
+    /* Conversion */
+    { id: "pointstopath", cat: "Conversion", name: "Points to path", icon: "route",
+      help: "Joins points into lines, in the order of a field, one line per group.",
+      params: [P_in("point", "Points"), { id: "order", type: "field", label: "Order by (optional; else layer order)", of: "input", optional: true }, { id: "group", type: "field", label: "One path per value of (optional)", of: "input", optional: true }],
+      run: function (p) {
+        var pts = single(only(feats(p.input, p.input_sel), "point")), groups = {}, keys = [];
+        pts.forEach(function (f, i) { f._i = i; var k = p.group ? String(f.properties[p.group]) : "all"; if (!groups[k]) { groups[k] = []; keys.push(k); } groups[k].push(f); });
+        return keys.map(function (k) {
+          var g = groups[k].slice();
+          if (p.order) g.sort(function (a, b) { var x = a.properties[p.order], y = b.properties[p.order]; var nx = Number(x), ny = Number(y); return isFinite(nx) && isFinite(ny) ? nx - ny : String(x).localeCompare(String(y)); });
+          if (g.length < 2) return null;
+          var line = turf.lineString(g.map(function (f) { return f.geometry.coordinates; }));
+          line.properties = { points: g.length, length_km: +turf.length(line).toFixed(4) };
+          if (p.group) line.properties[p.group] = g[0].properties[p.group];
+          if (p.order) { line.properties.begin = g[0].properties[p.order]; line.properties.end = g[g.length - 1].properties[p.order]; }
+          return line;
+        }).filter(Boolean);
+      } },
+    { id: "tosegments", cat: "Conversion", name: "Lines to segments", icon: "linear_scale",
+      params: [P_in("line")],
+      run: function (p) { var out = []; only(feats(p.input, p.input_sel), "line").forEach(function (f) { turf.lineSegment(f).features.forEach(function (s, i) { s.properties = Object.assign({ segment: i + 1 }, f.properties); out.push(s); }); }); return out; } },
+    { id: "towkt", cat: "Conversion", name: "Geometry to WKT field", icon: "data_object",
+      params: [P_in(), { id: "name", type: "text", label: "Field name", value: "wkt" }],
+      run: function (p) { return feats(p.input, p.input_sel).map(function (f) { f.properties = Object.assign({}, f.properties); f.properties[p.name || "wkt"] = toWKT(f.geometry); return f; }); } },
+    { id: "fromwkt", cat: "Conversion", name: "WKT field to geometry", icon: "shape_line",
+      help: "Builds the geometry of each feature from a WKT text field (POINT, LINESTRING, POLYGON and MULTI…).",
+      params: [P_in("any", "Layer with a WKT field"), { id: "field", type: "field", label: "WKT field", of: "input" }],
+      run: function (p) {
+        return feats(p.input, p.input_sel).map(function (f) { var g = fromWKT(f.properties[p.field]); if (!g) return null; return { type: "Feature", properties: f.properties, geometry: g }; }).filter(Boolean);
+      } },
+    { id: "toutm", cat: "Conversion", name: "Add UTM coordinates", icon: "grid_on",
+      help: "UTM easting / northing (WGS 84) of points or of each feature's centroid; zone chosen per feature or fixed.",
+      params: [P_in(), { id: "zone", type: "number", label: "Zone (0 = automatic)", value: 0, min: 0, max: 60 }],
+      run: function (p) {
+        return feats(p.input, p.input_sel).map(function (f) {
+          var c = f.geometry.type === "Point" ? f.geometry.coordinates : turf.centroid(f).geometry.coordinates;
+          var u = utm(c[0], c[1], +p.zone || 0);
+          f.properties = Object.assign({}, f.properties, { utm_zone: u.zone + (c[1] < 0 ? "S" : "N"), utm_e: +u.e.toFixed(2), utm_n: +u.n.toFixed(2) });
+          return f;
+        });
+      } },
+    { id: "todms", cat: "Conversion", name: "Add coordinates (decimal and DMS)", icon: "my_location",
+      params: [P_in()],
+      run: function (p) {
+        return feats(p.input, p.input_sel).map(function (f) {
+          var c = f.geometry.type === "Point" ? f.geometry.coordinates : turf.centroid(f).geometry.coordinates;
+          f.properties = Object.assign({}, f.properties, { lon: +c[0].toFixed(7), lat: +c[1].toFixed(7), lon_dms: dmsStr(c[0], "E", "W"), lat_dms: dmsStr(c[1], "N", "S") });
+          return f;
+        });
+      } },
+    { id: "saveas", cat: "Conversion", name: "Convert format (save as)", icon: "save_as", table: true,
+      help: "Writes the layer as GeoJSON, Shapefile (.zip), KML, GPX or CSV.",
+      params: [P_in(), { id: "fmt", type: "select", label: "Format", options: [["geojson", "GeoJSON"], ["shp", "ESRI Shapefile (.zip)"], ["kml", "KML (Google Earth)"], ["gpx", "GPX"], ["csv", "CSV"]], value: "shp" }],
+      run: function (p) {
+        if (p.fmt === "geojson") GIS.exportGeoJSON(p.input, p.input_sel);
+        else if (p.fmt === "csv") GIS.exportCSV(p.input, p.input_sel);
+        else GIS.exportFormat(p.input, p.fmt, p.input_sel);
+        return { message: p.input.name + " written as " + p.fmt.toUpperCase() + "." };
+      } },
+
     /* Vector general */
     { id: "merge", cat: "Vector general", name: "Merge vector layers", icon: "merge",
       params: [P_in("any", "First layer"), { id: "overlay", type: "layer", label: "Second layer", geom: "any", sel: true }, { id: "tag", type: "check", label: "Add a field with the source layer name", value: true }],
       run: function (p) {
         function tag(list, l) { if (p.tag) list.forEach(function (f) { f.properties = Object.assign({ layer: l.name }, f.properties); }); return list; }
         return tag(feats(p.input, p.input_sel), p.input).concat(tag(feats(p.overlay, p.overlay_sel), p.overlay));
-      } }
+      } },
+    { id: "joinfield", cat: "Vector general", name: "Join attributes by field value", icon: "join_left",
+      params: [P_in("any", "Input layer"), { id: "field", type: "field", label: "Table field", of: "input" }, { id: "overlay", type: "layer", label: "Layer to join", geom: "any" },
+        { id: "field2", type: "field", label: "Field of layer to join", of: "overlay" }, { id: "prefix", type: "text", label: "Prefix for joined fields", value: "j_" }],
+      run: function (p) {
+        var map = {};
+        p.overlay.data.features.forEach(function (f) { var k = String(f.properties[p.field2]); if (!(k in map)) map[k] = f.properties; });
+        var hit = 0, out = feats(p.input, p.input_sel).map(function (f) {
+          var j = map[String(f.properties[p.field])];
+          f.properties = Object.assign({}, f.properties);
+          if (j) { hit++; Object.keys(j).forEach(function (k) { f.properties[(p.prefix || "") + k] = j[k]; }); }
+          return f;
+        });
+        if (!hit) throw new Error("No values of " + p.field + " match " + p.field2 + ".");
+        return out;
+      } },
+    { id: "spatialjoin", cat: "Vector general", name: "Join attributes by location", icon: "join",
+      help: "Adds the attributes of the first overlapping feature of the join layer.",
+      params: [P_in("any", "Input layer"), { id: "overlay", type: "layer", label: "Join layer", geom: "any", sel: true }, { id: "prefix", type: "text", label: "Prefix for joined fields", value: "j_" }, { id: "keep", type: "check", label: "Keep features without a match", value: true }],
+      run: function (p) {
+        var J = feats(p.overlay, p.overlay_sel), bbs = J.map(function (g) { return turf.bbox(g); });
+        return feats(p.input, p.input_sel).map(function (f) {
+          var fb = turf.bbox(f), m = null;
+          for (var i = 0; i < J.length && !m; i++) if (bboxOverlap(fb, bbs[i]) && turf.booleanIntersects(f, J[i])) m = J[i];
+          if (!m && !p.keep) return null;
+          f.properties = Object.assign({}, f.properties);
+          if (m) Object.keys(m.properties).forEach(function (k) { f.properties[(p.prefix || "") + k] = m.properties[k]; });
+          return f;
+        }).filter(Boolean);
+      } },
+    { id: "splitfield", cat: "Vector general", name: "Split layer by field", icon: "call_split", noLayer: true,
+      params: [P_in(), { id: "field", type: "field", label: "Unique values of", of: "input" }],
+      run: function (p) {
+        var groups = {}, keys = [];
+        feats(p.input, p.input_sel).forEach(function (f) { var k = String(f.properties[p.field]); if (!groups[k]) { groups[k] = []; keys.push(k); } groups[k].push(f); });
+        if (keys.length > 60) throw new Error(keys.length + " values; that would make too many layers.");
+        keys.forEach(function (k) { GIS.addVector(fc(groups[k]), p.input.name + " — " + p.field + " = " + k); });
+        return { message: keys.length + " layers created from " + p.field + "." };
+      } },
+    { id: "dedupe", cat: "Vector general", name: "Delete duplicate geometries", icon: "layers_clear",
+      params: [P_in()],
+      run: function (p) { var seen = {}; return feats(p.input, p.input_sel).filter(function (f) { var k = JSON.stringify(f.geometry.coordinates); if (seen[k]) return false; seen[k] = 1; return true; }); } }
   ];
   var CATS = [["Vector geoprocessing", "layers"], ["Vector geometry", "shape_line"], ["Vector analysis", "analytics"], ["Vector creation", "add_box"],
-    ["Vector selection", "select"], ["Interpolation", "blur_on"], ["Clustering", "bubble_chart"], ["Vector general", "category"]];
+    ["Vector selection", "select"], ["Conversion", "swap_horiz"], ["Interpolation", "blur_on"], ["Clustering", "bubble_chart"], ["Vector general", "category"]];
+
+  /* ------------------------------------------------ conversion helpers */
+
+  function toWKT(g) {
+    function pt(c) { return c[0] + " " + c[1]; }
+    function ring(r) { return "(" + r.map(pt).join(", ") + ")"; }
+    function poly(p) { return "(" + p.map(ring).join(", ") + ")"; }
+    switch (g.type) {
+      case "Point": return "POINT (" + pt(g.coordinates) + ")";
+      case "MultiPoint": return "MULTIPOINT (" + g.coordinates.map(function (c) { return "(" + pt(c) + ")"; }).join(", ") + ")";
+      case "LineString": return "LINESTRING " + ring(g.coordinates);
+      case "MultiLineString": return "MULTILINESTRING (" + g.coordinates.map(ring).join(", ") + ")";
+      case "Polygon": return "POLYGON " + poly(g.coordinates);
+      case "MultiPolygon": return "MULTIPOLYGON (" + g.coordinates.map(poly).join(", ") + ")";
+    }
+    return "";
+  }
+  function fromWKT(s) {
+    s = String(s || "").trim();
+    var m = s.match(/^(MULTIPOINT|MULTILINESTRING|MULTIPOLYGON|POINT|LINESTRING|POLYGON)\s*(Z|M|ZM)?\s*(\(.*\))$/i);
+    if (!m) return null;
+    var type = m[1].toUpperCase(), body = m[3], pos = 0;
+    function list() {
+      // Nested parentheses into arrays of coordinate pairs.
+      var out = [], cur = "";
+      pos++; // (
+      while (pos < body.length) {
+        var ch = body[pos];
+        if (ch === "(") { out.push(list()); cur = ""; continue; }
+        if (ch === ")") { pos++; if (cur.trim()) out.push(cur.trim().split(/\s+/).slice(0, 2).map(Number)); return out; }
+        if (ch === ",") { if (cur.trim()) out.push(cur.trim().split(/\s+/).slice(0, 2).map(Number)); cur = ""; pos++; continue; }
+        cur += ch; pos++;
+      }
+      return out;
+    }
+    var c = list();
+    var T = { POINT: "Point", LINESTRING: "LineString", POLYGON: "Polygon", MULTIPOINT: "MultiPoint", MULTILINESTRING: "MultiLineString", MULTIPOLYGON: "MultiPolygon" }[type];
+    if (T === "Point") c = c[0];
+    if (T === "MultiPoint") c = c.map(function (x) { return Array.isArray(x[0]) ? x[0] : x; });
+    return { type: T, coordinates: c };
+  }
+  // UTM forward (WGS 84, Snyder / Krüger series).
+  function utm(lon, lat, zone) {
+    zone = zone || Math.min(60, Math.floor((lon + 180) / 6) + 1);
+    var a = 6378137, f = 1 / 298.257223563, k0 = 0.9996, e2 = f * (2 - f), ep2 = e2 / (1 - e2);
+    var phi = lat * Math.PI / 180, lam0 = ((zone - 1) * 6 - 180 + 3) * Math.PI / 180, lam = lon * Math.PI / 180;
+    var N = a / Math.sqrt(1 - e2 * Math.sin(phi) * Math.sin(phi)), T = Math.tan(phi) * Math.tan(phi), C = ep2 * Math.cos(phi) * Math.cos(phi), A = Math.cos(phi) * (lam - lam0);
+    var M = a * ((1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256) * phi - (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * phi) +
+      (15 * e2 * e2 / 256 + 45 * e2 * e2 * e2 / 1024) * Math.sin(4 * phi) - (35 * e2 * e2 * e2 / 3072) * Math.sin(6 * phi));
+    var e = k0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * ep2) * Math.pow(A, 5) / 120) + 500000;
+    var n = k0 * (M + N * Math.tan(phi) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * ep2) * Math.pow(A, 6) / 720));
+    if (lat < 0) n += 10000000;
+    return { zone: zone, e: e, n: n };
+  }
+  function dmsStr(v, pos, neg) {
+    var a = Math.abs(v), d = Math.floor(a), mf = (a - d) * 60, m = Math.floor(mf), s = (mf - m) * 60;
+    if (s >= 59.995) { s = 0; m++; } if (m >= 60) { m = 0; d++; }
+    return d + "°" + String(m).padStart(2, "0") + "'" + s.toFixed(2).padStart(5, "0") + '"' + (v >= 0 ? pos : neg);
+  }
 
   function matchLoc(f, ov, pred) {
     var fb = turf.bbox(f);
