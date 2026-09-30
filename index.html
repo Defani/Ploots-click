@@ -1645,6 +1645,19 @@ body.gis-carto #canvasScroll{background-color:#2a2622;background-image:radial-gr
 html:not([data-theme=dark]) body.gis-carto #canvasScroll{background-color:#e9e4da;background-image:radial-gradient(rgba(0,0,0,.08) 1px,transparent 1.2px)}
 body.gis-carto .gisw-seg button.active[data-v="cartography"]{color:#d98a1c}
 body.gis-carto #canvasStage{box-shadow:0 18px 50px rgba(0,0,0,.35)}
+/* Digitizing (js/gis/21-digitize.js) */
+.dg-hud{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:8px;max-width:calc(100% - 24px);padding:6px 6px 6px 12px;background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:12px;white-space:nowrap}
+.dg-hud>.material-symbols-outlined{font-size:19px;color:#ff5a1f}
+.dg-hud b{font-weight:600}
+.dg-hud span{color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.dg-hud em{font-style:normal;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dg-hud button{display:flex;align-items:center;gap:4px;flex:none;height:28px;padding:0 8px!important;border-radius:7px;font-size:12px;cursor:pointer}
+.dg-hud button .material-symbols-outlined{font-size:17px}
+.dg-hud button.on{color:#ff00aa;border-color:#ff00aa!important}
+.dg-hud .dg-done{background:var(--accent)!important;color:#fff;border-color:var(--accent)!important}
+.dg-form{width:340px}
+.dg-form .gis-dlg-head>span{display:flex;align-items:center;gap:6px}
+.dg-hint{margin:10px 0 0;font-size:11px;color:var(--ink-soft)}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3194,6 +3207,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/18-locator.js"></script>
 <script src="js/gis/19-gfw.js"></script>
 <script src="js/gis/20-cartography.js"></script>
+<script src="js/gis/21-digitize.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>

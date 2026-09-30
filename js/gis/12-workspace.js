@@ -58,6 +58,14 @@
     layout.parentNode.insertBefore(pane, layout.nextSibling);
     host = $("gisAnalysisHost");
     status = $("gisStatusBar");
+    // The map follows its box (panels and the dock open and close).
+    if (window.ResizeObserver) {
+      var rq = 0;
+      new ResizeObserver(function () {
+        cancelAnimationFrame(rq);
+        rq = requestAnimationFrame(function () { if (GIS.analysis && GIS.analysis.resize) GIS.analysis.resize(); });
+      }).observe(host);
+    }
     status.addEventListener("click", function (e) {
       var b = e.target.closest("[data-a]");
       if (!b) return;

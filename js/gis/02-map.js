@@ -851,6 +851,7 @@
 
   function onMapHover(e) {
     if (!M || !M.interactive || M.tool === "pan") return;
+    if (GIS.digitize && GIS.digitize.active()) return;
     if (M.tool === "measure" || M.tool === "area") {
       if (M.meas && !M.meas.done) { M.meas.hover = [e.lngLat.lng, e.lngLat.lat]; drawMeasure(); }
       return;
@@ -863,6 +864,7 @@
 
   function onMapClick(e) {
     if (!M || !M.interactive || M.boxDragged) return;
+    if (GIS.digitize && GIS.digitize.active()) return; // js/gis/21-digitize.js handles clicks
     if (M.tool === "measure" || M.tool === "area") {
       if (!M.meas || M.meas.done) M.meas = { kind: M.tool, pts: [], done: false };
       M.meas.pts.push([e.lngLat.lng, e.lngLat.lat]);
@@ -1041,7 +1043,7 @@
     views().forEach(function (v) {
       inView(v, function () {
         if (!M.analysis && state.chartType !== TYPE) return;
-        var grew = evt === "layers" && M.loaded && GIS.layers.length > (M.layerCount || 0);
+        var grew = evt === "layers" && M.loaded && GIS.layers.length > (M.layerCount || 0) && !(GIS.digitize && GIS.digitize.active());
         M.layerCount = GIS.layers.length;
         applyLayers();
         // A newly added layer is framed, unless the layout map is locked.
