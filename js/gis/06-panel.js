@@ -179,6 +179,38 @@
     return '<span class="gis-sw gis-sw-' + kind + '" style="--c:' + esc(color) + '"></span>';
   }
 
+  // Rename a layer in the list: the name becomes a text box; Enter or
+  // leaving it saves, Escape cancels.
+  function renameInline(id) {
+    var l = GIS.get(id), row = document.querySelector('#gisLayerList .gis-layer[data-id="' + id + '"]');
+    var span = row && row.querySelector(".gis-layer-name");
+    if (!l || !span) return;
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "gis-layer-rename";
+    inp.value = l.name;
+    span.replaceWith(inp);
+    row.draggable = false;
+    inp.focus();
+    inp.select();
+    var done = false;
+    function finish(save) {
+      if (done) return;
+      done = true;
+      var v = inp.value.trim();
+      if (save && v && v !== l.name) { l.name = v; GIS.emit("layers"); if (typeof historyNotifyChange === "function") historyNotifyChange(); }
+      else renderLayerList();
+    }
+    inp.addEventListener("keydown", function (e) {
+      e.stopPropagation();
+      if (e.key === "Enter") finish(true);
+      else if (e.key === "Escape") finish(false);
+    });
+    inp.addEventListener("blur", function () { finish(true); });
+    ["click", "dblclick", "mousedown"].forEach(function (ev) { inp.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+  }
+  GIS.renameLayer = renameInline;
+
   function wireLayerList() {
     var box = $("gisLayerList"), dragId = null;
     box.addEventListener("click", function (e) {
@@ -194,11 +226,17 @@
       var row = t.closest(".gis-layer");
       if (row) GIS.setActive(row.dataset.id);
     });
-    // Double-click a layer: properties (QGIS); right-click: layer menu.
+    // Double-click the name: rename in place; elsewhere on the row:
+    // properties (QGIS). F2 renames the active layer. Right-click: menu.
     box.addEventListener("dblclick", function (e) {
       var r = e.target.closest(".gis-layer");
       if (!r || e.target.closest("button,input")) return;
+      if (e.target.closest(".gis-layer-name")) { renameInline(r.dataset.id); return; }
       GIS.layerProperties(GIS.get(r.dataset.id));
+    });
+    box.tabIndex = 0;
+    box.addEventListener("keydown", function (e) {
+      if (e.key === "F2" && GIS.active() && !e.target.closest("input")) { e.preventDefault(); renameInline(GIS.active().id); }
     });
     box.addEventListener("contextmenu", function (e) {
       var r = e.target.closest(".gis-layer");

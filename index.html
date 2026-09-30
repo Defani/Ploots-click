@@ -1529,6 +1529,31 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 .cat-servers button{display:flex;align-items:center;gap:9px;width:100%;padding:6px 8px!important;border-radius:8px;text-align:left;font-size:12px}
 .cat-servers button.active{border-color:var(--accent)!important;background:var(--accent-soft)!important}
 .cat-tabs button .plogo,#panel-catalog .toggle-group .plogo{margin-right:5px}
+.gis-layer-rename{flex:1;min-width:0;padding:2px 6px!important;font-size:12.5px;border:1px solid var(--accent)!important;border-radius:5px;background:var(--panel)!important;color:var(--ink)}
+#gisLayerList:focus{outline:none}
+/* Location search (js/gis/18-locator.js) */
+.gisw-map .gis-map-tools{left:auto;right:12px;transform:none;max-width:calc(100% - 360px)}
+.gloc{position:absolute;left:12px;top:12px;z-index:6;width:min(330px,calc(100% - 24px))}
+.gloc-bar{display:flex;align-items:center;gap:6px;height:38px;padding:0 6px 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.22)}
+.gloc-bar>.material-symbols-outlined{font-size:19px;color:var(--ink-soft)}
+.gloc-bar input{flex:1;min-width:0;border:none!important;background:none!important;outline:none;padding:0!important;font-size:13px;color:var(--ink)}
+.gloc-bar kbd{font:500 10px Inter,'Segoe UI',Arial,sans-serif;color:var(--ink-soft);border:1px solid var(--line-strong);border-radius:4px;padding:1px 4px;white-space:nowrap}
+.gloc-go{display:flex;align-items:center;justify-content:center;width:28px!important;height:28px;padding:0!important;border:none!important;background:none!important;color:var(--accent);border-radius:7px;cursor:pointer}
+.gloc-go:hover{background:var(--accent-soft)!important}
+.gloc-list{margin-top:6px;max-height:min(420px,60vh);overflow:auto;padding:4px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.28)}
+.gloc-row{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:7px;cursor:pointer}
+.gloc-row:hover,.gloc-row.sel{background:var(--panel-2)}
+.gloc-row.hint{color:var(--ink-soft)}
+.gloc-row>.material-symbols-outlined{font-size:18px;color:var(--accent);flex:none}
+.gloc-row.hint>.material-symbols-outlined{color:var(--ink-soft)}
+.gloc-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.gloc-txt b{font-weight:500;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gloc-txt span{font-size:11px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gloc-row em{font-style:normal;font-size:10.5px;color:var(--ink-soft);background:var(--panel-2);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.gloc-row button{display:flex;align-items:center;justify-content:center;width:26px!important;height:26px;padding:0!important;border:none!important;background:none!important;color:var(--ink-soft);border-radius:6px;cursor:pointer;flex:none}
+.gloc-row button:hover{color:var(--accent);background:var(--accent-soft)!important}
+.gloc-row button .material-symbols-outlined{font-size:18px}
+.gloc-note{padding:6px 8px 4px;font-size:11px;color:var(--ink-soft)}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3074,6 +3099,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/15-google-tiles.js"></script>
 <script src="js/gis/16-logos.js"></script>
 <script src="js/gis/17-basemap-gallery.js"></script>
+<script src="js/gis/18-locator.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>

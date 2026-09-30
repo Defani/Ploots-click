@@ -68,7 +68,7 @@
       h += row("count", "", "Show feature count", { check: !!l.showCount });
       h += row("labels", "", "Show labels", { check: GIS.sym.hasLabels(l) });
     }
-    h += SEP + row("rename", "edit", "Rename…") + row("dup", "content_copy", "Duplicate layer");
+    h += SEP + row("rename", "edit", "Rename (F2)") + row("dup", "content_copy", "Duplicate layer");
     h += row("top", "vertical_align_top", "Move to top", { disabled: i === 0 }) + row("bottom", "vertical_align_bottom", "Move to bottom", { disabled: i === n - 1 });
     if (vec) h += SEP + '<div class="gis-ctx-sub"><button type="button" class="gis-ctx-subbtn">' + sym("ios_share") + '<span>Export</span><span class="material-symbols-outlined gis-ctx-arrow">chevron_right</span></button><div class="gis-ctx-subm">' +
       row("xgeo", "data_object", "GeoJSON") + row("xshp", "folder_zip", "Shapefile (.zip)") + row("xkml", "travel_explore", "KML (Google Earth)") + row("xgpx", "route", "GPX") + row("xcsv", "csv", "CSV") +
@@ -107,7 +107,9 @@
       case "legend": l.legend = l.legend === false; GIS.emit("style"); GIS.emit("layers"); break;
       case "count": l.showCount = !l.showCount; GIS.emit("layers"); break;
       case "labels": toggleLabels(l); break;
-      case "rename": var nm = (window.prompt("Layer name", l.name) || "").trim(); if (nm) { l.name = nm; GIS.emit("layers"); } break;
+      case "rename":
+        if (GIS.renameLayer && document.querySelector('#gisLayerList .gis-layer[data-id="' + l.id + '"]')) { GIS.openLayersPanel && GIS.openLayersPanel(); GIS.renameLayer(l.id); break; }
+        var nm = (window.prompt("Layer name", l.name) || "").trim(); if (nm) { l.name = nm; GIS.emit("layers"); } break;
       case "dup": GIS.duplicate(l.id); break;
       case "top": GIS.move(l.id, 0); break;
       case "bottom": GIS.move(l.id, GIS.layers.length - 1); break;
