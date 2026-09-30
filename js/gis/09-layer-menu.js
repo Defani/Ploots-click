@@ -170,7 +170,7 @@
 
   /* ------------------------------------------------ expression builder */
 
-  var OPS = ["=", "!=", "<", ">", "<=", ">=", "AND", "OR", "NOT", "LIKE", "IN ( )", "IS NULL", "( )", "%", "+", "-", "*", "/", "||"];
+  var OPS = ["=", "!=", "<", ">", "<=", ">=", "AND", "OR", "NOT", "LIKE", "IN ( )", "IS NULL", "( )", "%", "+", "-", "*", "/", "||", "$area", "$length", "$perimeter", "$x", "$y", "$id"];
 
   function uniqueValues(l, field, limit) {
     var seen = new Map();

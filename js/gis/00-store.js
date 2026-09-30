@@ -325,6 +325,9 @@
   //   name LIKE 'Ma%'   iso3 IN ('IDN', 'MYS')   "area" IS NOT NULL
   //   ("pop" / "area") * 1000 >= 2   NOT "flag"
   // Field names are bare words or "double quoted"; text is 'single quoted'.
+  // Geometry variables (QGIS names, on the WGS 84 ellipsoid's sphere):
+  //   $area (m²), $length and $perimeter (m), $x, $y (point or centroid),
+  //   $id (feature number from 1), e.g. $area / 10000 > 5  (over 5 ha).
   var KEYWORDS = /^(AND|OR|NOT|IN|LIKE|ILIKE|IS|NULL|TRUE|FALSE)$/i;
   function tokenize(src) {
     var out = [], i = 0, m;
@@ -343,6 +346,7 @@
         if (e < 0) throw new Error("Unclosed field name");
         out.push({ t: "field", v: src.slice(i + 1, e) }); i = e + 1; continue;
       }
+      if ((m = /^\$[A-Za-z]+/.exec(rest))) { out.push({ t: "var", v: m[0].toLowerCase() }); i += m[0].length; continue; }
       if ((m = /^(<=|>=|<>|!=|==|\|\||[=<>+\-*\/%(),])/.exec(rest))) { out.push({ t: "op", v: m[0] }); i += m[0].length; continue; }
       if ((m = /^[A-Za-z_\u00C0-\uFFFF][\w\u00C0-\uFFFF]*/.exec(rest))) {
         out.push(KEYWORDS.test(m[0]) ? { t: "kw", v: m[0].toUpperCase() } : { t: "field", v: m[0] }); i += m[0].length; continue;
@@ -421,6 +425,10 @@
       if (!t) throw new Error("Unexpected end");
       if (t.t === "num" || t.t === "str") return function () { return t.v; };
       if (t.t === "field") return function (r) { return r[t.v]; };
+      if (t.t === "var") {
+        if (!/^\$(area|length|perimeter|x|y|id)$/.test(t.v)) throw new Error("Unknown variable " + t.v);
+        return function (r) { return geomVar(t.v, r); };
+      }
       if (t.t === "kw" && t.v === "NULL") return function () { return null; };
       if (t.t === "kw" && (t.v === "TRUE" || t.v === "FALSE")) return function () { return t.v === "TRUE"; };
       if (t.t === "op" && t.v === "(") { var e = orE(); eat(")"); return e; }
@@ -430,7 +438,52 @@
     if (p < toks.length) throw new Error("Unexpected " + toks[p].v);
     return fn;
   }
-  GIS.expr = { compile: compile };
+  // properties object -> [feature, index], rebuilt when a lookup misses.
+  var featOf = new WeakMap();
+  function lookup(props) {
+    var hit = featOf.get(props);
+    if (hit) return hit;
+    GIS.layers.forEach(function (l) { if (l.kind === "vector") l.data.features.forEach(function (f, i) { if (f.properties) featOf.set(f.properties, [f, i]); }); });
+    return featOf.get(props);
+  }
+  var RAD = Math.PI / 180, R = 6371008.8; // mean (≈ authalic) radius, close to ellipsoidal areas
+  function ringArea(c) {
+    // Spherical excess (as in Turf / d3): signed area of a lon/lat ring.
+    var s = 0, n = c.length;
+    if (n < 3) return 0;
+    for (var i = 0; i < n; i++) {
+      var a = c[i], b = c[(i + 1) % n], d = c[(i + 2) % n];
+      s += (d[0] - a[0]) * RAD * Math.sin(b[1] * RAD);
+    }
+    return Math.abs(s * R * R / 2);
+  }
+  function polyArea(p) { return p.reduce(function (s, r, k) { return s + (k ? -ringArea(r) : ringArea(r)); }, 0); }
+  function lineLen(c) {
+    var s = 0;
+    for (var i = 1; i < c.length; i++) {
+      var a = c[i - 1], b = c[i], dl = (b[1] - a[1]) * RAD, dn = (b[0] - a[0]) * RAD;
+      var h = Math.sin(dl / 2) * Math.sin(dl / 2) + Math.cos(a[1] * RAD) * Math.cos(b[1] * RAD) * Math.sin(dn / 2) * Math.sin(dn / 2);
+      s += 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(h)));
+    }
+    return s;
+  }
+  function geomVar(v, props) {
+    var fi = props && lookup(props), f = fi && fi[0], g = f && f.geometry;
+    if (v === "$id") return fi ? fi[1] + 1 : null;
+    if (!g) return null;
+    var polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    var lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : [];
+    if (v === "$area") return polys.reduce(function (s, p) { return s + polyArea(p); }, 0);
+    if (v === "$perimeter") return polys.reduce(function (s, p) { return s + p.reduce(function (t, r) { return t + lineLen(r); }, 0); }, 0);
+    if (v === "$length") return lines.length ? lines.reduce(function (s, l) { return s + lineLen(l); }, 0) : polys.reduce(function (s, p) { return s + lineLen(p[0]); }, 0);
+    if (v === "$x" || v === "$y") {
+      var c = g.type === "Point" ? g.coordinates : null;
+      if (!c) { var b = GIS.featureBounds([f]); c = b ? [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2] : null; }
+      return c ? c[v === "$x" ? 0 : 1] : null;
+    }
+    return null;
+  }
+  GIS.expr = { compile: compile, geomVar: geomVar };
 
   function safeName(s) { return String(s || "layer").replace(/[\\/:*?"<>|]+/g, "").replace(/\.(geo)?json$/i, "").trim() || "layer"; }
 
