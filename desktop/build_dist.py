@@ -13,7 +13,11 @@ depend on any of that, so this script:
   4. collects every Iconify icon name used in the code, downloads just those
      icons, and registers them with the <iconify-icon> element, so it never
      calls the Iconify API;
-  5. fails if any CDN URL is left.
+  5. bundles the desktop engines (js/gis/28-desktop-engines.js): DuckDB WASM
+     (its ES module graph from jsDelivr, the worker and the EH build) under
+     vendor/duckdb/, and the spatial, json and parquet extensions under
+     vendor/duckdb-ext/<duckdb version>/wasm_eh/, so SQL works offline;
+  6. fails if any CDN URL is left.
 
 Downloads are cached in desktop/.cache, so rebuilding is quick and works
 offline once the cache is filled. Python standard library only.
@@ -75,6 +79,8 @@ def copy_app() -> None:
     (DIST / "assets").mkdir()
     for f in (ROOT / "assets").glob("logo_*"):
         shutil.copy2(f, DIST / "assets" / f.name)
+    # Fonts and sprites for offline (PMTiles) basemaps.
+    shutil.copytree(ROOT / "assets" / "basemaps-assets", DIST / "assets" / "basemaps-assets")
 
 
 def text_files() -> list[Path]:
@@ -150,6 +156,45 @@ def localize_icons() -> None:
     index.write_text(html, encoding="utf-8")
 
 
+DUCKDB_NPM = "1.32.0"     # @duckdb/duckdb-wasm, as in js/gis/28-desktop-engines.js
+DUCKDB_CORE = "v1.4.3"    # the DuckDB version inside it (select version())
+DUCKDB_EXTENSIONS = ("spatial", "json", "parquet")
+ESM_IMPORT_RE = re.compile(r'"/npm/([^"]+?)/\+esm"')
+
+
+def localize_duckdb() -> None:
+    base = f"https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@{DUCKDB_NPM}"
+    out = DIST / "vendor" / "duckdb"
+    out.mkdir(parents=True, exist_ok=True)
+    done: set[str] = set()
+
+    def esm(url: str, name: str) -> None:
+        # jsDelivr's +esm modules import each other as "/npm/<pkg>@<v>/+esm".
+        if name in done:
+            return
+        done.add(name)
+        src = fetch(url).decode("utf-8")
+        for dep in set(ESM_IMPORT_RE.findall(src)):
+            local = re.sub(r"[^\w.-]+", "_", dep) + ".mjs"
+            esm(f"https://cdn.jsdelivr.net/npm/{dep}/+esm", local)
+            src = src.replace(f'"/npm/{dep}/+esm"', f'"./{local}"')
+        src = re.sub(r"//# sourceMappingURL=\S+", "", src)
+        (out / name).write_text(src, encoding="utf-8")
+
+    esm(f"{base}/+esm", "duckdb.mjs")
+    for f in ("duckdb-browser-eh.worker.js", "duckdb-eh.wasm"):
+        (out / f).write_bytes(fetch(f"{base}/dist/{f}"))
+    ext = DIST / "vendor" / "duckdb-ext" / DUCKDB_CORE / "wasm_eh"
+    ext.mkdir(parents=True, exist_ok=True)
+    for e in DUCKDB_EXTENSIONS:
+        (ext / f"{e}.duckdb_extension.wasm").write_bytes(fetch(f"https://extensions.duckdb.org/{DUCKDB_CORE}/wasm_eh/{e}.duckdb_extension.wasm"))
+    # The CDN base in the engine code is only used in a browser.
+    eng = DIST / "js" / "gis" / "28-desktop-engines.js"
+    eng.write_text(eng.read_text(encoding="utf-8").replace(base, "vendor/duckdb"), encoding="utf-8")
+    size = sum(p.stat().st_size for p in (DIST / "vendor").rglob("*") if "duckdb" in p.as_posix() and p.is_file())
+    print(f"  DuckDB {DUCKDB_CORE} and {', '.join(DUCKDB_EXTENSIONS)}: {size / 1e6:.1f} MB")
+
+
 def check() -> None:
     left = []
     for p in text_files():
@@ -171,6 +216,8 @@ def main() -> None:
     localize_fonts()
     print("Making icons local…")
     localize_icons()
+    print("Bundling the desktop engines…")
+    localize_duckdb()
     check()
 
 

@@ -132,6 +132,7 @@
   function styleFor(id) {
     var b = basemapDef(id);
     if (b.google) return GIS.google ? GIS.google.style(b, styleFor) : styleFor("positron");
+    if (b.offline) return GIS.offline ? GIS.offline.style(b) : styleFor("none");
     if (b.style) return b.style;
     var bg = typeof chartBgColor === "function" ? chartBgColor() : "#ffffff";
     var style = { version: 8, glyphs: GLYPHS, sources: {}, layers: [{ id: "background", type: "background", paint: { "background-color": bg === "rgba(0,0,0,0)" ? "#ffffff" : bg } }] };
