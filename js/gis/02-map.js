@@ -145,8 +145,47 @@
 
   GIS.styleFor = styleFor;
   // Re-apply the basemap on every view (e.g. once a Google session is ready).
+  // Which map a view shows (js/gis/00-store.js "Maps"): the Analysis view
+  // shows the active map; the page's main frame the map chosen for it
+  // (state.layoutMapId) or else the active one; an off-screen view the
+  // map it was made for.
+  function viewMap(v) {
+    if (v && v.mapId) return GIS.mapById(v.mapId) || GIS.activeMap();
+    if (v && !v.analysis && state.layoutMapId) return GIS.mapById(state.layoutMapId) || GIS.activeMap();
+    return GIS.activeMap();
+  }
+  function viewLayers(v) { return viewMap(v || M).layers; }
+  function viewBasemap(v) { return GIS.mapBasemap(viewMap(v)); }
+  GIS.viewMapOf = viewMap;
+
+  // A picture of any map (its layers and basemap) for a map frame on the
+  // page: an off-screen MapLibre map at 2x, drawn once and removed.
+  // o: { w, h, center, zoom, bearing } in page pixels.
+  GIS.renderMapImage = function (mapId, o) {
+    var m = GIS.mapById(mapId);
+    if (!m || typeof maplibregl === "undefined") return Promise.resolve(null);
+    var div = document.createElement("div");
+    div.style.cssText = "position:fixed;left:-10000px;top:0;width:" + Math.round(o.w) + "px;height:" + Math.round(o.h) + "px;";
+    document.body.appendChild(div);
+    var map = new maplibregl.Map({ container: div, style: styleFor(GIS.mapBasemap(m)), center: o.center || [0, 0], zoom: o.zoom || 1, bearing: o.bearing || 0,
+      interactive: false, attributionControl: false, fadeDuration: 0, pixelRatio: 2, preserveDrawingBuffer: true, canvasContextAttributes: { preserveDrawingBuffer: true } });
+    var V = { map: map, keys: {}, offscreen: true, mapId: mapId, analysis: false, loaded: false };
+    return new Promise(function (res) {
+      var done = false;
+      function finish(url) { if (done) return; done = true; try { map.remove(); } catch (e) { } div.remove(); res(url); }
+      map.on("load", function () {
+        V.loaded = true;
+        if (!o.center) { var b = GIS.bounds(m.layers); if (b) map.fitBounds(b, { padding: 12, duration: 0 }); }
+        inView(V, applyLayers);
+        map.once("idle", function () { try { finish(map.getCanvas().toDataURL("image/png")); } catch (e) { finish(null); } });
+      });
+      map.on("error", function () { });
+      setTimeout(function () { try { finish(map.getCanvas().toDataURL("image/png")); } catch (e) { finish(null); } }, 20000);
+    });
+  };
+
   GIS.refreshBasemap = function () {
-    views().forEach(function (v) { v.basemap = state.mapBasemap; try { v.map.setStyle(styleFor(state.mapBasemap), { diff: false }); } catch (e) { } });
+    views().forEach(function (v) { var b = viewBasemap(v); v.basemap = b; try { v.map.setStyle(styleFor(b), { diff: false }); } catch (e) { } });
   };
 
   // Mapzen Global Terrain: the AWS Terrain Tiles (Terrarium encoding),
@@ -240,13 +279,13 @@
 
     var view = opts.analysis ? loadAnalysisView() : s.mapView;
     var mopts = {
-      container: mapDiv, style: styleFor(s.mapBasemap), attributionControl: opts.analysis ? { compact: true } : false,
+      container: mapDiv, style: styleFor(viewBasemap({ analysis: !!opts.analysis })), attributionControl: opts.analysis ? { compact: true } : false,
       canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },
       preserveDrawingBuffer: true, fadeDuration: 0, pixelRatio: window.devicePixelRatio || 1
     };
     if (view) { mopts.center = view.center; mopts.zoom = view.zoom; mopts.bearing = view.bearing || 0; mopts.pitch = view.pitch || 0; }
     var map = new maplibregl.Map(mopts);
-    var V = { gd: opts.analysis ? null : host, host: host, analysis: !!opts.analysis, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, readout: readout, basemap: s.mapBasemap,
+    var V = { gd: opts.analysis ? null : host, host: host, analysis: !!opts.analysis, wrap: wrap, mapDiv: mapDiv, map: map, overlay: overlay, tools: tools, box: box, readout: readout, basemap: viewBasemap({ analysis: !!opts.analysis }),
       keys: {}, interactive: !!opts.analysis, tool: "pan", loaded: false, layerCount: 0, hist: [], histPos: -1, meas: null, moveListeners: [] };
     function run(fn) { return function () { return inView(V, fn, arguments); }; }
     map.boxZoom.disable();
@@ -256,7 +295,7 @@
     map.on("load", run(function () {
       M.loaded = true;
       if (!view) fitAll();
-      M.layerCount = GIS.layers.length;
+      M.layerCount = viewLayers().length;
       if (!M.analysis) syncRatio();
       drawOverlay(); emitView(true);
       if (M.analysis) setTool(M.tool);
@@ -368,7 +407,7 @@
     else M.map.fitBounds(b, { padding: pad, animate: false, maxZoom: maxZoom || 18, bearing: M.map.getBearing() });
     saveView();
   }
-  function fitAll() { fitBounds(GIS.bounds()); }
+  function fitAll() { fitBounds(GIS.bounds(viewLayers())); }
   function zoomToLayer(layer) {
     if (!layer) return;
     if (layer.kind === "xyz") return;
@@ -397,7 +436,7 @@
   // zoomed in). Scales become zoom levels at the current view; page scale
   // and zoom differ by a constant, so the mapping holds at every zoom.
   var curRange = null;
-  function hasScaleRange() { return GIS.layers.some(function (l) { return l.minScale > 0 || l.maxScale > 0; }); }
+  function hasScaleRange() { return viewLayers().some(function (l) { return l.minScale > 0 || l.maxScale > 0; }); }
   function zoomRange(l) {
     if (!(l.minScale > 0) && !(l.maxScale > 0)) return null;
     var cur = GIS.getScale(), z0 = M.map.getZoom();
@@ -433,13 +472,13 @@
     if (!map.isStyleLoaded()) { var v = M; map.once("idle", function () { inView(v, applyLayers); }); return; }
 
     // Drop layers/sources of removed layers.
-    var ids = GIS.layers.map(function (l) { return "gis-" + l.id; });
+    var LAYERS = viewLayers(), ids = LAYERS.map(function (l) { return "gis-" + l.id; });
     map.getStyle().layers.filter(function (L) { return OURS.test(L.id); }).forEach(function (L) { map.removeLayer(L.id); });
     Object.keys(map.getStyle().sources).filter(function (k) { return OURS.test(k) && !ids.some(function (id) { return k === id || k.indexOf(id + "-") === 0; }); })
       .forEach(function (k) { map.removeSource(k); delete M.keys[k]; });
 
     // Bottom of the list first, so the top layer is drawn last.
-    GIS.layers.slice().reverse().forEach(function (l) {
+    LAYERS.slice().reverse().forEach(function (l) {
       var id = "gis-" + l.id, vis = l.visible ? "visible" : "none";
       curRange = zoomRange(l);
       if (l.kind === "xyz") {
@@ -524,6 +563,7 @@
         "text-allow-overlap": ov, "text-ignore-placement": ov, "text-keep-upright": true }, paint: lpaint });
     });
     curRange = null;
+    if (M.offscreen) return;
     drawMeasure();
     drawOverlay();
   }
@@ -724,9 +764,9 @@
 
   function attribution() {
     var parts = [];
-    var b = basemapDef(state.mapBasemap);
+    var b = basemapDef(viewBasemap());
     if (b.attr) parts.push(b.attr);
-    GIS.layers.forEach(function (l) { if ((l.kind === "xyz" || l.kind === "mvt" || l.kind === "vector") && l.visible && l.attribution && parts.indexOf(l.attribution) < 0) parts.push(l.attribution); });
+    viewLayers().forEach(function (l) { if ((l.kind === "xyz" || l.kind === "mvt" || l.kind === "vector") && l.visible && l.attribution && parts.indexOf(l.attribution) < 0) parts.push(l.attribution); });
     return parts.join(" · ");
   }
 
@@ -741,7 +781,7 @@
     var s = state, W = s.chartBox.w, H = s.chartBox.h, inner = innerRect(W, H);
     var svg = d3.select(M.overlay).attr("width", W).attr("height", H).attr("viewBox", "0 0 " + W + " " + H);
     svg.selectAll("*").remove();
-    if (!GIS.layers.length) {
+    if (!viewLayers().length) {
       svg.append("text").attr("x", inner.x + inner.w / 2).attr("y", inner.y + inner.h / 2).attr("text-anchor", "middle").attr("font-size", 13).attr("fill", "#8a8a8a")
         .attr("font-family", s.fontBody).text("Add a layer from the Map panel");
     }
@@ -1043,8 +1083,8 @@
     views().forEach(function (v) {
       inView(v, function () {
         if (!M.analysis && state.chartType !== TYPE) return;
-        var grew = evt === "layers" && M.loaded && GIS.layers.length > (M.layerCount || 0) && !(GIS.digitize && GIS.digitize.active());
-        M.layerCount = GIS.layers.length;
+        var grew = evt === "layers" && M.loaded && viewLayers().length > (M.layerCount || 0) && !(GIS.digitize && GIS.digitize.active());
+        M.layerCount = viewLayers().length;
         applyLayers();
         // A newly added layer is framed, unless the layout map is locked.
         if (grew && (M.analysis || !state.mapLock)) zoomToLayer(GIS.active());
@@ -1106,7 +1146,8 @@
     M.map.resize();
     syncRatio();
     if (ANALYSIS && ANALYSIS.basemap !== s.mapBasemap) { ANALYSIS.basemap = s.mapBasemap; ANALYSIS.map.setStyle(styleFor(s.mapBasemap), { diff: false }); }
-    if (M.basemap !== s.mapBasemap) { M.basemap = s.mapBasemap; M.map.setStyle(styleFor(s.mapBasemap), { diff: false }); return; }
+    var lb = viewBasemap(M);
+    if (M.basemap !== lb) { M.basemap = lb; M.map.setStyle(styleFor(lb), { diff: false }); return; }
     applyLayers();
     emitView(true);
   };

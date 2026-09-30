@@ -634,6 +634,7 @@
   function rebuild(obj) {
     if (!fc() || !obj || !obj.gisItem) return;
     var type = obj.gisItem, o = obj.gisOpts;
+    if (type === "mapframe") { if (GIS.mapFrames) GIS.mapFrames.rebuild(obj); return; }
     if (type === "inset") {
       renderInset(o).then(function (url) {
         if (!url || fc().getObjects().indexOf(obj) < 0) return;
@@ -709,7 +710,7 @@
     //   north      proportional size, redrawn crisp
     canvas.on("object:modified", function (e) {
       var o = e.target;
-      if (!o || !o.gisItem || o.gisItem === "inset") return;
+      if (!o || !o.gisItem || o.gisItem === "inset" || o.gisItem === "mapframe") return;
       var sx = o.scaleX || 1, sy = o.scaleY || 1;
       if (Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) return;
       var w = o.width, h = o.height, dw = w * sx - w, dh = h * sy - h, p = o.gisOpts, patch = {};

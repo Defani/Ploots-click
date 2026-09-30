@@ -1707,6 +1707,14 @@ body.gis-carto #canvasStage{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .gis-attr-dock.editing{box-shadow:inset 0 3px 0 #e5484d}
 .gis-attr-bar button:disabled{opacity:.35;cursor:default}
 #paneGis .gis-attr-dock{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;flex:none;height:260px;border-top:1px solid var(--line)}
+/* Maps (js/gis/26-maps.js) */
+.gmaps-bar{display:flex;align-items:center;gap:3px;margin:8px 0 6px;padding:4px 4px 4px 8px;border:1px solid var(--line-strong);border-radius:9px;background:var(--panel-2)}
+.gmaps-bar>.material-symbols-outlined{font-size:18px;color:var(--accent)}
+.gmaps-bar select{flex:1;min-width:0;border:none!important;background:none!important;font-weight:600;font-size:12.5px;padding:3px 2px!important}
+.gmaps-bar button{width:26px!important;height:26px;padding:0!important;border:none!important;background:none!important;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--ink-soft)}
+.gmaps-bar button:hover:not(:disabled){background:var(--panel)!important;color:var(--ink)}
+.gmaps-bar button:disabled{opacity:.35}
+.gmaps-bar button .material-symbols-outlined{font-size:17px}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3260,6 +3268,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/22-animation.js"></script>
 <script src="js/gis/23-gee.js"></script>
 <script src="js/gis/24-sld.js"></script>
+<script src="js/gis/26-maps.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>

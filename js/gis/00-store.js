@@ -20,9 +20,16 @@
    items), legendName, filter (expression, see GIS.expr), minScale/maxScale
    (scale-dependent visibility, 1:N; 0 = no limit), showCount.
 
+   Maps (like ArcGIS Pro): the project holds several maps, each with its
+   own layers, basemap and last view. GIS.layers is always the active map's
+   list (the same array), so everything that works on "the layers" works
+   on the active map. The page's main map frame can show another map
+   (state.layoutMapId), and more map frames can be placed on the page
+   (js/gis/26-maps.js).
+
    Events (PlootsGIS.on): "layers" (added/removed/reordered/renamed),
    "style" (symbology or visibility), "data" (features edited),
-   "selection", "active".
+   "selection", "active", "maps" (maps added, renamed, removed, switched).
    ========================================================================== */
 (function () {
   "use strict";
@@ -59,7 +66,7 @@
   ensureState();
 
   var listeners = {};
-  var nextId = 1;
+  var nextId = 1, nextMap = 2;
 
   var GIS = window.PlootsGIS = {
     TYPE: TYPE,
@@ -76,6 +83,58 @@
     },
 
     get: function (id) { return GIS.layers.filter(function (l) { return l.id === id; })[0] || null; },
+
+    /* ------------------------------------------------------------ maps */
+    maps: [],
+    activeMapId: null,
+    mapById: function (id) { return GIS.maps.filter(function (m) { return m.id === id; })[0] || null; },
+    activeMap: function () { return GIS.mapById(GIS.activeMapId) || GIS.maps[0]; },
+    // Basemap of a map: the active one's lives in state.mapBasemap.
+    mapBasemap: function (m) { return m === GIS.activeMap() ? state.mapBasemap : m.basemap; },
+    setActiveMap: function (id) {
+      var next = GIS.mapById(id), cur = GIS.activeMap();
+      if (!next || next === cur) return;
+      cur.basemap = state.mapBasemap;
+      cur.activeId = GIS.activeId;
+      if (GIS.analysis && GIS.analysis.map && GIS.analysis.map()) { var am = GIS.analysis.map(), c = am.getCenter(); cur.view = { center: [c.lng, c.lat], zoom: am.getZoom(), bearing: am.getBearing(), pitch: am.getPitch() }; }
+      GIS.activeMapId = next.id;
+      GIS.layers = next.layers;
+      GIS.activeId = next.activeId || (next.layers[0] && next.layers[0].id) || null;
+      state.mapBasemap = next.basemap || state.mapBasemap;
+      GIS.emit("maps", next);
+      GIS.emit("layers");
+      if (GIS.refreshBasemap) GIS.refreshBasemap();
+      if (next.view && GIS.analysis && GIS.analysis.map && GIS.analysis.map()) GIS.analysis.map().jumpTo(next.view);
+    },
+    addMap: function (name, from) {
+      var m = { id: "M" + (nextMap++), name: name || "Map " + nextMap, layers: [], basemap: from ? GIS.mapBasemap(from) : state.mapBasemap, activeId: null, view: null };
+      if (from) {
+        m.layers = from.layers.map(function (l) {
+          var c = Object.assign({}, l, { id: "L" + (nextId++) });
+          if (l.data) c.data = JSON.parse(JSON.stringify(l.data));
+          if (l.style) c.style = JSON.parse(JSON.stringify(l.style));
+          if (l.selection) c.selection = new Set();
+          return c;
+        });
+        m.view = from.view;
+      }
+      GIS.maps.push(m);
+      GIS.emit("maps", m);
+      return m;
+    },
+    renameMap: function (id, name) { var m = GIS.mapById(id); if (m && name) { m.name = name; GIS.emit("maps", m); } },
+    removeMap: function (id) {
+      if (GIS.maps.length < 2) throw new Error("A project keeps at least one map.");
+      var m = GIS.mapById(id);
+      if (!m) return;
+      if (m === GIS.activeMap()) GIS.setActiveMap(GIS.maps.filter(function (x) { return x !== m; })[0].id);
+      GIS.maps.splice(GIS.maps.indexOf(m), 1);
+      if (state.layoutMapId === id) state.layoutMapId = null;
+      GIS.emit("maps");
+      GIS.emit("layers");
+    },
+    // A layer by id in any map.
+    findLayer: function (id) { for (var i = 0; i < GIS.maps.length; i++) { var l = GIS.maps[i].layers.filter(function (x) { return x.id === id; })[0]; if (l) return l; } return null; },
     STYLE_DEFAULTS: STYLE_DEFAULTS,
     // Fills in style keys added after a layer was created.
     ensureStyle: function (l) {
@@ -184,7 +243,9 @@
     },
 
     remove: function (id) {
-      GIS.layers = GIS.layers.filter(function (l) { return l.id !== id; });
+      // In place: the array belongs to the active map.
+      var at = GIS.layers.findIndex(function (l) { return l.id === id; });
+      if (at >= 0) GIS.layers.splice(at, 1);
       if (GIS.activeId === id) GIS.activeId = GIS.layers[0] ? GIS.layers[0].id : null;
       GIS.emit("layers");
     },
@@ -317,6 +378,8 @@
       GIS.download(csv, safeName(layer.name) + (selectedOnly ? "_selected" : "") + ".csv", "text/csv");
     }
   };
+  GIS.maps.push({ id: "M1", name: "Map 1", layers: GIS.layers, basemap: state.mapBasemap, activeId: null, view: null });
+  GIS.activeMapId = "M1";
 
   /* ------------------------------------------------------ expressions */
   // A small QGIS-style expression language for filters and "select by

@@ -27,6 +27,7 @@
       '<div class="side-section-body" id="' + id + '">' + (body || "") + "</div></div>";
   }
 
+  function sym(n) { return '<span class="material-symbols-outlined">' + n + "</span>"; }
   function field(label, control) { return '<label class="field-label">' + label + "</label>" + control; }
   function pair(a, b) { return '<div class="num-pair" style="margin-top:8px;"><div>' + a + "</div><div>" + b + "</div></div>"; }
   function num(bind, v, min, max, step) { return '<input type="number" data-bind="' + bind + '" value="' + esc(v) + '"' + (min != null ? ' min="' + min + '"' : "") + (max != null ? ' max="' + max + '"' : "") + ' step="' + (step || "any") + '">'; }
@@ -371,6 +372,7 @@
   function renderView() {
     var v = $("gisView");
     if (v) v.innerHTML =
+      (GIS.maps.length > 1 ? field("Map in this frame", select("map:layoutMapId", [["", "Active map (" + GIS.activeMap().name + ")"]].concat(GIS.maps.map(function (m) { return [m.id, m.name]; })), state.layoutMapId || "")) : "") +
       pair(field("Scale 1:", '<input type="number" id="gisScale" min="1" step="1">'), field("Rotation (°)", '<input type="number" id="gisRotation" step="1">')) +
       check("map:mapLock", state.mapLock, "Lock map (no pan / zoom)") +
       '<button id="gisMoveBtn" class="btn-primary" style="width:100%;margin-top:10px;"' + (state.mapLock ? " disabled" : "") + '><span class="material-symbols-outlined">open_with</span>Move content</button>' +
@@ -458,6 +460,11 @@
       h += pair(field("Ticks", num("item:ticks", p.ticks, 2, 12, 1)), field("Decimals", select("item:decimals", [[-1, "Auto"], [0, "0"], [1, "1"], [2, "2"], [3, "3"]], p.decimals)));
       h += pair(field("Font size", num("item:fontSize", p.fontSize, 6, 30, 1)), field("Color", color("item:color", p.color)));
       h += check("item:frame", p.frame, "Background frame");
+    } else if (o.gisItem === "mapframe") {
+      h += field("Map", select("item:mapId", GIS.maps.map(function (m) { return [m.id, m.name]; }), p.mapId));
+      h += '<div class="gis-layer-actions" style="margin-top:8px;"><button data-mf="view" title="Show the extent of the Analysis map">' + sym("travel_explore") + 'Analysis view</button><button data-mf="fit">' + sym("fit_screen") + "Fit layers</button></div>" +
+        '<div class="gis-layer-actions"><button data-mf="in">' + sym("zoom_in") + 'Zoom in</button><button data-mf="out">' + sym("zoom_out") + "Zoom out</button></div>";
+      h += pair(field("Frame width", num("item:frameWidth", p.frameWidth, 0, 8, 0.5)), field("Frame color", color("item:frameColor", p.frameColor)));
     } else if (o.gisItem === "inset") {
       h += field("Basemap", select("item:basemap", GIS.BASEMAPS.map(function (b) { return [b.id, b.label]; }), p.basemap));
       h += pair(field("Zoom offset", num("item:zoomOffset", p.zoomOffset, -12, 0, 1)), field("Extent color", color("item:extentColor", p.extentColor)));
@@ -538,7 +545,7 @@
       if (key === "mapGridUtmZone") state[key] = +v;
       if (key === "mapGridType") state.mapGridInterval = 0; // degrees vs metres
       if (key === "mapLock") { if (v && GIS.mapActions) GIS.mapActions.setInteractive(false); renderView(); }
-      if (key === "mapGridType") renderView();
+      if (key === "mapGridType" || key === "layoutMapId") renderView();
       if (typeof render === "function" && state.chartType === TYPE) render();
       if (typeof historyNotifyChange === "function") historyNotifyChange();
     } else if (scope === "item") {
@@ -582,6 +589,7 @@
         GIS.emit("style"); renderStyle();
       }
       else if (b.dataset.add) { enterMapMode(); GIS.items.add(b.dataset.add); }
+      else if (b.dataset.mf) { var mfo = selectedItem(); if (mfo && GIS.mapFrames) GIS.mapFrames.action(mfo, b.dataset.mf); }
       else if (b.dataset.north) { var no = selectedItem(); if (no) { GIS.items.update(no, { style: b.dataset.north }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisLegendFit") { var lo = selectedItem(); if (lo) { GIS.items.update(lo, { boxW: 0, boxH: 0 }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisMoveBtn") GIS.mapActions && GIS.mapActions.setInteractive(true);
