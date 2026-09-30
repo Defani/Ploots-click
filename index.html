@@ -1532,7 +1532,9 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 .gis-layer-rename{flex:1;min-width:0;padding:2px 6px!important;font-size:12.5px;border:1px solid var(--accent)!important;border-radius:5px;background:var(--panel)!important;color:var(--ink)}
 #gisLayerList:focus{outline:none}
 /* Location search (js/gis/18-locator.js) */
-.gisw-map .gis-map-tools{left:auto;right:12px;transform:none;max-width:calc(100% - 360px)}
+.gisw-map{container-type:inline-size}
+.gisw-map .gis-map-tools{left:auto;right:12px;transform:none;max-width:calc(100% - 24px);flex-wrap:nowrap}
+@container (max-width:780px){.gisw-map .gis-map-tools{top:58px;left:12px;right:auto;flex-wrap:wrap;justify-content:flex-start}}
 .gloc{position:absolute;left:12px;top:12px;z-index:6;width:min(330px,calc(100% - 24px))}
 .gloc-bar{display:flex;align-items:center;gap:6px;height:38px;padding:0 6px 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.22)}
 .gloc-bar>.material-symbols-outlined{font-size:19px;color:var(--ink-soft)}
@@ -1554,6 +1556,38 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 .gloc-row button:hover{color:var(--accent);background:var(--accent-soft)!important}
 .gloc-row button .material-symbols-outlined{font-size:18px}
 .gloc-note{padding:6px 8px 4px;font-size:11px;color:var(--ink-soft)}
+/* Processing toolbox (js/gis/13-processing.js) */
+.gproc-box{padding:10px 10px 16px}
+.gproc-search{display:flex;align-items:center;gap:6px;padding:4px 10px;margin-bottom:8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel-2)}
+.gproc-search .material-symbols-outlined{font-size:17px;color:var(--ink-soft)}
+.gproc-search input{flex:1;border:none!important;background:none!important;outline:none;padding:4px 0!important;font-size:12.5px;color:var(--ink)}
+.gproc-fhead,.gproc-tool{display:flex;align-items:center;gap:7px;width:100%;padding:6px 6px!important;border:none!important;background:none!important;border-radius:6px;color:var(--ink);cursor:pointer;text-align:left;font-size:12.5px}
+.gproc-fhead:hover,.gproc-tool:hover{background:var(--panel-2)!important}
+.gproc-fhead{font-weight:600}
+.gproc-fhead em{margin-left:auto;font-style:normal;font-weight:500;font-size:11px;color:var(--ink-soft)}
+.gproc-fhead .material-symbols-outlined{font-size:18px;color:#d9a441}
+.gproc-fhead .gproc-chev{color:var(--ink-soft);font-size:18px;transition:transform .15s}
+.gproc-folder.open .gproc-chev{transform:rotate(90deg)}
+.gproc-items{display:none;padding-left:22px}
+.gproc-folder.open .gproc-items{display:block}
+.gproc-tool .material-symbols-outlined{font-size:17px;color:var(--accent)}
+.gproc-empty{padding:12px;color:var(--ink-soft)}
+.gproc-dlg{width:440px}
+.gproc-dlg .gis-dlg-head>span{display:flex;align-items:center;gap:7px}
+.gproc-dlg .gis-dlg-head>span .material-symbols-outlined{font-size:19px;color:var(--accent)}
+.gproc-dlg .gis-dlg-head em{font-style:normal;font-weight:500;font-size:11px;color:var(--ink-soft);margin-left:4px}
+.gproc-help{margin:0 0 6px;font-size:12px;color:var(--ink-soft);line-height:1.45}
+.gproc-geom{font-style:normal;font-size:10px;padding:0 5px;border-radius:4px;background:var(--panel-2);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+.gproc-sel{margin-top:4px;font-size:12px}
+.gproc-msg{margin-top:12px;padding:8px 10px;border-radius:7px;background:var(--accent-soft);font-size:12px}
+.gproc-msg.err{background:rgba(242,72,34,.12);color:var(--danger)}
+.gproc-result{margin-top:10px}
+.gproc-table{width:100%;border-collapse:collapse;font-size:12px}
+.gproc-table th{text-align:left;font-weight:500;color:var(--ink-soft);padding:4px 6px;border-bottom:1px solid var(--line)}
+.gproc-table td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.gproc-dlg [data-run]{display:flex;align-items:center;gap:4px}
+.gproc-dlg [data-run] .material-symbols-outlined{font-size:18px}
+.gproc-menu{min-width:230px}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3095,6 +3129,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/10-bridge.js"></script>
 <script src="js/gis/11-kobo.js"></script>
 <script src="js/gis/12-workspace.js"></script>
+<script src="js/gis/13-processing.js"></script>
 <script src="js/gis/14-ramp-picker.js"></script>
 <script src="js/gis/15-google-tiles.js"></script>
 <script src="js/gis/16-logos.js"></script>

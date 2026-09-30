@@ -148,7 +148,9 @@
   var toolsBtn = button('construction', 'Tools', 'Map tools', 'tb-drop');
   var gridBtn = button('grid_4x4', 'Grid', 'Coordinate grid');
   var itemsBtn = button('dashboard_customize', 'Map items', 'Add a layout item', 'tb-drop');
-  [addBtn, bmBtn, attrBtn, moveBtn, toolsBtn, gridBtn, itemsBtn].forEach(function (b) { mapGroup.appendChild(b); });
+  var geoBtn = button('hub', 'Geoprocessing', 'Geoprocessing tools and the Processing toolbox', 'tb-drop');
+  [addBtn, bmBtn, attrBtn, moveBtn, toolsBtn, geoBtn, gridBtn, itemsBtn].forEach(function (b) { mapGroup.appendChild(b); });
+  geoBtn.addEventListener('click', function () { if (GIS.processing) GIS.processing.menu(geoBtn); });
   // Page-only map buttons (hidden in the Analysis view).
   [moveBtn, gridBtn, itemsBtn].forEach(function (b) { b.classList.add('tb-carto'); });
 
