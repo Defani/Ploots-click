@@ -54,6 +54,7 @@ const PRECACHE_URLS = [
   "./js/gis/17-basemap-gallery.js",
   "./js/gis/18-locator.js",
   "./js/gis/19-gfw.js",
+  "./js/gis/20-cartography.js",
   "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",

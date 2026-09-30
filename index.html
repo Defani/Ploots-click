@@ -1626,6 +1626,25 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 .gfw-res table th{font-weight:500}
 .gfw-res #gfwCsv{width:100%;margin-top:10px}
 .gfw-foot{margin:18px 0 0;font-size:10.5px;color:var(--ink-soft)}
+/* Cartography view (js/gis/20-cartography.js) */
+body.gis-carto .tb-ana,
+body.gis-carto .nav-btn[data-panel="panel-gis-toolbox"],body.gis-carto .nav-btn[data-panel="panel-gis-gfw"],
+body.gis-carto .nav-btn[data-panel="panel-catalog"],body.gis-carto .nav-btn[data-panel="panel-kobo"],
+body.gis-carto .nav-add,body.gis-carto .nav-add-sep{display:none!important}
+.carto-bar{display:none}
+body.gis-carto .carto-bar{display:flex;position:absolute;top:30px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:4px;padding:4px;max-width:calc(100% - 48px);overflow-x:auto;scrollbar-width:none;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.carto-grp{display:flex;align-items:center;gap:1px;padding:0 3px;border-right:1px solid var(--line)}
+.carto-grp:last-child{border-right:none}
+.carto-bar button{display:flex;align-items:center;gap:5px;flex:none;height:30px;padding:0 7px!important;border:none!important;background:none!important;border-radius:7px;color:var(--ink);cursor:pointer;font-size:12px;white-space:nowrap}
+.carto-bar button:hover{background:var(--panel-2)!important}
+.carto-bar button .material-symbols-outlined{font-size:19px;color:var(--ink-soft)}
+.carto-bar button:hover .material-symbols-outlined{color:#d98a1c}
+.carto-menu{min-width:240px}
+/* Cartography looks like a drafting table */
+body.gis-carto #canvasScroll{background-color:#2a2622;background-image:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.2px);background-size:18px 18px}
+html:not([data-theme=dark]) body.gis-carto #canvasScroll{background-color:#e9e4da;background-image:radial-gradient(rgba(0,0,0,.08) 1px,transparent 1.2px)}
+body.gis-carto .gisw-seg button.active[data-v="cartography"]{color:#d98a1c}
+body.gis-carto #canvasStage{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3174,6 +3193,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/17-basemap-gallery.js"></script>
 <script src="js/gis/18-locator.js"></script>
 <script src="js/gis/19-gfw.js"></script>
+<script src="js/gis/20-cartography.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
