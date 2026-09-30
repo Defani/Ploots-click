@@ -51,6 +51,8 @@
   function latestYear(s) { var m = String(s).match(/(19|20)\d\d/g); return m ? Math.max.apply(null, m.map(Number)) : 0; }
   function nice(s) { return String(s).replace(/_/g, " "); }
   function enter() { GIS.enterMapMode(); }
+  // Provider logo (js/gis/16-logos.js).
+  function lg(id, s) { return GIS.logos ? GIS.logos.html(id, s || 16) : ""; }
 
   /* ------------------------------------------------------------ panel */
 
@@ -62,10 +64,13 @@
     p.innerHTML =
       '<div class="sp-head"><span class="sp-title">Data catalog</span><button type="button" class="sp-close" title="Close panel"><span class="material-symbols-outlined">keyboard_double_arrow_left</span></button></div>' +
       '<div class="cat-body">' +
-        '<div class="toggle-group cat-tabs"><button data-tab="gov" class="active">Government</button><button data-tab="gfw">GFW</button><button data-tab="bio">Species</button></div>' +
+        '<div class="toggle-group cat-tabs"><button data-tab="gov" class="active">Government</button><button data-tab="gfw">' + lg("gfw", 14) + 'GFW</button><button data-tab="bio">Species</button></div>' +
 
         '<div class="cat-pane" data-pane="gov">' +
-          '<select id="catServer">' + SERVERS.map(function (s) { return '<option value="' + s.id + '">' + esc(s.label) + "</option>"; }).join("") + '<option value="custom">Other ArcGIS server…</option></select>' +
+          '<div class="cat-servers" id="catServers">' + SERVERS.map(function (s) {
+            return '<button type="button" data-server="' + s.id + '"' + (s === SERVERS[0] ? ' class="active"' : "") + ">" + lg(s.id, 22) + "<span>" + esc(s.label) + "</span></button>";
+          }).join("") + '<button type="button" data-server="custom">' + lg("arcgis", 22) + "<span>Other ArcGIS server…</span></button></div>" +
+          '<select id="catServer" hidden>' + SERVERS.map(function (s) { return '<option value="' + s.id + '">' + esc(s.label) + "</option>"; }).join("") + '<option value="custom">Other ArcGIS server…</option></select>' +
           '<div id="catCustomWrap" style="display:none;"><input type="text" id="catCustomUrl" placeholder="https://…/arcgis/rest/services" style="margin-top:6px;"><button id="catCustomGo" style="width:100%;margin-top:6px;">Open</button></div>' +
           '<div class="cat-row"><input type="search" id="catGovFilter" placeholder="Filter"><label class="cat-check"><input type="checkbox" id="catNewest" checked>Newest first</label></div>' +
           '<div class="cat-crumbs" id="catCrumbs"></div>' +
@@ -80,7 +85,7 @@
         "</div>" +
 
         '<div class="cat-pane" data-pane="bio" style="display:none;">' +
-          '<div class="toggle-group" style="margin-top:2px;"><button data-src="gbif" class="active">GBIF</button><button data-src="inat">iNaturalist</button></div>' +
+          '<div class="toggle-group" style="margin-top:2px;"><button data-src="gbif" class="active">' + lg("gbif", 16) + 'GBIF</button><button data-src="inat">' + lg("inat", 16) + 'iNaturalist</button></div>' +
           '<label class="field-label">Taxon</label>' +
           '<div class="cat-ac"><input type="text" id="catTaxon" placeholder="e.g. Rhizophora, Nasalis larvatus" autocomplete="off"><div class="cat-ac-list" id="catTaxonList"></div></div>' +
           '<div class="cat-picked" id="catPicked"></div>' +
@@ -136,6 +141,14 @@
   var gov = { server: SERVERS[0], path: "", items: [], loaded: false, service: null };
 
   function wireGov() {
+    $("catServers").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-server]");
+      if (!b) return;
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("active", x === b); });
+      var sel = $("catServer");
+      sel.value = b.dataset.server;
+      sel.dispatchEvent(new Event("change"));
+    });
     $("catServer").addEventListener("change", function () {
       var custom = this.value === "custom";
       $("catCustomWrap").style.display = custom ? "" : "none";

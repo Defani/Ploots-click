@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v15";
+const CACHE_NAME = "ploots-click-v16";
 
 const PRECACHE_URLS = [
   "./",
@@ -48,6 +48,9 @@ const PRECACHE_URLS = [
   "./js/gis/11-kobo.js",
   "./js/gis/12-workspace.js",
   "./js/gis/14-ramp-picker.js",
+  "./js/gis/15-google-tiles.js",
+  "./js/gis/16-logos.js",
+  "./js/gis/17-basemap-gallery.js",
   "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",

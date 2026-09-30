@@ -619,7 +619,9 @@
       if (GIS.attributeTable.isOpen()) GIS.attributeTable.hide();
       else { var l = GIS.active(); GIS.attributeTable.show(l && l.kind === "vector" ? l.id : null); }
     });
-    $("gisBasemap").addEventListener("change", function () { state.mapBasemap = this.value; if (state.chartType === TYPE) render(); });
+    $("gisBasemap").addEventListener("change", function () {
+      state.mapBasemap = this.value; if (state.chartType === TYPE) render(); if (GIS.refreshBasemap) GIS.refreshBasemap();
+    });
     wireLayerList();
   }
 

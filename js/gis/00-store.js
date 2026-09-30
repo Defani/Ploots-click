@@ -30,7 +30,7 @@
   var TYPE = "geojson-map";
 
   var MAP_DEFAULTS = {
-    mapBasemap: "positron",
+    mapBasemap: "google-roadmap",
     mapView: null,          // { center, zoom, bearing, pitch }
     mapLock: false,
     mapFrame: true, mapFrameWidth: 1, mapFrameColor: "#1a1a1a",

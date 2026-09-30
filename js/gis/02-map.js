@@ -37,9 +37,15 @@
   var FONT = ["Noto Sans Regular"];
   var OSM = "© OpenStreetMap contributors";
   var ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+  var MAPZEN = "Terrain Tiles: Mapzen / AWS Open Data (SRTM, GMTED, ETOPO1 and others)";
   // Yesterday (UTC): the newest complete day of NASA's daily VIIRS mosaic.
   var GIBS_DAY = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
   var BASEMAPS = [
+    // Google Maps via the Map Tiles API (js/gis/15-google-tiles.js); needs the user's own API key.
+    { id: "google-roadmap", group: "Google Maps", label: "Google Maps", google: "roadmap", attr: "Map data © Google" },
+    { id: "google-satellite", group: "Google Maps", label: "Google Satellite", google: "satellite", attr: "Imagery © Google" },
+    { id: "google-hybrid", group: "Google Maps", label: "Google Hybrid", google: "hybrid", attr: "Imagery and map data © Google" },
+    { id: "google-terrain", group: "Google Maps", label: "Google Terrain", google: "terrain", attr: "Map data © Google" },
     { id: "positron", group: "Vector (OpenFreeMap)", label: "Positron", style: "https://tiles.openfreemap.org/styles/positron", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
     { id: "bright", group: "Vector (OpenFreeMap)", label: "Bright", style: "https://tiles.openfreemap.org/styles/bright", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
     { id: "liberty", group: "Vector (OpenFreeMap)", label: "Liberty", style: "https://tiles.openfreemap.org/styles/liberty", attr: "© OpenFreeMap © OpenMapTiles " + OSM },
@@ -61,10 +67,7 @@
     { id: "osm", group: "Streets", label: "OpenStreetMap", tiles: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", attr: OSM, maxzoom: 19 },
     { id: "osm-hot", group: "Streets", label: "OpenStreetMap Humanitarian", tiles: "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", attr: OSM + ", tiles by HOT / OSM France", maxzoom: 19 },
     { id: "cyclosm", group: "Streets", label: "CyclOSM", tiles: "https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", attr: OSM + ", CyclOSM", maxzoom: 19 },
-    { id: "carto-voyager", group: "Streets", label: "CARTO Voyager", tiles: "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
     { id: "esri-street", group: "Streets", label: "Esri World Street Map", tiles: ESRI + "World_Street_Map/MapServer/tile/{z}/{y}/{x}", attr: "Esri" },
-    { id: "carto-light", group: "Light & dark", label: "CARTO Light", tiles: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
-    { id: "carto-dark", group: "Light & dark", label: "CARTO Dark", tiles: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", attr: "© CARTO " + OSM },
     { id: "esri-lightgray", group: "Light & dark", label: "Esri Light Gray", tiles: ESRI + "Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri", maxzoom: 16 },
     { id: "esri-darkgray", group: "Light & dark", label: "Esri Dark Gray", tiles: ESRI + "Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", attr: "Esri", maxzoom: 16 },
     { id: "gbif-classic", group: "GBIF", label: "GBIF Classic", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-classic", attr: "GBIF, " + OSM },
@@ -74,8 +77,51 @@
     { id: "gbif-tuatara", group: "GBIF", label: "GBIF Tuatara", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-tuatara", attr: "GBIF, " + OSM },
     { id: "gbif-middle", group: "GBIF", label: "GBIF Middle", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=gbif-middle", attr: "GBIF, " + OSM },
     { id: "gbif-osm-bright", group: "GBIF", label: "GBIF OSM Bright", tiles: "https://tile.gbif.org/3857/omt/{z}/{x}/{y}@1x.png?style=osm-bright", attr: "GBIF, " + OSM },
+    {"id": "gl-osm-de", "group": "Regional", "label": "OpenStreetMap DE", "tiles": "https://tile.openstreetmap.de/{z}/{x}/{y}.png", "attr": OSM},
+    {"id": "gl-osm-ch", "group": "Regional", "label": "OpenStreetMap CH", "tiles": "https://tile.osm.ch/switzerland/{z}/{x}/{y}.png", "attr": OSM},
+    {"id": "gl-esri-world-light-gray-reference", "group": "Labels & overlays", "label": "Esri World Light Gray Reference", "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", "attr": "Esri"},
+    {"id": "gl-esri-world-dark-gray-reference", "group": "Labels & overlays", "label": "Esri World Dark Gray Reference", "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", "attr": "Esri"},
+    {"id": "gl-eox-terrain-light", "group": "Topographic", "label": "EOX Terrain Light", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/terrain-light_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-eox-terrain", "group": "Topographic", "label": "EOX Terrain", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/terrain_3857/default/g/{z}/{y}/{x}.jpg", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-eox-overlay", "group": "Labels & overlays", "label": "EOX Overlay", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/overlay_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.png", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-eox-overlay-bright", "group": "Labels & overlays", "label": "EOX Overlay Bright", "tiles": "https://tiles.maps.eox.at/wmts/1.0.0/overlay_bright_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.png", "attr": "EOX IT Services, " + OSM, "maxzoom": 14},
+    {"id": "gl-nasa-gibs-aster-gdem-shaded-relief", "group": "Topographic", "label": "NASA ASTER GDEM Shaded Relief", "tiles": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/ASTER_GDEM_Greyscale_Shaded_Relief/default/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpg", "attr": "Imagery provided by NASA Global Imagery Browse Services", "maxzoom": 12},
+    {"id": "gl-nasa-gibs-modis-terra-true-color", "group": "Imagery", "label": "NASA MODIS Terra True Color", "tiles": "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/MODIS_Terra_CorrectedReflectance_TrueColor/default//GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg", "attr": "Imagery provided by NASA Global Imagery Browse Services", "maxzoom": 9},
+    {"id": "gl-nasa-gibs-viirs-earth-at-night", "group": "Imagery", "label": "NASA VIIRS Earth At Night 2012", "tiles": "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/VIIRS_CityLights_2012/default//GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg", "attr": "Imagery provided by NASA Global Imagery Browse Services", "maxzoom": 8},
+    {"id": "gl-openrailwaymap", "group": "Transport", "label": "OpenRailwayMap", "tiles": "https://a.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-openrailwaymap-maxspeed", "group": "Transport", "label": "OpenRailwayMap Maxspeed", "tiles": "https://a.tiles.openrailwaymap.org/maxspeed/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-openrailwaymap-electrification", "group": "Transport", "label": "OpenRailwayMap Electrification", "tiles": "https://a.tiles.openrailwaymap.org/electrification/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-openrailwaymap-signals", "group": "Transport", "label": "OpenRailwayMap Signals", "tiles": "https://a.tiles.openrailwaymap.org/signals/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: OpenRailwayMap"},
+    {"id": "gl-swisstopo-national-map-color", "group": "Regional", "label": "Swiss National Map Color", "tiles": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg", "attr": "© swisstopo", "maxzoom": 18},
+    {"id": "gl-swisstopo-national-map-grey", "group": "Regional", "label": "Swiss National Map Grey", "tiles": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", "attr": "© swisstopo", "maxzoom": 18},
+    {"id": "gl-swisstopo-swissimage", "group": "Imagery", "label": "SWISSIMAGE", "tiles": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg", "attr": "© swisstopo", "maxzoom": 18},
+    {"id": "gl-topplusopen-color", "group": "Regional", "label": "TopPlusOpen Color", "tiles": "https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web/default/WEBMERCATOR/{z}/{y}/{x}.png", "attr": "Map data: © dl-de/by-2-0", "maxzoom": 18},
+    {"id": "gl-topplusopen-grey", "group": "Regional", "label": "TopPlusOpen Grey", "tiles": "https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web_grau/default/WEBMERCATOR/{z}/{y}/{x}.png", "attr": "Map data: © dl-de/by-2-0", "maxzoom": 18},
+    {"id": "gl-usgs-us-imagery", "group": "Imagery", "label": "USGS US Imagery", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-imagery-topo", "group": "Imagery", "label": "USGS US Imagery Topo", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-topo", "group": "Topographic", "label": "USGS US Topo", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-hydro", "group": "Labels & overlays", "label": "USGS US Hydrography", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSHydroCached/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-usgs-us-shaded-relief", "group": "Topographic", "label": "USGS US Shaded Relief", "tiles": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSShadedReliefOnly/MapServer/tile/{z}/{y}/{x}", "attr": "Tiles courtesy of the U.S. Geological Survey"},
+    {"id": "gl-waymarkedtrails-hiking", "group": "Outdoor", "label": "Waymarked Trails Hiking", "tiles": "https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-waymarkedtrails-cycling", "group": "Outdoor", "label": "Waymarked Trails Cycling", "tiles": "https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-waymarkedtrails-mtb", "group": "Outdoor", "label": "Waymarked Trails MTB", "tiles": "https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-waymarkedtrails-slopes", "group": "Outdoor", "label": "Waymarked Trails Slopes", "tiles": "https://tile.waymarkedtrails.org/slopes/{z}/{x}/{y}.png", "attr": "Map data: © OpenStreetMap contributors | Map style: Waymarked Trails"},
+    {"id": "gl-openbasiskaart", "group": "Regional", "label": "Openbasiskaart", "tiles": "https://www.openbasiskaart.nl/mapcache/wmts/1.0.0/osm-g/default/g/{z}/{y}/{x}.png", "attr": "Map data © OpenStreetMap contributors | Openbasiskaart", "maxzoom": 18},
+    { id: "mapzen-hillshade", group: "Terrain (Mapzen DEM)", label: "Mapzen Global Terrain — hillshade", dem: "hillshade", attr: MAPZEN },
+    { id: "mapzen-relief", group: "Terrain (Mapzen DEM)", label: "Mapzen Global Terrain — color relief", dem: "relief", attr: MAPZEN },
+    { id: "mapzen-relief-light", group: "Terrain (Mapzen DEM)", label: "Mapzen Global Terrain — hillshade over light gray", dem: "hillshade", over: "esri-lightgray", attr: MAPZEN + ", Esri" },
     { id: "none", group: "None", label: "None" }
   ];
+  // Menus list the basemaps group by group, in this order.
+  var GROUP_ORDER = ["Google Maps", "Vector (OpenFreeMap)", "Streets", "Light & dark", "Imagery", "Topographic", "Terrain (Mapzen DEM)", "Outdoor", "Transport", "Regional", "Labels & overlays", "GBIF", "None"];
+  BASEMAPS = BASEMAPS.map(function (b, i) { return [b, i]; }).sort(function (a, c) {
+    var ga = GROUP_ORDER.indexOf(a[0].group), gc = GROUP_ORDER.indexOf(c[0].group);
+    return (ga < 0 ? 99 : ga) - (gc < 0 ? 99 : gc) || a[1] - c[1];
+  }).map(function (x) { return x[0]; });
+  // Transparent tiles (labels, trails, railways) go over a basemap as a
+  // layer rather than replacing it.
+  var OVERLAY_GROUPS = { "Labels & overlays": 1, "Outdoor": 1, "Transport": 1 };
+  BASEMAPS.forEach(function (b) { if (OVERLAY_GROUPS[b.group]) b.overlay = true; });
   GIS.BASEMAPS = BASEMAPS;
 
   PD.dataFree = PD.dataFree || {};
@@ -85,6 +131,7 @@
 
   function styleFor(id) {
     var b = basemapDef(id);
+    if (b.google) return GIS.google ? GIS.google.style(b, styleFor) : styleFor("positron");
     if (b.style) return b.style;
     var bg = typeof chartBgColor === "function" ? chartBgColor() : "#ffffff";
     var style = { version: 8, glyphs: GLYPHS, sources: {}, layers: [{ id: "background", type: "background", paint: { "background-color": bg === "rgba(0,0,0,0)" ? "#ffffff" : bg } }] };
@@ -92,10 +139,34 @@
       style.sources.basemap = { type: "raster", tiles: [b.tiles], tileSize: 256, maxzoom: b.maxzoom || 19 };
       style.layers.push({ id: "basemap", type: "raster", source: "basemap" });
     }
+    if (b.dem) demStyle(style, b);
     return style;
   }
 
   GIS.styleFor = styleFor;
+  // Re-apply the basemap on every view (e.g. once a Google session is ready).
+  GIS.refreshBasemap = function () {
+    views().forEach(function (v) { v.basemap = state.mapBasemap; try { v.map.setStyle(styleFor(state.mapBasemap), { diff: false }); } catch (e) { } });
+  };
+
+  // Mapzen Global Terrain: the AWS Terrain Tiles (Terrarium encoding),
+  // drawn as a hypsometric color relief and / or a hillshade.
+  var TERRARIUM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
+  GIS.TERRARIUM = TERRARIUM;
+  var RELIEF = ["interpolate", ["linear"], ["elevation"],
+    -8000, "#0b2545", -3000, "#1d4e89", -200, "#4f8fc0", -1, "#a6d0e4",
+    0, "#5f9e5a", 200, "#8fbf6a", 600, "#cfd88d", 1200, "#e3c07b", 2000, "#c08a55", 3000, "#8e6a4c", 4200, "#d9d4cf", 5500, "#ffffff"];
+  function demStyle(style, b) {
+    if (b.over) {
+      var o = basemapDef(b.over);
+      if (o.tiles) { style.sources.basemap = { type: "raster", tiles: [o.tiles], tileSize: 256, maxzoom: o.maxzoom || 19 }; style.layers.push({ id: "basemap", type: "raster", source: "basemap" }); }
+    }
+    style.sources.dem = { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15 };
+    if (b.dem === "relief") style.layers.push({ id: "dem-relief", type: "color-relief", source: "dem", paint: { "color-relief-color": RELIEF } });
+    style.layers.push({ id: "dem-hillshade", type: "hillshade", source: "dem", paint: {
+      "hillshade-exaggeration": b.dem === "relief" ? 0.45 : 0.7, "hillshade-shadow-color": "#3d3528", "hillshade-highlight-color": "#ffffff",
+      "hillshade-accent-color": "#5a4f3f" } });
+  }
 
   /* ------------------------------------------------------------- state */
 

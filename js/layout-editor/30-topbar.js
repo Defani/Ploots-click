@@ -169,12 +169,15 @@
       });
   });
   bmBtn.addEventListener('click', function () {
+    if (GIS.basemapGallery) { GIS.basemapGallery.open(bmBtn); return; }
     var html = '', group = null;
     GIS.BASEMAPS.forEach(function (b) {
       if (b.group !== group) { group = b.group; html += head(group); }
       html += item(b.id, sym(b.id === 'none' ? 'block' : b.tiles ? 'satellite_alt' : 'map'), b.label, b.id === state.mapBasemap);
     });
-    openMenu(bmBtn, html, function (v) { state.mapBasemap = v; render(); if (GIS.refreshPanel) GIS.refreshPanel(); });
+    openMenu(bmBtn, html, function (v) {
+      state.mapBasemap = v; render(); if (GIS.refreshBasemap) GIS.refreshBasemap(); if (GIS.refreshPanel) GIS.refreshPanel();
+    });
   });
   attrBtn.addEventListener('click', function () {
     if (GIS.attributeTable.isOpen()) GIS.attributeTable.hide();

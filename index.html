@@ -1493,6 +1493,42 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 .gis-ctx-subm{display:none;position:absolute;top:-5px;left:100%;min-width:210px;padding:5px;background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;box-shadow:0 10px 28px rgba(0,0,0,.25)}
 .sub-left .gis-ctx-subm{left:auto;right:100%}
 .gis-ctx-sub:hover>.gis-ctx-subm,.gis-ctx-sub:focus-within>.gis-ctx-subm{display:block}
+/* Provider logos (js/gis/16-logos.js) */
+.plogo{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;border-radius:5px;color:#fff;font-weight:700;letter-spacing:-.02em;line-height:1;overflow:hidden;font-family:Inter,'Segoe UI',Arial,sans-serif;vertical-align:middle}
+.plogo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:1px;box-sizing:border-box}
+/* Basemap gallery (js/gis/17-basemap-gallery.js) */
+.bmg-pop{position:fixed;z-index:10040;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.3);overflow:hidden}
+.bmg-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.bmg-title{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;white-space:nowrap}
+.bmg-title .material-symbols-outlined{font-size:19px;color:var(--accent)}
+.bmg-search{flex:1;display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel-2)}
+.bmg-search .material-symbols-outlined{font-size:17px;color:var(--ink-soft)}
+.bmg-search input{flex:1;border:none!important;background:none!important;outline:none;padding:3px 0!important;font-size:12.5px;color:var(--ink)}
+.bmg-key,.bmg-x{display:flex;align-items:center;gap:4px;width:auto;padding:5px 8px!important;border:none!important;background:none!important;color:var(--ink-soft);border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap}
+.bmg-key:hover,.bmg-x:hover{background:var(--panel-2)!important;color:var(--ink)}
+.bmg-key .material-symbols-outlined,.bmg-x .material-symbols-outlined{font-size:17px}
+.bmg-body{overflow:auto;padding:4px 12px 14px}
+.bmg-group{margin:12px 2px 6px;font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)}
+.bmg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.bmg-card{position:relative;display:flex;flex-direction:column;gap:0;padding:0!important;border:1px solid var(--line-strong)!important;border-radius:9px;background:var(--panel)!important;overflow:hidden;cursor:pointer;text-align:left;width:auto}
+.bmg-card:hover{border-color:var(--accent)!important}
+.bmg-card.active{border-color:var(--accent)!important;box-shadow:0 0 0 2px var(--accent-soft)}
+.bmg-thumb{height:88px;background:var(--panel-2);overflow:hidden}
+.bmg-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.bmg-none{background:repeating-conic-gradient(#e6e6e6 0 25%,#fff 0 50%) 0 0/16px 16px}
+.bmg-pending{background:linear-gradient(90deg,var(--panel-2),var(--line),var(--panel-2));background-size:200% 100%;animation:bmgShim 1.2s linear infinite}
+.bmg-fail{background:repeating-linear-gradient(45deg,var(--panel-2) 0 6px,var(--line) 6px 12px)}
+@keyframes bmgShim{to{background-position:-200% 0}}
+.bmg-logo{position:absolute;left:6px;top:6px;display:flex;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.bmg-name{padding:6px 8px 7px;font-size:12px;line-height:1.25;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bmg-empty{padding:18px;color:var(--ink-soft)}
+.bmg-over{background-size:cover;background-position:center}
+.bmg-tag{position:absolute;right:6px;top:6px;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:600}
+/* Catalog: server cards and logos */
+.cat-servers{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.cat-servers button{display:flex;align-items:center;gap:9px;width:100%;padding:6px 8px!important;border-radius:8px;text-align:left;font-size:12px}
+.cat-servers button.active{border-color:var(--accent)!important;background:var(--accent-soft)!important}
+.cat-tabs button .plogo,#panel-catalog .toggle-group .plogo{margin-right:5px}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3035,6 +3071,9 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/11-kobo.js"></script>
 <script src="js/gis/12-workspace.js"></script>
 <script src="js/gis/14-ramp-picker.js"></script>
+<script src="js/gis/15-google-tiles.js"></script>
+<script src="js/gis/16-logos.js"></script>
+<script src="js/gis/17-basemap-gallery.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
