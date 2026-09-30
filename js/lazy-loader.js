@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ploots Click — lazy loader for heavy CDN libraries.
+   GIS Consultant Studio — lazy loader for heavy CDN libraries.
 
    Previously all 8 of these loaded blocking in <head> on every visit, even
    for panels the user never opens. This file replaces that with 3 tiers:

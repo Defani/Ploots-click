@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ploots Click — service worker.
+   GIS Consultant Studio — service worker.
 
    Strategy
    --------
@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v22";
+const CACHE_NAME = "ploots-click-v24";
 
 const PRECACHE_URLS = [
   "./",
@@ -130,6 +130,8 @@ const PRECACHE_URLS = [
   "./js/desktop-shell.js",
   "./css/glass.css",
   "./css/agro.css",
+  "./css/home.css",
+  "./js/home-thumbs.js",
   "./js/agro/agro-3d-real.js",
   "./js/agro/agroforestry.js",
   "./js/local-fonts.js",

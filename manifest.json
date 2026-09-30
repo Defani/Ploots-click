@@ -1,6 +1,6 @@
 {
-  "name": "Ploots Click",
-  "short_name": "Ploots",
+  "name": "GIS Consultant Studio",
+  "short_name": "GIS Studio",
   "description": "Simple, publication-ready chart maker — 100% client-side, no backend.",
   "start_url": "./index.html",
   "scope": "./",

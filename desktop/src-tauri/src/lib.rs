@@ -1,4 +1,4 @@
-//! Ploots Click desktop shell.
+//! GIS Consultant Studio desktop shell.
 //!
 //! The app itself is the web app in `../dist` (built by `desktop/build_dist.py`
 //! with every library, font and icon bundled), shown in a WebView2 window.
@@ -115,5 +115,5 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![kobo_get, kobo_token])
         .run(tauri::generate_context!())
-        .expect("error while running Ploots Click");
+        .expect("error while running GIS Consultant Studio");
 }

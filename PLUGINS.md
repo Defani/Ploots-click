@@ -1,6 +1,6 @@
-# Ploots Click plugins
+# GIS Consultant Studio plugins
 
-Plugins add features to Ploots Click (web and desktop app) without changing
+Plugins add features to GIS Consultant Studio (web and desktop app) without changing
 the app itself. They work like GeoLibre plugins: a folder with a manifest and
 one JavaScript module, installed from **Plugins** in the left rail.
 
@@ -96,7 +96,7 @@ Everything a plugin adds through `app` is removed automatically when the plugin 
 | | |
 | --- | --- |
 | `app.apiVersion` | `1` |
-| `app.appVersion` | Ploots Click version |
+| `app.appVersion` | GIS Consultant Studio version |
 | `app.plugin` | `{ id, name, version }` of this plugin |
 | `app.desktop` | `true` in the desktop app |
 | `app.onCleanup(fn)` | Run `fn` when the plugin is disabled or removed (timers, DOM you added yourself, map listeners). |

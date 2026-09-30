@@ -386,7 +386,7 @@
           return addLayers([file]);
         });
       default:
-        throw new Error("Ploots Click cannot open ." + (ext || "this") + " files.");
+        throw new Error("GIS Consultant Studio cannot open ." + (ext || "this") + " files.");
     }
   }
 

@@ -195,7 +195,7 @@
       }
       g.font = Math.round(10 * dpr) + "px Inter, Arial, sans-serif";
       g.fillStyle = "rgba(0,0,0,.6)";
-      g.fillText("Ploots Click", 12 * dpr, c.height - 10 * dpr);
+      g.fillText("GIS Consultant Studio", 12 * dpr, c.height - 10 * dpr);
     }
     frame();
     m.on("render", frame);

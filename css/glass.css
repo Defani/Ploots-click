@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ploots Click — glass theme and design system (loaded last).
+   GIS Consultant Studio — glass theme and design system (loaded last).
 
    One set of tokens for every surface, so panels, menus, dialogs and the
    toolbars floating over the map look like one app:
@@ -233,3 +233,61 @@ button .material-symbols-outlined, .gis-ctx .material-symbols-outlined, .tb-item
 .gisw-dock-tabs [data-tab].active { border-bottom: 2px solid var(--accent) !important; }
 /* Editing mode stays red in the attribute table. */
 .gis-attr-dock.editing .gis-attr-mode button.active { background: transparent !important; color: #e5484d !important; }
+
+/* ------------------------------------------------ stronger frosted glass */
+/* A livelier colour field behind, clearer panes in front: lower opacity,
+   more blur and saturation, a light edge on top and a soft diagonal
+   reflection, so panels read as glass rather than as flat grey. */
+:root {
+  --g-blur: 26px;
+  --g-glass: rgba(255, 255, 255, .42);
+  --g-glass-strong: rgba(255, 255, 255, .66);
+  --g-edge: rgba(255, 255, 255, .9);
+  --g-sheen: linear-gradient(135deg, rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, .12) 38%, rgba(255, 255, 255, 0) 60%);
+}
+html[data-theme=dark] {
+  --g-glass: rgba(22, 27, 24, .38);
+  --g-glass-strong: rgba(26, 32, 28, .62);
+  --g-edge: rgba(255, 255, 255, .12);
+  --g-sheen: linear-gradient(135deg, rgba(255, 255, 255, .09) 0%, rgba(255, 255, 255, .025) 40%, rgba(255, 255, 255, 0) 62%);
+}
+body {
+  background-image:
+    radial-gradient(42vw 42vh at 6% 8%, rgba(94, 160, 60, .42), transparent 70%),
+    radial-gradient(38vw 44vh at 96% 12%, rgba(40, 150, 140, .32), transparent 70%),
+    radial-gradient(46vw 46vh at 72% 104%, rgba(217, 150, 40, .30), transparent 70%),
+    radial-gradient(40vw 40vh at 18% 96%, rgba(120, 90, 200, .18), transparent 70%) !important;
+}
+html[data-theme=dark] body {
+  background-color: #0b0f0c !important;
+  background-image:
+    radial-gradient(42vw 42vh at 6% 8%, rgba(94, 170, 60, .30), transparent 70%),
+    radial-gradient(38vw 44vh at 96% 12%, rgba(30, 150, 140, .22), transparent 70%),
+    radial-gradient(46vw 46vh at 72% 104%, rgba(217, 140, 30, .18), transparent 70%),
+    radial-gradient(40vw 40vh at 18% 96%, rgba(110, 80, 200, .14), transparent 70%) !important;
+}
+.topbar, .sidebar-nav, .sidebar-container .sidebar, .sidebar, .gisw-dock, .gisw-status, .gis-attr-dock,
+.ag-head, .ag-left, .ag-right, .home-card-wrap {
+  background: var(--g-sheen), var(--g-glass) !important;
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(190%) brightness(1.04);
+  backdrop-filter: blur(var(--g-blur)) saturate(190%) brightness(1.04);
+}
+.tb-menu, .gis-ctx, .gis-ctx-subm, .bmg-pop, .rp-pop, .gloc-list, .gisw-addpop,
+.gis-dlg, .carto-bar, .gis-map-tools, .gloc-bar, .dg-hud, .canvas-zoom-bar, .ag-float, .ag-info {
+  background: var(--g-sheen), var(--g-glass-strong) !important;
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(200%);
+  backdrop-filter: blur(var(--g-blur)) saturate(200%);
+  box-shadow: var(--g-shadow-float), inset 0 1px 0 var(--g-edge), inset 0 0 0 1px rgba(255, 255, 255, .06) !important;
+}
+/* Cards inside the glass: a thinner layer of glass. */
+.side-section, .gfw-card, .gfw-res, .anim-player, .ag-kpi, .ag-chart, .ag-spec, .home-card, .gmaps-bar {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .03)) !important;
+  border: 1px solid var(--g-line) !important;
+  box-shadow: inset 0 1px 0 var(--g-edge);
+}
+html:not([data-theme=dark]) .side-section, html:not([data-theme=dark]) .ag-kpi, html:not([data-theme=dark]) .home-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .25)) !important;
+}
+/* Home floats over the app like a pane of glass. */
+.home-screen { background: rgba(8, 12, 10, .28) !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.home-card-wrap { border: 1px solid var(--g-line-strong) !important; border-radius: 20px !important; box-shadow: var(--g-shadow-float), inset 0 1px 0 var(--g-edge) !important; }

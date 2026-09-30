@@ -1,5 +1,5 @@
 
-# Ploots Click
+# GIS Consultant Studio
 
 A single-page, no-backend chart builder for publication-ready figures — paste your data, style it, lay it out, and export print-quality PNG/SVG. 100% client-side, hosted free on **GitHub Pages**.
 
@@ -66,20 +66,20 @@ A single-page, no-backend chart builder for publication-ready figures — paste 
 
 ## What is this?
 
-Ploots Click is a **client-side-only web app**: open the page (or visit the GitHub Pages link below) and everything — data parsing, chart rendering, maps, page layout, and export — happens locally in your browser tab (maps fetch their basemap tiles online). Nothing you paste or upload is ever sent to a server, because there is no server. The app is just static HTML, CSS, and JavaScript, deployed straight from this repository via GitHub Pages, which is why it costs nothing to run and needs zero setup.
+GIS Consultant Studio is a **client-side-only web app**: open the page (or visit the GitHub Pages link below) and everything — data parsing, chart rendering, maps, page layout, and export — happens locally in your browser tab (maps fetch their basemap tiles online). Nothing you paste or upload is ever sent to a server, because there is no server. The app is just static HTML, CSS, and JavaScript, deployed straight from this repository via GitHub Pages, which is why it costs nothing to run and needs zero setup.
 
 [⬆️ Back to Table of Contents](#table-of-contents)
 
 ## Desktop app
 
-Ploots Click also runs as a **desktop app for Windows**, built with [Tauri 2](https://tauri.app) like GeoLibre Desktop. It uses the system's WebView2, so the installer is small.
+GIS Consultant Studio also runs as a **desktop app for Windows**, built with [Tauri 2](https://tauri.app) like GeoLibre Desktop. It uses the system's WebView2, so the installer is small.
 
 - **Nothing is hosted.** The app's code, libraries (Fabric.js, MapLibre GL, AG Grid, MathJax, SheetJS, jsPDF, Plotly, geotiff.js, …), fonts and icons are all inside the app. It makes no calls to CDNs, Google Fonts or the Iconify API. Files you open stay on your computer.
 - **Online only when you ask.** Basemap tiles, the data catalog (government ArcGIS servers, GFW, GBIF, iNaturalist), KoboToolbox and the Claude bridge (`ws://127.0.0.1:9878`, on your own computer) connect only when you use them.
 - **KoboToolbox without a proxy.** The app reads the Kobo API natively, so `tools/kobo_proxy.py` is not needed. The access setting shows "Built-in".
 - Web links open in your default browser.
 
-**Install:** download `Ploots Click_<version>_x64-setup.exe` (or the `.msi`) from the repository's Releases page, or from the "ploots-click-windows" artifact of the **Desktop app** workflow run. The setup installs for the current user only and does not need administrator rights. If WebView2 is missing, the installer gets it.
+**Install:** download `GIS Consultant Studio_<version>_x64-setup.exe` (or the `.msi`) from the repository's Releases page, or from the "ploots-click-windows" artifact of the **Desktop app** workflow run. The setup installs for the current user only and does not need administrator rights. If WebView2 is missing, the installer gets it.
 
 **Build it yourself (Windows):**
 
@@ -103,7 +103,7 @@ The app opens on a **Home** screen: make a **Chart** from tabular data or a **Ma
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/editor-light.png" alt="Ploots Click editor: chart type gallery on the left, a grouped bar chart on an A4 page, Design panel on the right" width="100%">
+  <img src="assets/screenshots/editor-light.png" alt="GIS Consultant Studio editor: chart type gallery on the left, a grouped bar chart on an A4 page, Design panel on the right" width="100%">
 </p>
 
 Everything is set from **one sidebar on the left**, so the page keeps the rest of the window. Its rail is grouped by task — **Home** · **Data** (charts) or **Map** (maps) · **Canvas**, **Design**, **Layers** · **Chart**, **Axis**, **Legend**, **Style** (charts) · **Shapes**, **LaTeX** · **Export** — and each mode only shows the menus it uses. The page canvas has rulers, the mouse wheel zooms, and a dark theme is one click away (moon icon):
@@ -305,13 +305,13 @@ Add `--allow-host kobo.example.org` for a self-hosted server. Add `--demo` to al
 
 #### Chat with Claude
 
-The round **Claude** button opens a chat bubble. It connects Ploots Click to the **geolibre-live** MCP server (the same server used by the GeoLibre Live MCP Bridge plugin) at `ws://127.0.0.1:9878`. With that server registered in Claude Desktop or Claude Code:
+The round **Claude** button opens a chat bubble. It connects GIS Consultant Studio to the **geolibre-live** MCP server (the same server used by the GeoLibre Live MCP Bridge plugin) at `ws://127.0.0.1:9878`. With that server registered in Claude Desktop or Claude Code:
 
 - Messages typed in the bubble reach Claude through `live_chat_wait` / `live_chat_inbox` (say "dengar geolibre" in Claude to start listening). Claude answers in the bubble with `live_say` (a task list with progress, then a notification when done) and `live_show_chart` (Plotly charts inside the chat).
 - Claude reads the survey from the real submissions with `live_kobo_summary`, `live_kobo_fields`, `live_kobo_rows`, `live_kobo_aggregate` and `live_kobo_load`. It gets the same derived fields as the GeoLibre Kobo Connector (`_enumerator`, `_desa`, `_tanggal`, `_submission_date`, `_luas_ha`, `_validasi`), plus `_durasi_menit`.
 - Claude can also read and drive the map: `live_get_state`, `live_list_layers`, `live_get_layer_features`, `live_get_selection`, `live_screenshot`, `live_set_view`, `live_zoom_to_layer`, `live_set_basemap`, `live_add_geojson_layer`, `live_add_tile_layer`.
 
-The server keeps one app connection and the newest one wins, so a GeoLibre window with the bridge plugin and Ploots Click take turns. If another app takes over, the bubble shows it and does not reconnect by itself. Connecting by hand turns on auto-connect for your next visit.
+The server keeps one app connection and the newest one wins, so a GeoLibre window with the bridge plugin and GIS Consultant Studio take turns. If another app takes over, the bubble shows it and does not reconnect by itself. Connecting by hand turns on auto-connect for your next visit.
 
 ### Files (folder browser)
 
@@ -341,7 +341,7 @@ Selecting a file shows a **preview** before it is opened: the first rows of a CS
 
 Files are read from disk when opened; nothing is copied or uploaded. This uses the File System Access API (Chrome, Edge and the desktop app). In other browsers, a folder can be read for the current session only.
 
-When the app opens, an intro says "Welcome to Ploots Click": personal GIS, data analysis, visualization and field monitoring, a private tool of Defani Arman Alfitriansyah, for personal use only and not for distribution.
+When the app opens, an intro says "Welcome to GIS Consultant Studio": personal GIS, data analysis, visualization and field monitoring, a private tool of Defani Arman Alfitriansyah, for personal use only and not for distribution.
 
 **Sign-in.** The intro also asks for a **username and password**.
 
@@ -941,7 +941,7 @@ Released under the [MIT License](./LICENSE). Bundled third-party code
 
 This project was not built to compete with established data visualization software or commercial charting tools. Rather, its core purpose is simply to utilize available open-source technologies to make the process of creating publication-ready plots as easy, accessible, and lightweight as possible. It is especially dedicated to students and researchers who might not have coding experience or the budget to access premium software, with the hope that the features provided here can assist in their research and academic work.
 
-Ploots Click draws heavy inspiration from the many incredible charting tools, design systems, and data communities out there. A massive thank you to all the creators of the underlying engines and open-source libraries that power this tool. A special thanks to **GitHub** for providing GitHub Pages, which makes hosting this static web app for free possible.
+GIS Consultant Studio draws heavy inspiration from the many incredible charting tools, design systems, and data communities out there. A massive thank you to all the creators of the underlying engines and open-source libraries that power this tool. A special thanks to **GitHub** for providing GitHub Pages, which makes hosting this static web app for free possible.
 
 I am always open to feedback and suggestions. Ultimately, I am just a student utilizing a little bit of knowledge with the help of official documentation and AI tools like **Claude**, **ChatGPT** (for brainstorming), and **Gemini** to help bring this idea to life. To every developer, library maintainer, and supporter—thank you. This tool is built on the shoulders of your hard work.
 
@@ -949,7 +949,7 @@ I am always open to feedback and suggestions. Ultimately, I am just a student ut
 
 ## Feedback & Contributions
 
-Since I am always open to feedback and suggestions, if you find a bug, have a feature request, or just want to share how you use Ploots Click in your research, please feel free to open an **[Issue](https://github.com/Defani/Ploots-click/issues)** in this repository. 
+Since I am always open to feedback and suggestions, if you find a bug, have a feature request, or just want to share how you use GIS Consultant Studio in your research, please feel free to open an **[Issue](https://github.com/Defani/Ploots-click/issues)** in this repository. 
 
 You don't need to be a programmer to contribute—bug reports, design ideas, and usability feedback are incredibly valuable!
 

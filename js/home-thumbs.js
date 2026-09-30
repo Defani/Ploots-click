@@ -1,0 +1,111 @@
+/* ==========================================================================
+   Animated thumbnails for the three Home cards, drawn from what each mode
+   really shows (looping like GIFs, as SVG + CSS animation):
+
+   Chart          the app's own sample chart: the grouped bar data (plots
+                  P1-P5, four mangrove species) in the active palette, bars
+                  growing in, with its legend
+   Map            the sample map: the ASEAN countries from the bundled
+                  TopoJSON, graduated by population on the YlGn ramp, on a
+                  sea like the default basemap, with field points popping up
+   Agroforestry   the simulator's 2D plot: the coffee grid (2.5 m) and the
+                  lamtoro crowns (5 m, staggered) growing year by year, the
+                  shade they cast, the year counter, in the simulator colours
+   ========================================================================== */
+(function () {
+  "use strict";
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var W = 240, H = 132;
+
+  /* ------------------------------------------------------------- chart */
+  function chart() {
+    var text = (window.SAMPLE_DATA_BY_TYPE && SAMPLE_DATA_BY_TYPE["bar-group"]) || "Plot\tA\tB\tC\tD\nP1\t42\t33\t59\t71\nP2\t39\t41\t63\t68\nP3\t51\t28\t50\t76\nP4\t30\t36\t55\t67\nP5\t46\t31\t60\t79";
+    var rows = text.trim().split("\n").map(function (l) { return l.split("\t"); });
+    var series = rows[0].slice(1), cats = rows.slice(1).map(function (r) { return r[0]; });
+    var vals = rows.slice(1).map(function (r) { return r.slice(1).map(Number); });
+    var pal = (window.PALETTES && window.state && PALETTES[state.paletteIdx] ? PALETTES[state.paletteIdx].colors : ["#2f6360", "#c9a66b", "#8a5a44", "#5c7a99"]);
+    var max = Math.max.apply(null, [].concat.apply([], vals)) * 1.1;
+    var x0 = 26, y0 = 104, pw = W - x0 - 10, ph = 78, gw = pw / cats.length, bw = gw * 0.78 / series.length;
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="ht ht-chart" aria-hidden="true"><rect width="' + W + '" height="' + H + '" fill="#fff"/>';
+    // legend (top, like the default top-right legend)
+    series.forEach(function (n, i) { s += '<rect x="' + (x0 + i * 52) + '" y="8" width="7" height="7" fill="' + pal[i % pal.length] + '"/><text x="' + (x0 + 10 + i * 52) + '" y="14.5" class="ht-t">' + esc(n.length > 11 ? n.slice(0, 10) + "…" : n) + "</text>"; });
+    for (var g = 0; g <= 4; g++) { var gy = y0 - ph * g / 4; s += '<line x1="' + x0 + '" x2="' + (W - 8) + '" y1="' + gy + '" y2="' + gy + '" class="ht-gl"/><text x="' + (x0 - 4) + '" y="' + (gy + 3) + '" class="ht-t" text-anchor="end">' + Math.round(max * g / 4) + "</text>"; }
+    cats.forEach(function (c, ci) {
+      vals[ci].forEach(function (v, si) {
+        var h = v / max * ph, x = x0 + ci * gw + gw * 0.11 + si * bw;
+        s += '<rect class="ht-bar" style="--d:' + (ci * 0.18 + si * 0.06).toFixed(2) + 's" x="' + x.toFixed(1) + '" y="' + (y0 - h).toFixed(1) + '" width="' + (bw - 1).toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + pal[si % pal.length] + '"/>';
+      });
+      s += '<text x="' + (x0 + ci * gw + gw / 2).toFixed(1) + '" y="' + (y0 + 12) + '" class="ht-t" text-anchor="middle">' + esc(c) + "</text>";
+    });
+    s += '<line x1="' + x0 + '" x2="' + (W - 8) + '" y1="' + y0 + '" y2="' + y0 + '" class="ht-ax"/><line x1="' + x0 + '" x2="' + x0 + '" y1="' + (y0 - ph - 4) + '" y2="' + y0 + '" class="ht-ax"/>';
+    return s + "</svg>";
+  }
+
+  /* --------------------------------------------------------------- map */
+  function mapSvg(fc) {
+    var proj = d3.geoMercator().fitExtent([[8, 8], [W - 8, H - 8]], fc), path = d3.geoPath(proj);
+    var vals = fc.features.map(function (f) { return f.properties.population_m || 0; }).sort(d3.ascending);
+    var ramp = (window.PlootsGIS && PlootsGIS.sym) ? PlootsGIS.sym.rampColors("YlGn") : ["#ffffe5", "#d9f0a3", "#78c679", "#238443", "#004529"];
+    var q = d3.scaleQuantile().domain(vals).range([0.1, 0.3, 0.55, 0.78, 1]);
+    var interp = d3.interpolateRgbBasis(ramp);
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="ht ht-map" aria-hidden="true"><rect width="' + W + '" height="' + H + '" fill="#aad3df"/>';
+    fc.features.forEach(function (f, i) {
+      s += '<path class="ht-cty" style="--d:' + (i * 0.25).toFixed(2) + "s;--c:" + interp(q(f.properties.population_m || 0)) + '" d="' + path(f) + '"/>';
+    });
+    // labels for the larger countries, as in the sample (label field: name)
+    fc.features.forEach(function (f) {
+      var a = path.area(f);
+      if (a < 180) return;
+      var c = path.centroid(f);
+      s += '<text x="' + c[0].toFixed(1) + '" y="' + c[1].toFixed(1) + '" class="ht-lbl" text-anchor="middle">' + esc(f.properties.name) + "</text>";
+    });
+    // field points (Kobo submissions) popping up over the map
+    var pts = [[106.8, -6.6], [110.4, -7.0], [98.7, 3.6], [101.7, 3.1], [114.6, 4.9], [121.0, 14.6], [100.5, 13.7], [105.8, 21.0], [119.4, -5.1], [116.1, -8.6]];
+    pts.forEach(function (p, i) {
+      var xy = proj(p);
+      if (!xy) return;
+      s += '<g transform="translate(' + xy[0].toFixed(1) + " " + xy[1].toFixed(1) + ')"><circle class="ht-pulse" style="--d:' + (0.6 + i * 0.45).toFixed(2) + 's" r="7"/><circle class="ht-pin" style="--d:' + (0.6 + i * 0.45).toFixed(2) + 's" r="2.6"/></g>';
+    });
+    return s + "</svg>";
+  }
+
+  /* -------------------------------------------------------------- agro */
+  function agro() {
+    // A 40 x 22 m corner of the default plot, as the 2D view draws it.
+    var pw = 40, phm = 22, sc = Math.min((W - 16) / pw, (H - 24) / phm), ox = (W - pw * sc) / 2, oy = 18;
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="ht ht-agro" aria-hidden="true"><rect width="' + W + '" height="' + H + '" fill="#f4f1ea"/>';
+    s += '<rect x="' + ox + '" y="' + oy + '" width="' + pw * sc + '" height="' + phm * sc + '" fill="#e9e3d3"/>';
+    for (var gx = 0; gx <= pw; gx += 10) s += '<line x1="' + (ox + gx * sc) + '" x2="' + (ox + gx * sc) + '" y1="' + oy + '" y2="' + (oy + phm * sc) + '" class="ht-pg"/>';
+    for (var gy = 0; gy <= phm; gy += 10) s += '<line x1="' + ox + '" x2="' + (ox + pw * sc) + '" y1="' + (oy + gy * sc) + '" y2="' + (oy + gy * sc) + '" class="ht-pg"/>';
+    // lamtoro shade on the ground, then coffee, then lamtoro crowns (lower first)
+    var lam = [];
+    for (var ly = 2.5, row = 0; ly < phm; ly += 5, row++) for (var lx = 2.5 + (row % 2 ? 2.5 : 0); lx < pw; lx += 5) lam.push([lx, ly]);
+    lam.forEach(function (p, i) { s += '<circle class="ht-shade" style="--d:' + (0.3 + (i % 5) * 0.05).toFixed(2) + 's" cx="' + (ox + p[0] * sc).toFixed(1) + '" cy="' + (oy + p[1] * sc).toFixed(1) + '" r="' + (2.2 * sc).toFixed(1) + '"/>'; });
+    for (var cy = 1.25; cy < phm; cy += 2.5) for (var cx = 1.25; cx < pw; cx += 2.5) {
+      s += '<g transform="translate(' + (ox + cx * sc).toFixed(1) + " " + (oy + cy * sc).toFixed(1) + ')"><circle class="ht-cof" style="--d:' + ((cx + cy) * 0.012).toFixed(2) + 's" r="' + (1.3 * sc).toFixed(1) + '"/><circle r="0.9" fill="#4a3620"/></g>';
+    }
+    lam.forEach(function (p, i) {
+      s += '<g transform="translate(' + (ox + p[0] * sc).toFixed(1) + " " + (oy + p[1] * sc).toFixed(1) + ')"><circle class="ht-lam" style="--d:' + (0.2 + (i % 7) * 0.04).toFixed(2) + 's" r="' + (2.2 * sc).toFixed(1) + '"/><circle r="1.3" fill="#4a3620"/></g>';
+    });
+    s += '<rect x="' + ox + '" y="' + oy + '" width="' + pw * sc + '" height="' + phm * sc + '" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/>';
+    // the year counter of the simulator header
+    s += '<rect x="' + (W - 58) + '" y="3" width="52" height="13" rx="6.5" fill="rgba(0,0,0,.08)"/>';
+    [0, 2, 4, 6, 8, 10].forEach(function (y, i) { s += '<text class="ht-yr' + (i === 5 ? " last" : "") + '" style="--d:' + (i * 0.9).toFixed(1) + 's" x="' + (W - 32) + '" y="12.5" text-anchor="middle">Year ' + y + "</text>"; });
+    s += '<text x="' + ox + '" y="12.5" class="ht-t">Coffee 2.5 × 2.5 m · lamtoro 5 × 5 m</text>';
+    return s + "</svg>";
+  }
+
+  // Fills the thumbnails of a freshly built Home (the map one needs the sample data).
+  function hydrate(root) {
+    var c = root.querySelector('[data-thumb="chart"]'), a = root.querySelector('[data-thumb="agro"]'), m = root.querySelector('[data-thumb="map"]');
+    if (c) c.innerHTML = chart();
+    if (a) a.innerHTML = agro();
+    if (m && window.PlootsGIS && PlootsGIS.loadSample && window.d3) {
+      PlootsGIS.loadSample().then(function (fc) { m.innerHTML = mapSvg(fc); }).catch(function () { });
+    }
+  }
+  function slot(k) { return '<div class="ht-slot" data-thumb="' + k + '"></div>'; }
+
+  window.PlootsHomeThumbs = { chart: slot("chart"), map: slot("map"), agro: slot("agro"), hydrate: hydrate };
+})();
