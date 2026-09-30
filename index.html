@@ -1630,7 +1630,7 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 body.gis-carto .tb-ana,
 body.gis-carto .nav-btn[data-panel="panel-gis-toolbox"],body.gis-carto .nav-btn[data-panel="panel-gis-gfw"],
 body.gis-carto .nav-btn[data-panel="panel-catalog"],body.gis-carto .nav-btn[data-panel="panel-kobo"],
-body.gis-carto .nav-add,body.gis-carto .nav-add-sep{display:none!important}
+body.gis-carto .nav-add,body.gis-carto .nav-add-sep,body.gis-carto .nav-anim{display:none!important}
 .carto-bar{display:none}
 body.gis-carto .carto-bar{display:flex;position:absolute;top:30px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:4px;padding:4px;max-width:calc(100% - 48px);overflow-x:auto;scrollbar-width:none;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .carto-grp{display:flex;align-items:center;gap:1px;padding:0 3px;border-right:1px solid var(--line)}
@@ -1658,6 +1658,30 @@ body.gis-carto #canvasStage{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .dg-form{width:340px}
 .dg-form .gis-dlg-head>span{display:flex;align-items:center;gap:6px}
 .dg-hint{margin:10px 0 0;font-size:11px;color:var(--ink-soft)}
+/* Map animation (js/gis/22-animation.js) */
+.anim-body{padding:10px 12px 16px}
+.anim-tabs{margin-bottom:8px}
+.anim-row{display:flex;gap:6px;margin-top:8px}
+.anim-row button{flex:1;display:flex;align-items:center;justify-content:center;gap:5px}
+.anim-keys{display:flex;flex-direction:column;gap:4px}
+.anim-key{display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px solid var(--line);border-radius:7px;font-size:11.5px}
+.anim-key b{width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;flex:none}
+.anim-key span{flex:1;color:var(--ink-soft)}
+.anim-key button{width:24px!important;height:24px;padding:0!important;border:none!important;background:none!important;display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
+.anim-key button .material-symbols-outlined{font-size:16px}
+.anim-empty{font-size:11.5px;color:var(--ink-soft);padding:6px 0}
+.anim-player{margin-top:14px;padding:10px;border:1px solid var(--line-strong);border-radius:10px}
+.anim-controls{display:flex;align-items:center;gap:2px}
+.anim-controls button{width:32px!important;height:32px;padding:0!important;border:none!important;background:none!important;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--ink)}
+.anim-controls button:hover{background:var(--panel-2)!important}
+.anim-controls .anim-play{background:var(--accent)!important;color:#fff;border-radius:50%}
+.anim-controls #anCount{margin-left:auto;font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.anim-player input[type=range]{width:100%;margin:8px 0 2px}
+.anim-rec{width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px}
+.anim-rec .material-symbols-outlined{color:#e5484d}
+.anim-rec.on{background:#e5484d!important;color:#fff;border-color:#e5484d!important}
+.anim-rec.on .material-symbols-outlined{color:#fff;animation:gfwSpin 2s linear infinite}
+.anim-label{position:absolute;right:16px;bottom:44px;z-index:6;padding:8px 16px;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font:700 28px Inter,'Segoe UI',Arial,sans-serif;letter-spacing:.01em;pointer-events:none}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3208,6 +3232,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/19-gfw.js"></script>
 <script src="js/gis/20-cartography.js"></script>
 <script src="js/gis/21-digitize.js"></script>
+<script src="js/gis/22-animation.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
