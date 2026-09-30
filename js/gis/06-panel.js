@@ -409,7 +409,9 @@
 
   var SCALE_STYLES = [["single", "Single box"], ["double", "Double box"], ["ticks-middle", "Line ticks middle"], ["ticks-down", "Line ticks down"], ["ticks-up", "Line ticks up"], ["stepped", "Stepped line"], ["hollow", "Hollow"], ["numeric", "Numeric (1:n)"]];
   var SCALE_UNITS = [["auto", "Auto (m / km)"], ["auto-imperial", "Auto (ft / mi)"], ["m", "Meters"], ["km", "Kilometers"], ["ft", "Feet"], ["mi", "Miles"], ["nmi", "Nautical miles"]];
-  var NORTH_STYLES = [["arrow", "Split arrow"], ["half", "Half arrow"], ["triangle", "Solid triangle"], ["line", "Line arrow"], ["circle", "Circle arrow"], ["compass4", "Compass rose (4)"], ["compass8", "Compass rose (8)"], ["star", "Star"]];
+  var NORTH_STYLES = [["arrow", "Split arrow"], ["half", "Half arrow"], ["triangle", "Solid triangle"], ["line", "Line arrow"], ["circle", "Circle arrow"], ["compass4", "Compass rose (4)"], ["compass8", "Compass rose (8)"], ["star", "Star"],
+    ["diamond", "Diamond"], ["needle", "Compass needle"], ["chevron", "Chevron"], ["block", "Block arrow"], ["arrowN", "Arrow over N"], ["minimal", "Minimal N"], ["compass16", "Compass rose (16)"],
+    ["nautical", "Nautical rose"], ["ring", "Ring arrow"], ["disc", "Disc"], ["badge", "Badge"], ["tail", "Fletched arrow"], ["shaded", "Shaded arrow"], ["trueMag", "True and magnetic north"]];
 
   function selectedItem() {
     var fc = window.fabricCanvas, o = fc && fc.getActiveObject();
@@ -435,8 +437,12 @@
       h += pair(field("Labels", select("item:labels", [["all", "Every segment"], ["ends", "Ends only"]], p.labels)), field("Color", color("item:color", p.color)));
       h += check("item:frame", p.frame, "Background frame");
     } else if (o.gisItem === "north") {
-      h += field("Style", select("item:style", NORTH_STYLES, p.style)) + pair(field("Size", num("item:size", p.size, 16, 300, 1)), field("Color", color("item:color", p.color)));
-      h += check("item:followMap", p.followMap, "Follow map rotation");
+      h += '<label class="field-label">Style</label><div class="north-grid">' + NORTH_STYLES.map(function (s) {
+        return '<button type="button" data-north="' + s[0] + '" title="' + esc(s[1]) + '"' + (s[0] === p.style ? ' class="active"' : "") + ">" + (GIS.items.northSVG ? GIS.items.northSVG(s[0], p.color, p.fill2) : esc(s[1])) + "</button>";
+      }).join("") + "</div>";
+      h += pair(field("Size", num("item:size", p.size, 16, 300, 1)), field("Color", color("item:color", p.color)));
+      h += field("Accent (light parts)", color("item:fill2", p.fill2 || "#ffffff"));
+      h += check("item:label", p.label !== false, "Show the N (and E S W) letters") + check("item:followMap", p.followMap, "Follow map rotation");
     } else if (o.gisItem === "colorbar") {
       var srcs = GIS.layers.filter(function (l) { return l.kind === "raster" || (l.kind === "vector" && l.style.symbology === "graduated"); });
       h += field("Layer", '<select data-bind="item:layerId">' + opt("", "Auto", !p.layerId) + options(srcs.map(function (l) { return [l.id, l.name]; }), p.layerId) + "</select>");
@@ -572,6 +578,7 @@
         GIS.emit("style"); renderStyle();
       }
       else if (b.dataset.add) { enterMapMode(); GIS.items.add(b.dataset.add); }
+      else if (b.dataset.north) { var no = selectedItem(); if (no) { GIS.items.update(no, { style: b.dataset.north }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisLegendFit") { var lo = selectedItem(); if (lo) { GIS.items.update(lo, { boxW: 0, boxH: 0 }); setTimeout(renderItemProps, 0); } }
       else if (b.id === "gisMoveBtn") GIS.mapActions && GIS.mapActions.setInteractive(true);
       else if (b.id === "gisZoomAll") GIS.mapActions && GIS.mapActions.fitAll();
