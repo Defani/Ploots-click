@@ -15,6 +15,10 @@ Ploots calls  GET /kobo?url=<full Kobo API URL>  with the token in the
 X-Kobo-Token header. Only GET requests to /api/v2/ on the Kobo hosts are
 forwarded; the proxy listens on 127.0.0.1 only and never stores the token.
 
+Signing in with a username and password: POST /kobo-token with the JSON
+{"server", "username", "password"}; the proxy asks the server's /token/
+endpoint (Basic auth) and returns {"token": …}. Nothing is logged or kept.
+
 The demo form ("Coffee farmer baseline (demo)") is generated on the fly:
 five enumerators walking between farms near Takengon, Aceh Tengah, over the
 last ten days. Today's submissions appear as the day goes on, so the
@@ -201,7 +205,7 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         self.send_header("Access-Control-Allow-Origin", origin or "*")
         self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "X-Kobo-Token, Content-Type")
         self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Access-Control-Max-Age", "600")
@@ -220,6 +224,47 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(204)
         self._cors()
         self.end_headers()
+
+    def do_POST(self) -> None:
+        if urllib.parse.urlsplit(self.path).path != "/kobo-token":
+            self._json(404, {"detail": "Use POST /kobo-token"})
+            return
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            body = json.loads(self.rfile.read(min(n, 65536)) or b"{}")
+        except (ValueError, json.JSONDecodeError):
+            self._json(400, {"detail": "Send JSON: server, username, password."})
+            return
+        server = str(body.get("server", "")).rstrip("/")
+        user, pw = str(body.get("username", "")), str(body.get("password", ""))
+        t = urllib.parse.urlsplit(server)
+        if t.hostname == DEMO_HOST and self.demo:
+            self._json(200, {"token": "demo"})
+            return
+        if t.scheme not in ("https", "http") or t.hostname not in self.allowed:
+            self._json(403, {"detail": f"Host {t.hostname} is not allowed. Start the proxy with --allow-host {t.hostname}."})
+            return
+        if not user or not pw:
+            self._json(400, {"detail": "Username and password are required."})
+            return
+        import base64
+        auth = base64.b64encode(f"{user}:{pw}".encode("utf-8")).decode("ascii")
+        req = urllib.request.Request(f"{t.scheme}://{t.netloc}/token/?format=json",
+                                     headers={"Accept": "application/json", "User-Agent": self.server_version, "Authorization": "Basic " + auth})
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                code, raw = r.status, r.read()
+        except urllib.error.HTTPError as e:
+            code, raw = e.code, e.read()
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            self._json(502, {"detail": f"Could not reach {t.hostname}: {e}"})
+            return
+        try:
+            obj = json.loads(raw or b"{}")
+        except json.JSONDecodeError:
+            obj = {"detail": "Unexpected reply from the server."}
+        # Only the token goes back to the page.
+        self._json(code, {"token": obj.get("token")} if code == 200 else {"detail": obj.get("detail", "Sign-in failed.")})
 
     def do_GET(self) -> None:
         u = urllib.parse.urlsplit(self.path)

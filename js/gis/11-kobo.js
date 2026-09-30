@@ -163,6 +163,40 @@
     var qs = Object.keys(q || {}).map(function (k) { return k + "=" + encodeURIComponent(typeof q[k] === "object" ? JSON.stringify(q[k]) : q[k]); }).join("&");
     return server() + path + (qs ? "?" + qs : "");
   }
+  // Sign in with the Kobo username and password: Kobo's /token/ endpoint
+  // returns the account's API token (Basic auth). Only the token is kept;
+  // the password is sent once and never stored.
+  K.login = function (username, password) {
+    var url = server() + "/token/?format=json";
+    var p;
+    if (/\/\/demo\.kobo\.local$/.test(server())) p = Promise.resolve({ token: "demo" });
+    else if (K.cfg.access === "app" && DESKTOP) {
+      p = window.__TAURI__.core.invoke("kobo_token", { server: server(), username: username, password: password }).then(function (r) {
+        var j = {}; try { j = JSON.parse(r.body || "{}"); } catch (e) { }
+        if (r.status === 401 || r.status === 403) throw new Error("Wrong username or password.");
+        if (r.status < 200 || r.status >= 300) throw new Error(j.detail || "HTTP " + r.status);
+        return j;
+      }, function (e) { throw new Error(String(e && e.message || e)); });
+    } else if (K.cfg.access === "proxy" || K.cfg.access === "app") {
+      var base = K.cfg.proxy.replace(/\/+$/, "");
+      p = fetch(base + "/kobo-token", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ server: server(), username: username, password: password }) })
+        .catch(function () { throw new Error("The Kobo proxy at " + base + " is not running. Start it with: python tools/kobo_proxy.py"); })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (r.status === 401 || r.status === 403) throw new Error("Wrong username or password."); if (!r.ok) throw new Error(j.detail || "HTTP " + r.status); return j; }); });
+    } else {
+      p = fetch(url, { headers: { Authorization: "Basic " + btoa(unescape(encodeURIComponent(username + ":" + password))) } })
+        .catch(function () { throw new Error("The Kobo server refused a direct browser request (CORS). Use the local proxy."); })
+        .then(function (r) { if (r.status === 401 || r.status === 403) throw new Error("Wrong username or password."); return r.json(); });
+    }
+    return p.then(function (j) {
+      if (!j || !j.token) throw new Error("The server did not return an API token.");
+      K.token = j.token;
+      K.cfg.username = username;
+      saveCfg();
+      return j.token;
+    });
+  };
+  K.logout = function () { K.token = ""; K.connected = false; saveCfg(); try { localStorage.removeItem(STORE + ":token"); } catch (e) { } };
+
   K.checkProxy = function () {
     return fetch(K.cfg.proxy.replace(/\/+$/, "") + "/health").then(function (r) { return r.json(); });
   };
@@ -401,7 +435,13 @@
         '<div class="kobo-sec">' +
           field("Server", '<select id="koboServer">' + opts(SERVERS, K.cfg.server) + "</select>") +
           '<input type="text" id="koboCustom" placeholder="https://kobo.example.org" value="' + esc(K.cfg.custom) + '" style="margin-top:6px;' + (K.cfg.server === "custom" ? "" : "display:none") + '">' +
-          field("API token", '<input type="password" id="koboToken" autocomplete="off" spellcheck="false" value="' + esc(K.token) + '">') +
+          '<div class="toggle-group kobo-auth"><button type="button" data-auth="login"' + (K.cfg.auth !== "token" ? ' class="active"' : "") + '>Username &amp; password</button><button type="button" data-auth="token"' + (K.cfg.auth === "token" ? ' class="active"' : "") + ">API token</button></div>" +
+          '<div id="koboLoginWrap"' + (K.cfg.auth === "token" ? ' style="display:none"' : "") + ">" +
+            field("Username", '<input type="text" id="koboUser" autocomplete="username" spellcheck="false" value="' + esc(K.cfg.username || "") + '">') +
+            field("Password", '<input type="password" id="koboPass" autocomplete="current-password">') +
+            '<p class="kobo-note" id="koboSigned"></p>' +
+          "</div>" +
+          '<div id="koboTokenWrap"' + (K.cfg.auth === "token" ? "" : ' style="display:none"') + ">" + field("API token", '<input type="password" id="koboToken" autocomplete="off" spellcheck="false" value="' + esc(K.token) + '">') + "</div>" +
           '<label class="check-row kobo-check"><input type="checkbox" id="koboRemember"' + (K.cfg.remember ? " checked" : "") + "> Remember on this device</label>" +
           '<div class="num-pair" style="margin-top:8px;"><div>' + field("Access", '<select id="koboAccess">' + opts((DESKTOP ? [["app", "Built-in"]] : []).concat([["proxy", "Local proxy"], ["direct", "Direct"]]), K.cfg.access) + "</select>") + "</div>" +
             '<div id="koboProxyWrap"' + (K.cfg.access === "proxy" ? "" : ' style="display:none"') + ">" + field('Proxy <i class="kobo-dot" id="koboProxyDot"></i>', '<input type="text" id="koboProxy" value="' + esc(K.cfg.proxy) + '">') + "</div></div>" +
@@ -447,7 +487,33 @@
     $("koboRemember").addEventListener("change", function () { K.cfg.remember = this.checked; saveCfg(); });
     $("koboAccess").addEventListener("change", function () { K.cfg.access = this.value; K.cfg.accessChosen = true; $("koboProxyWrap").style.display = this.value === "proxy" ? "" : "none"; saveCfg(); pingProxy(); });
     $("koboProxy").addEventListener("change", function () { K.cfg.proxy = this.value.trim() || "http://127.0.0.1:8767"; saveCfg(); pingProxy(); });
-    $("koboConnect").addEventListener("click", function () { K.token = $("koboToken").value.trim(); saveCfg(); K.connect().catch(function () { }); });
+    p.querySelector(".kobo-auth").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-auth]");
+      if (!b) return;
+      K.cfg.auth = b.dataset.auth; saveCfg();
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("active", x === b); });
+      $("koboLoginWrap").style.display = K.cfg.auth === "token" ? "none" : "";
+      $("koboTokenWrap").style.display = K.cfg.auth === "token" ? "" : "none";
+    });
+    function signedNote() {
+      var n = $("koboSigned");
+      if (n) n.innerHTML = K.token && K.cfg.auth !== "token" ? "Signed in as <b>" + esc(K.cfg.username || "") + '</b> · <a href="#" id="koboLogout">Sign out</a>' : "";
+      var lo = $("koboLogout");
+      if (lo) lo.addEventListener("click", function (ev) { ev.preventDefault(); K.logout(); signedNote(); setBusy(false, "Signed out.", true); });
+    }
+    signedNote();
+    $("koboConnect").addEventListener("click", function () {
+      if (K.cfg.auth === "token") { K.token = $("koboToken").value.trim(); saveCfg(); K.connect().catch(function () { }); return; }
+      var u = $("koboUser").value.trim(), pw = $("koboPass").value;
+      if (!pw && K.token && u === K.cfg.username) { K.connect().catch(function () { }); return; }
+      if (!u || !pw) { setBusy(false, "Enter your Kobo username and password.", false); return; }
+      setBusy(true, "Signing in…");
+      K.login(u, pw).then(function () {
+        $("koboPass").value = "";
+        signedNote();
+        return K.connect();
+      }).catch(function (e) { setBusy(false, e.message, false); });
+    });
     $("koboForms").addEventListener("click", function (e) {
       var it = e.target.closest("[data-uid]");
       if (it) K.openAsset(it.dataset.uid).then(function () { renderActive(); schedule(); }).catch(function () { });
