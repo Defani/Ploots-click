@@ -375,6 +375,9 @@
       .then(function () { btn.disabled = false; });
   }
 
+  // The GFW panel (js/gis/19-gfw.js) hosts the dataset list.
+  GIS.gfwCatalog = { load: loadGfw, add: addGfw, api: GFW_API };
+
   /* ---------------------------------------------------------- species */
 
   var bio = { src: "gbif", taxon: null, timer: 0 };

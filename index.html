@@ -1588,6 +1588,44 @@ body.gis-mode .nav-btn.nav-add .material-symbols-outlined{font-size:18px;height:
 .gproc-dlg [data-run]{display:flex;align-items:center;gap:4px}
 .gproc-dlg [data-run] .material-symbols-outlined{font-size:18px}
 .gproc-menu{min-width:230px}
+/* Global Forest Watch panel (js/gis/19-gfw.js) */
+.gfw-title{display:flex;align-items:center;gap:8px}
+.gfw-body{padding:10px 12px 16px}
+.gfw-tabs{margin-bottom:10px}
+.gfw-card{padding:10px 12px 12px;border:1px solid var(--line-strong);border-radius:10px;margin-bottom:10px}
+.gfw-card-head{display:flex;align-items:center;gap:7px;font-size:13px}
+.gfw-card-head .material-symbols-outlined{color:#97bd3d;font-size:20px}
+.gfw-card-head em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ink-soft)}
+.gfw-card .btn-primary,.gfw-body button{display:flex;align-items:center;justify-content:center;gap:5px}
+.gfw-note{margin:8px 0 0;font-size:11px;line-height:1.45;color:var(--ink-soft)}
+.gfw-list{display:flex;flex-direction:column;gap:2px}
+.gfw-item{display:flex!important;align-items:center;justify-content:flex-start!important;gap:9px!important;width:100%;padding:7px 8px!important;border:none!important;background:none!important;border-radius:8px;text-align:left;cursor:pointer;color:var(--ink)}
+.gfw-item:hover{background:var(--panel-2)!important}
+.gfw-item>.material-symbols-outlined:first-child{font-size:19px;color:#97bd3d}
+.gfw-item>.material-symbols-outlined:last-child{margin-left:auto;font-size:18px;color:var(--ink-soft)}
+.gfw-name{display:flex;flex-direction:column;gap:1px;font-size:12.5px;min-width:0}
+.gfw-name small{font-size:11px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gfw-sub{display:flex;align-items:center;gap:6px;margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+.gfw-sub .material-symbols-outlined{font-size:16px}
+.gfw-sub em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:500;color:var(--danger)}
+.gfw-sub em.ok{color:#3f9d4a}
+.gfw-api{display:flex;flex-direction:column;gap:4px}
+.gfw-api button{justify-content:flex-start!important;width:100%;text-align:left;font-size:12.5px}
+.gfw-link{margin-top:6px;border:none!important;background:none!important;color:var(--accent);font-size:12px;padding:4px 0!important;justify-content:flex-start!important}
+.gfw-busy{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--ink-soft)}
+.gfw-busy .material-symbols-outlined{animation:gfwSpin 1s linear infinite}
+@keyframes gfwSpin{to{transform:rotate(360deg)}}
+.gfw-res{margin-top:12px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px}
+.gfw-res-head{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.gfw-res-head b{font-size:13px}
+.gfw-res-head span{font-size:11px;color:var(--ink-soft)}
+.gfw-chart{width:100%;height:90px;display:block}
+.gfw-chart rect{fill:#dc6699}
+.gfw-chart rect:hover{fill:#b8467a}
+.gfw-axis{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-soft);margin:2px 0 8px}
+.gfw-res table th{font-weight:500}
+.gfw-res #gfwCsv{width:100%;margin-top:10px}
+.gfw-foot{margin:18px 0 0;font-size:10.5px;color:var(--ink-soft)}
 /* Plugins (js/plugins.js) */
 body:not(.gis-mode) .nav-plugin-map{display:none}
 body.gis-mode .nav-plugin-chart{display:none}
@@ -3135,6 +3173,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/16-logos.js"></script>
 <script src="js/gis/17-basemap-gallery.js"></script>
 <script src="js/gis/18-locator.js"></script>
+<script src="js/gis/19-gfw.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
