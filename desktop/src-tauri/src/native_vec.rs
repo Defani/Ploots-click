@@ -865,7 +865,7 @@ mod tests {
 
     // A shapefile with two squares near Takengon, written by hand.
     fn write_test_shp(dir: &Path) -> std::path::PathBuf {
-        let squares = [[96.80, 4.60, 96.85, 4.65], [96.86, 4.60, 96.90, 4.64]];
+        let squares: [[f64; 4]; 2] = [[96.80, 4.60, 96.85, 4.65], [96.86, 4.60, 96.90, 4.64]];
         let mut shp = Vec::new();
         let mut shx = Vec::new();
         let mut recs = Vec::new();
