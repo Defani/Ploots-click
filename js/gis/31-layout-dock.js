@@ -100,6 +100,15 @@
     if (map) map.classList.toggle("cd-on", !!isMap);
     if (item) item.classList.toggle("cd-on", !!o && !isMap);
     if (empty) empty.style.display = o ? "none" : "";
+    // Legend, scale bar, north arrow, inset, colour bar and extra map frames
+    // keep their own settings (basemap of the inset, units, style…): show
+    // them under the position and size of the item.
+    var gp = $("gisItemProps");
+    if (gp) {
+      if (!gp._home) gp._home = [gp.parentNode, gp.nextSibling];
+      if (o && o.gisItem && !isMap && item) { if (gp.parentNode !== item) item.appendChild(gp); gp.classList.add("cd-gis-props"); }
+      else if (gp.parentNode !== gp._home[0]) { gp._home[0].insertBefore(gp, gp._home[1] && gp._home[1].parentNode === gp._home[0] ? gp._home[1] : null); gp.classList.remove("cd-gis-props"); }
+    }
   }
   // Move the panels into the dock in Layout view, and back out of it.
   function adopt(el, pane) { if (!el || el.parentNode === pane) return; homes.push([el, el.parentNode, el.nextSibling]); pane.appendChild(el); }

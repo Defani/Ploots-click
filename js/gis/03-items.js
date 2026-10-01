@@ -24,7 +24,7 @@
     legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true, boxW: 0, boxH: 0, hidden: [], hiddenEntries: {}, onlyVisible: true },
     scalebar: { style: "single", segments: 4, units: "auto", width: 170, height: 6, fontSize: 10, frame: false, color: INK, labels: "all" },
     north: { style: "arrow", size: 56, color: INK, fill2: "#ffffff", label: true, followMap: true },
-    inset: { basemap: "positron", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 },
+    inset: { basemap: "opentopomap", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 },
     colorbar: { layerId: null, mode: "auto", classes: 6, orientation: "horizontal", length: 220, thickness: 12, extend: "neither", ticks: 5, decimals: -1, title: "", fontSize: 10, frame: true, color: INK }
   };
   GIS.ITEM_DEFAULTS = DEFAULTS;

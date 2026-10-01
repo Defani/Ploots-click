@@ -67,7 +67,7 @@
   function openInsert(btn) {
     if (pop) { closePop(); return; }
     pop = document.createElement("div");
-    pop.className = "gis-ctx arc-insert-menu";
+    pop.className = "gis-ctx open arc-insert-menu";
     // Map frames: one per map of the project (multiple maps), or a new map.
     var maps = (GIS.maps || []).map(function (m) { return ["map:" + m.id, "add_photo_alternate", "Map frame: " + m.name]; }).concat([["map:__new", "add_location_alt", "Map frame: new map…"], "-"]);
     pop.innerHTML = maps.concat(INSERT).map(function (it) { return it === "-" ? "<hr>" : '<button type="button" data-v="' + it[0] + '">' + sym(it[1]) + "<span>" + it[2] + "</span></button>"; }).join("");
