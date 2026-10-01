@@ -502,3 +502,13 @@ body.gis-carto #tfbMini { display: none !important; }
 #cartoDock .cd-gis-props { padding: 4px 12px 14px; border-top: 1px solid var(--g-line); }
 #cartoDock .cd-gis-props .field-label { font-size: 11px !important; margin: 6px 0 3px !important; color: var(--ink-soft) !important; }
 #cartoDock .cd-gis-props select, #cartoDock .cd-gis-props input[type=number] { height: 28px !important; font-size: 12.5px !important; }
+
+/* Earth Engine panel: wide enough to write code; "Wide editor" widens it further. */
+.sidebar:not(.closed):has(#panel-gis-gee.active) { width: 460px !important; }
+.sidebar.gee-wide:not(.closed):has(#panel-gis-gee.active) { width: min(900px, 62vw) !important; }
+#panel-gis-gee #geeCode { height: 300px; min-height: 160px; font: 12.5px/1.5 "JetBrains Mono", Consolas, monospace; padding: 10px 12px; border-radius: 8px; }
+.sidebar.gee-wide #panel-gis-gee #geeCode { height: calc(100vh - 430px); min-height: 320px; }
+.sidebar.gee-wide #panel-gis-gee .gee-out { max-height: 260px; }
+.gee-code-head { display: flex; align-items: center; }
+.gee-code-head .ss-icon { margin-left: auto; width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--ink-soft); border-radius: 6px; cursor: pointer; }
+.gee-code-head .ss-icon:hover { color: var(--accent); background: var(--g-hover); }

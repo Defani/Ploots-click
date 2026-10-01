@@ -12,9 +12,19 @@
 //!   `kobo_token(server, username, password)`  signs in: asks the server's
 //!   `/token/` endpoint (Basic auth) for the account's API token. The
 //!   password is used for that one request and never kept.
+//!   `google_signin(client_id, client_secret, scopes)`  Google sign-in in the
+//!   default browser (Chrome…), the OAuth way for installed apps: a one-time
+//!   listener on 127.0.0.1 receives the code, PKCE protects it, and the code
+//!   is exchanged for tokens here. Google refuses its sign-in page inside an
+//!   app window, so this is how Earth Engine signs in on the desktop.
+//!   `google_refresh(client_id, client_secret, refresh_token)`  a new access
+//!   token when the old one expires (about an hour), without the browser.
 
-use std::io::Read;
-use std::time::Duration;
+use std::io::{Read, Write};
+use std::net::TcpListener;
+use std::time::{Duration, Instant};
+
+use sha2::{Digest, Sha256};
 
 #[derive(serde::Serialize)]
 struct HttpReply {
@@ -95,6 +105,111 @@ fn kobo_token_request(server: &str, username: &str, password: &str) -> Result<Ht
     Ok(HttpReply { status, body })
 }
 
+/// Base64url without padding (PKCE verifier and challenge).
+fn b64url(data: &[u8]) -> String {
+    base64(data).trim_end_matches('=').replace('+', "-").replace('/', "_")
+}
+
+fn google_agent() -> ureq::Agent {
+    ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(20))
+        .timeout(Duration::from_secs(60))
+        .user_agent(concat!("GISConsultantStudio/", env!("CARGO_PKG_VERSION")))
+        .build()
+}
+
+fn google_token(form: &[(&str, &str)]) -> Result<HttpReply, String> {
+    let resp = match google_agent().post("https://oauth2.googleapis.com/token").send_form(form) {
+        Ok(r) => r,
+        Err(ureq::Error::Status(_, r)) => r,
+        Err(e) => return Err(format!("Could not reach Google: {e}")),
+    };
+    let status = resp.status();
+    let mut body = String::new();
+    resp.into_reader().take(1024 * 1024).read_to_string(&mut body).map_err(|e| e.to_string())?;
+    Ok(HttpReply { status, body })
+}
+
+const SIGNED_IN_PAGE: &str = "<!doctype html><meta charset=utf-8><title>GIS Consultant Studio</title><body style=\"font:16px system-ui;display:grid;place-items:center;height:90vh;color:#2c3a2e\"><div style=\"text-align:center\"><h2 style=\"color:#4e8a2e\">Signed in</h2><p>You can close this tab and go back to GIS Consultant Studio.</p></div>";
+
+fn google_signin_blocking(client_id: &str, client_secret: &str, scopes: &str) -> Result<HttpReply, String> {
+    let listener = TcpListener::bind("127.0.0.1:0").map_err(|e| format!("Could not open a local port: {e}"))?;
+    let port = listener.local_addr().map_err(|e| e.to_string())?.port();
+    let redirect = format!("http://127.0.0.1:{port}");
+    let mut rnd = [0u8; 64];
+    getrandom::getrandom(&mut rnd).map_err(|e| e.to_string())?;
+    let verifier = b64url(&rnd[..48]);
+    let state = b64url(&rnd[48..]);
+    let challenge = b64url(&Sha256::digest(verifier.as_bytes()));
+    let mut auth = url::Url::parse("https://accounts.google.com/o/oauth2/v2/auth").unwrap();
+    auth.query_pairs_mut()
+        .append_pair("client_id", client_id)
+        .append_pair("redirect_uri", &redirect)
+        .append_pair("response_type", "code")
+        .append_pair("scope", scopes)
+        .append_pair("code_challenge", &challenge)
+        .append_pair("code_challenge_method", "S256")
+        .append_pair("state", &state)
+        .append_pair("access_type", "offline")
+        .append_pair("prompt", "consent");
+    tauri_plugin_opener::open_url(auth.as_str(), None::<&str>).map_err(|e| format!("Could not open the browser: {e}"))?;
+
+    listener.set_nonblocking(true).map_err(|e| e.to_string())?;
+    let deadline = Instant::now() + Duration::from_secs(300);
+    loop {
+        match listener.accept() {
+            Ok((mut stream, _)) => {
+                let _ = stream.set_nonblocking(false);
+                let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+                let mut buf = [0u8; 8192];
+                let n = stream.read(&mut buf).unwrap_or(0);
+                let head = String::from_utf8_lossy(&buf[..n]).to_string();
+                let path = head.split_whitespace().nth(1).unwrap_or("/").to_string();
+                let u = url::Url::parse(&format!("http://127.0.0.1{path}")).map_err(|e| e.to_string())?;
+                let get = |k: &str| u.query_pairs().find(|(a, _)| a == k).map(|(_, v)| v.to_string());
+                let (code, err) = (get("code"), get("error"));
+                if code.is_none() && err.is_none() {
+                    // favicon and the like
+                    let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+                    continue;
+                }
+                let page = if err.is_some() { SIGNED_IN_PAGE.replace("Signed in", "Sign-in cancelled") } else { SIGNED_IN_PAGE.to_string() };
+                let _ = stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", page.len(), page).as_bytes());
+                if let Some(e) = err { return Err(format!("Google sign-in: {e}")); }
+                if get("state").as_deref() != Some(state.as_str()) { return Err("Google sign-in: the reply did not match this sign-in (state).".into()); }
+                let code = code.unwrap();
+                let mut form = vec![("code", code.as_str()), ("client_id", client_id), ("redirect_uri", redirect.as_str()), ("grant_type", "authorization_code"), ("code_verifier", verifier.as_str())];
+                if !client_secret.is_empty() { form.push(("client_secret", client_secret)); }
+                return google_token(&form);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                if Instant::now() > deadline { return Err("Google sign-in timed out (5 minutes). Press Connect again.".into()); }
+                std::thread::sleep(Duration::from_millis(120));
+            }
+            Err(e) => return Err(e.to_string()),
+        }
+    }
+}
+
+#[tauri::command]
+async fn google_signin(client_id: String, client_secret: Option<String>, scopes: String) -> Result<HttpReply, String> {
+    tauri::async_runtime::spawn_blocking(move || google_signin_blocking(&client_id, client_secret.as_deref().unwrap_or(""), &scopes))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn google_refresh(client_id: String, client_secret: Option<String>, refresh_token: String) -> Result<HttpReply, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let secret = client_secret.unwrap_or_default();
+        let mut form = vec![("client_id", client_id.as_str()), ("refresh_token", refresh_token.as_str()), ("grant_type", "refresh_token")];
+        if !secret.is_empty() { form.push(("client_secret", secret.as_str())); }
+        google_token(&form)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 async fn kobo_token(server: String, username: String, password: String) -> Result<HttpReply, String> {
     tauri::async_runtime::spawn_blocking(move || kobo_token_request(&server, &username, &password))
@@ -113,7 +228,7 @@ async fn kobo_get(url: String, token: Option<String>) -> Result<HttpReply, Strin
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![kobo_get, kobo_token])
+        .invoke_handler(tauri::generate_handler![kobo_get, kobo_token, google_signin, google_refresh])
         .run(tauri::generate_context!())
         .expect("error while running GIS Consultant Studio");
 }
