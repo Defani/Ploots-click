@@ -82,6 +82,8 @@
       (listeners[evt] || []).concat(listeners["*"] || []).forEach(function (fn) { try { fn(arg, evt); } catch (e) { console.error(e); } });
     },
 
+    // After opening a project: new ids continue after the loaded ones.
+    reserveIds: function (layerNum, mapNum) { nextId = Math.max(nextId, (layerNum || 0) + 1); nextMap = Math.max(nextMap, (mapNum || 0) + 1); },
     get: function (id) { return GIS.layers.filter(function (l) { return l.id === id; })[0] || null; },
 
     /* ------------------------------------------------------------ maps */

@@ -640,3 +640,46 @@ html[data-theme=dark] .north-grid button svg { filter: invert(1) hue-rotate(180d
 /* Rail labels a little larger for reading. */
 .sidebar-container .nav-lbl { font-size: 10.5px !important; font-weight: 500 !important; }
 .sidebar-nav .nav-add-sep { font-size: 10px !important; letter-spacing: .4px; }
+
+/* The rail and the open panel are one pane of glass: no dividing line, one backdrop. */
+html body .sidebar-container {
+  background: var(--g-glass) !important;
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(160%) !important;
+  backdrop-filter: blur(var(--g-blur)) saturate(160%) !important;
+  border-right: 1px solid var(--g-line) !important;
+}
+html[data-theme=dark] body .sidebar-container { background: rgba(20, 27, 24, .70) !important; }
+html body .sidebar-container .sidebar-nav, html body .sidebar-container .sidebar {
+  background: transparent !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 0 !important; box-shadow: none !important;
+}
+html body .sidebar-container .sp-head { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+/* Scrollbars: thin, no track line. Docks without hard edges. */
+* { scrollbar-width: thin; scrollbar-color: rgba(127, 140, 132, .35) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+::-webkit-scrollbar-track { background: transparent; border: 0; }
+::-webkit-scrollbar-thumb { background: rgba(127, 140, 132, .32); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: rgba(127, 140, 132, .55); }
+html body .gisw-dock, html body #cartoDock { border-left: 0 !important; }
+
+/* Sections inside the docks are flat: no card edge that looks cut by the dock. */
+html body .gisw-dock .side-section, html body #cartoDock .side-section {
+  border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; margin: 0 !important;
+}
+html body .gisw-dock .side-section + .side-section, html body #cartoDock .side-section + .side-section { border-top: 1px solid var(--g-line) !important; }
+html body .gisw-dock .side-section-body { padding: 4px 14px 14px !important; }
+
+/* Export: waiting for the map tiles */
+.gcs-export-wait { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; background: rgba(8, 12, 10, .35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.gew-card { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 260px; padding: 20px 26px; border-radius: 14px; background: var(--g-glass-strong); border: 1px solid var(--g-line-strong); box-shadow: var(--g-shadow-float); color: var(--ink); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+.gew-card b { font-size: 13.5px; }
+.gew-msg { font-size: 12px; color: var(--ink-soft); }
+.gew-spin { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--g-line-strong); border-top-color: var(--accent); animation: gewSpin .8s linear infinite; }
+@keyframes gewSpin { to { transform: rotate(360deg); } }
+/* Project buttons: only in the map workspace. */
+body:not(.gis-mode) #gcsProjBtns { display: none !important; }
+.home-actions { flex-wrap: wrap; }
+/* Home › Map: Blank · Open project · Sample on one row. */
+.home-card[data-mode="map"] .home-actions { display: grid !important; grid-template-columns: 0.8fr 1.3fr 0.8fr; gap: 6px; }
+.home-card .home-actions button { white-space: nowrap; padding-left: 8px !important; padding-right: 8px !important; }
+.home-card[data-mode="map"] .home-actions button { height: 36px !important; min-height: 0 !important; display: flex !important; align-items: center; justify-content: center; }

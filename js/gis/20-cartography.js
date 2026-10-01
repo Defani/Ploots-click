@@ -160,13 +160,85 @@
       title: [0.06, 0.035, 0.88], sub: [0.06, 0.085], bottom: [0.06, 0.765, 0.88], neat: true },
     poster: { name: "Poster (A2 portrait)", paper: [420, 594], map: [0.05, 0.13, 0.9, 0.66],
       title: [0.05, 0.035, 0.9], sub: [0.05, 0.095], bottom: [0.05, 0.81, 0.9], neat: true, big: true },
-    minimal: { name: "Minimal (full-page map)", paper: [297, 210], map: [0.02, 0.02, 0.96, 0.96], minimal: true }
+    minimal: { name: "Minimal (full-page map)", paper: [297, 210], map: [0.02, 0.02, 0.96, 0.96], minimal: true },
+    tematik: { name: "Peta tematik (KLHK / BIG style, A4 portrait)", paper: [210, 297], tematik: true }
   };
+  // The Indonesian thematic map sheet (as KLHK, BIG and project maps are
+  // drawn): a boxed title, a large map with a D° M' S" grid outside the frame,
+  // a locator inset with the north arrow at the top right, the scale bar on
+  // the map, and a band of boxes below: KETERANGAN (legend), information,
+  // datum and projection, Sumber (sources) and Dibuat (author, year).
+  function tematik(tag) {
+    var W = state.canvasWidthPx, H = state.canvasHeightPx, mm = W / 210, m = 5 * mm, ink = "#1a1a1a";
+    var box = function (x, y, w, h, sw) { return tag(addRect({ left: x, top: y, width: w, height: h, strokeWidth: sw || 0.8, stroke: ink, fill: "#ffffff" })); };
+    var txt = function (t, x, y, w, size, o) { return tag(addText(t, Object.assign({ left: x, top: y, width: w, fontSize: size * mm, fill: ink, lineHeight: 1.25 }, o || {}))); };
+    tag(addRect({ left: m * 0.5, top: m * 0.5, width: W - m, height: H - m, strokeWidth: 1, stroke: ink }));
+    // Title
+    var th = 11 * mm;
+    box(m, m, W - 2 * m, th, 1);
+    txt("PETA JUDUL PETA DI WILAYAH KAJIAN", m + 3 * mm, m + 2.6 * mm, W - 2 * m - 6 * mm, 5.2, { fontWeight: "bold", textAlign: "center", fontFamily: font("title"), charSpacing: 20 });
+    // Map, with room around it for the grid labels
+    var mx = m, my = m + th + 1.5 * mm, mw = W - 2 * m, mh = H * 0.68; // the map frame keeps its own room for the grid labels
+    state.chartBox.x = mx; state.chartBox.y = my; state.chartBox.w = mw; state.chartBox.h = mh;
+    Object.assign(state, { mapGrid: true, mapGridType: "geo", mapGridFormat: "dmsfull", mapGridLabels: "all", mapGridLabelPos: "outside", mapGridStyle: state.mapGridStyle || "lines" });
+    if (typeof syncChartBlockDom === "function") syncChartBlockDom();
+    if (typeof render === "function") render();
+    var c = fc();
+    // The map itself, inside the room the frame keeps for the grid labels.
+    var z = GIS.frameInset ? GIS.frameInset() : { l: 0, t: 0, r: 0, b: 0 }, ax = mx + z.l, ay = my + z.t, aw = mw - z.l - z.r, ah = mh - z.t - z.b;
+    if (GIS.items) {
+      // Locator inset with the north arrow, top right inside the map
+      var iw = aw * 0.32, ih = ah * 0.30, ix = ax + aw - iw - 2.5 * mm, iy = ay + 2.5 * mm;
+      var inset = GIS.items.add("inset");
+      if (inset) { GIS.items.update(inset, { w: Math.round(iw), h: Math.round(ih), zoomOffset: -3 }); inset = c.getObjects().filter(function (o) { return o.gisItem === "inset"; }).pop(); place(inset, ix, iy); }
+      var north = GIS.items.add("north");
+      if (north) { GIS.items.update(north, { style: "arrowN", size: Math.round(12 * mm) }); north = c.getObjects().filter(function (o) { return o.gisItem === "north"; }).pop(); place(north, ix + iw - north.getScaledWidth() - 2 * mm, iy + 2 * mm); }
+      txt("▭  Area yang dipetakan", ix, iy + ih + 1.5 * mm, iw, 3.2, { backgroundColor: "#ffffff" });
+      // Scale bar, bottom right inside the map
+      var scale = GIS.items.add("scalebar");
+      if (scale) { GIS.items.update(scale, { frame: true, style: "double" }); scale = c.getObjects().filter(function (o) { return o.gisItem === "scalebar"; }).pop(); place(scale, ax + aw - scale.getScaledWidth() - 2.5 * mm, ay + ah - scale.getScaledHeight() - 2.5 * mm); }
+    }
+    // Bottom band
+    var by = my + mh + 1.5 * mm, bh = H - m - by, bw = W - 2 * m, g = 1.5 * mm;
+    var w1 = bw * 0.46, w2 = bw * 0.25, w3 = bw - w1 - w2 - 2 * g;
+    box(m, by, w1, bh);
+    txt("KETERANGAN", m + 3 * mm, by + 2.5 * mm, w1 - 6 * mm, 4.4, { fontWeight: "bold", fontFamily: font("title") });
+    if (GIS.items) {
+      var legend = GIS.items.add("legend");
+      if (legend) { GIS.items.update(legend, { title: "", frame: false, background: "#ffffff", fontSize: 10, boxW: Math.round(w1 - 6 * mm), boxH: Math.round(bh - 12 * mm) }); legend = c.getObjects().filter(function (o) { return o.gisItem === "legend"; }).pop(); fit(legend, w1 - 6 * mm, bh - 12 * mm); place(legend, m + 3 * mm, by + 10 * mm); }
+    }
+    box(m + w1 + g, by, w2, bh);
+    txt("INFORMASI", m + w1 + g + 3 * mm, by + 2.5 * mm, w2 - 6 * mm, 4.0, { fontWeight: "bold", fontFamily: font("title") });
+    txt("Isi keterangan tambahan: nomor SK, kelompok tani, luas, catatan lapangan.", m + w1 + g + 3 * mm, by + 10 * mm, w2 - 6 * mm, 3.1);
+    var x3 = m + w1 + w2 + 2 * g, h3a = bh * 0.27, h3c = bh * 0.2, h3b = bh - h3a - h3c - 2 * g;
+    box(x3, by, w3, h3a);
+    txt("Datum      : World Geodetic System 1984\nProyeksi  : Geografis (lintang/bujur)\nGrid          : Geografis (D° M′ S″)", x3 + 2.5 * mm, by + 2 * mm, w3 - 5 * mm, 2.7);
+    box(x3, by + h3a + g, w3, h3b);
+    var src = [];
+    GIS.layers.forEach(function (l) { if (l.visible && l.kind !== "xyz") src.push(l.attribution ? l.name + " (" + l.attribution + ")" : l.name); });
+    txt("Sumber:", x3 + 2.5 * mm, by + h3a + g + 1.8 * mm, w3 - 5 * mm, 3.4, { fontWeight: "bold" });
+    txt(src.length ? src.map(function (s, i) { return (i + 1) + ". " + s; }).join("\n") : "1. Sumber data", x3 + 2.5 * mm, by + h3a + g + 7 * mm, w3 - 5 * mm, 2.6);
+    box(x3, by + bh - h3c, w3, h3c);
+    txt("Dibuat oleh: Defani Arman Alfitriansyah\nTahun : " + new Date().getFullYear(), x3 + 2.5 * mm, by + bh - h3c + 2 * mm, w3 - 5 * mm, 2.7);
+  }
   function clearLayout() {
     var c = fc();
     c.getObjects().slice().forEach(function (o) { if (o.gisItem || o.cartoTpl) c.remove(o); });
   }
-  function place(o, x, y) { if (!o) return; o.set({ left: x, top: y }); o.setCoords(); fc().fire("object:modified", { target: o }); }
+  // Puts the item's visible top-left corner at x, y (whatever its origin).
+  function place(o, x, y) {
+    if (!o) return;
+    o.set({ left: x, top: y }); o.setCoords();
+    var r = o.getBoundingRect(true, true);
+    o.set({ left: o.left + (x - r.left), top: o.top + (y - r.top) }); o.setCoords();
+    fc().fire("object:modified", { target: o });
+  }
+  // Scales an item down (never up) so it fits inside w × h.
+  function fit(o, w, h) {
+    if (!o) return;
+    var r = o.getBoundingRect(true, true), k = Math.min(1, w / r.width, h / r.height);
+    if (k < 1) { o.scale((o.scaleX || 1) * k); o.setCoords(); }
+  }
   function applyTemplate(id) {
     var T = TEMPLATES[id], c = fc();
     if (!T || !c) return;
@@ -174,11 +246,12 @@
     if (has && !window.confirm("Replace the current layout items (legend, scale bar, titles…) with the \"" + T.name + "\" template?")) return;
     clearLayout();
     setPage(T.paper[0], T.paper[1]);
+    function tag(o) { if (o) o.cartoTpl = true; return o; }
+    if (T.tematik) { tematik(tag); c.discardActiveObject(); c.requestRenderAll(); notify(); toast(T.name + " applied"); return; }
     var W = state.canvasWidthPx, H = state.canvasHeightPx, k = T.big ? 1.6 : 1;
     state.chartBox.x = T.map[0] * W; state.chartBox.y = T.map[1] * H; state.chartBox.w = T.map[2] * W; state.chartBox.h = T.map[3] * H;
     if (typeof syncChartBlockDom === "function") syncChartBlockDom();
     if (typeof render === "function") render();
-    function tag(o) { if (o) o.cartoTpl = true; return o; }
     if (T.neat) tag(addRect({ left: W * 0.02, top: H * 0.02, width: W * 0.96, height: H * 0.96, strokeWidth: 1.6, selectable: true }));
     if (T.title) {
       tag(addText("Map title", { left: T.title[0] * W, top: T.title[1] * H, width: T.title[2] * W, fontSize: 30 * k, fontWeight: "bold", fontFamily: font("title") }));
@@ -284,5 +357,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(boot, 50); }); else setTimeout(boot, 50);
 
-  GIS.cartography = { applyTemplate: applyTemplate, align: align, distribute: distribute, setPage: setPage, TEMPLATES: TEMPLATES };
+  GIS.cartography = { MM: MM, pageMm: pageMm, applyTemplate: applyTemplate, align: align, distribute: distribute, setPage: setPage, TEMPLATES: TEMPLATES };
 })();

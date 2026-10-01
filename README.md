@@ -186,7 +186,12 @@ The Map mode has two views, switched with the two small buttons at the **bottom 
 - Nothing opens by itself when an item is clicked, and there are no floating bars in this view.
 - **Rulers**: drag from a ruler to pull out a guide (Alt+drag pans); the mouse wheel zooms.
 - **Grid**: geographic (D° M′, D° M′ S″ always, or decimal degrees) or UTM, labels inside or outside the frame.
-- **One Export button** (round, top right): PNG, JPG, SVG, PDF and **GeoPDF**.
+- **One Export button** (round, top right): PNG, JPG, SVG, PDF and **GeoPDF**. While it exports, a small card waits until every map tile has loaded; raster basemaps and tile layers are fetched one or two zoom levels deeper so they are as sharp as the vector layers at 300 dpi.
+- **Templates**, including **Peta tematik (KLHK / BIG style, A4 portrait)**: a boxed title, the map with a D° M′ S″ grid outside the frame, a locator inset (with its own grid) and north arrow, the scale bar, and a band of boxes for KETERANGAN (legend), information, datum and projection, Sumber and Dibuat.
+- **Zoom the map to the active layer** or to all layers from the tool column, besides setting the scale.
+- **Legend** lists tile layers too: GFW tree cover loss as its year ramp, tree cover density, gain, alerts, GBIF density, and a plain swatch for other tiles.
+
+**Projects (.gcsproj)**, like a QGIS .qgz: Save (Ctrl+S), Save as and Open (Ctrl+O) in the top bar, **Home › Map › Open project**, or double-click a .gcsproj in Files. One file keeps every map with its layers (vector data, raster bands, tile URLs), symbology, labels, basemaps and views, the page size and every layout item, and the chart and Data View, so a layout is opened again instead of rebuilt.
 
 **Processing Toolbox** (Turf.js): vector geoprocessing (buffer, clip, difference, intersection, union, dissolve, convex and concave hulls, variable buffer), geometry (centroids, point on surface, bounding boxes, simplify, smooth, polygons ↔ lines), analysis (count points in polygon, distance to nearest hub, …), creation, selection, conversion, interpolation, clustering, general tools, and **Field data → Enumerator routes**: each enumerator's points joined in the order they were collected (per day if chosen) with the number of interviews, distance and hours.
 
@@ -665,7 +670,8 @@ flowchart LR
 │   │   ├── 29-item-props.js       #   Item Properties: text and shape settings, position and size in mm
 │   │   ├── 30-arcmap-ui.js        #   Data / Layout switch, scale box, map tools in the top bar, Insert menu
 │   │   ├── 31-layout-dock.js      #   Layout view frame: thin tool column, right dock (Items / Item Properties / Layout)
-│   │   └── 32-geopdf.js           #   GeoPDF export
+│   │   ├── 32-geopdf.js           #   GeoPDF export
+│   │   └── 33-project.js          #   project files (.gcsproj): save, save as, open
 │   ├── agro/                      # Agroforestry mode (loaded the first time it is opened)
 │   │   ├── agro-loader.js         #   the small stand-in that loads the simulator on demand
 │   │   ├── agroforestry.js        #   model, species, New stand dialog, menus, 2D, 3D SExI-FS, 3D navigation, files

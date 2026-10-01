@@ -90,9 +90,11 @@
   function addTcl(o) {
     registerProtocol();
     var l = GIS.layers.filter(function (x) { return x.gfwTcl; })[0];
-    if (l) { l.url = tclUrl(o); l.name = "Tree cover loss " + o.y0 + "–" + o.y1 + " (>" + o.tcd + "% canopy)"; GIS.emit("layers"); return l; }
+    // Legend: the same pink ramp the tiles are drawn with, older to recent years.
+    var spec = { ramp: ["rgb(220,102,153)", "rgb(220,62,123)"], min: String(o.y0), max: String(o.y1) };
+    if (l) { l.url = tclUrl(o); l.name = "Tree cover loss " + o.y0 + "–" + o.y1 + " (>" + o.tcd + "% canopy)"; l.legendSpec = spec; GIS.emit("layers"); return l; }
     l = GIS.addXYZ(tclUrl(o), "Tree cover loss " + o.y0 + "–" + o.y1 + " (>" + o.tcd + "% canopy)", ATTR);
-    l.gfwTcl = true;
+    l.gfwTcl = true; l.legendSpec = spec;
     GIS.move(l.id, 0);
     return l;
   }

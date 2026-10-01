@@ -30,7 +30,7 @@
             (window.PlootsHomeThumbs ? '<div class="home-thumb">' + window.PlootsHomeThumbs.map + '</div>' : '') +
             '<span class="material-symbols-outlined home-icon">map</span>' +
             "<h2>Map</h2><p>Spatial data: vector and raster layers, symbology, map layout.</p>" +
-            '<div class="home-actions"><button data-go="map-blank">Blank</button><button data-go="map-sample" class="btn-primary">Sample map</button></div>' +
+            '<div class="home-actions"><button data-go="map-blank">Blank</button><button data-go="map-project" class="btn-primary">Open project</button><button data-go="map-sample">Sample</button></div>' +
           "</div>" +
           '<div class="home-card" data-mode="agro">' +
             (window.PlootsHomeThumbs ? '<div class="home-thumb">' + window.PlootsHomeThumbs.agro + '</div>' : '') +
@@ -71,6 +71,8 @@
     GIS.enterMapMode();
     activateSidebarPanel("panel-map");
     if (what === "map-sample" && !GIS.layers.length) GIS.loadSampleLayer();
+    if (what === "map-blank" && GIS.project) GIS.project.reset();
+    if (what === "map-project" && GIS.project) GIS.project.open();
   }
 
   function addNavButton() {

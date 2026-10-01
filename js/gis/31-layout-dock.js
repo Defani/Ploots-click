@@ -23,6 +23,7 @@
   var TOOLS = [
     ["select", "arrow_selector_tool", "Select and move items"], ["move", "open_with", "Move map content (pan inside the map frame)"], "-",
     ["zin", "zoom_in", "Zoom in"], ["zout", "zoom_out", "Zoom out"], ["z100", "pageview", "Zoom to 100%"], ["zfit", "fit_screen", "Zoom to the whole page"], "-",
+    ["mlayer", "zoom_in_map", "Zoom the map to the active layer"], ["mall", "public", "Zoom the map to all layers"], "-",
     ["i:mapframe", "add_photo_alternate", "Add a map frame (another map)"], ["i:title", "title", "Add a title"], ["i:text", "text_fields", "Add text"], ["i:legend", "format_list_bulleted", "Add a legend"],
     ["i:scalebar", "straighten", "Add a scale bar"], ["i:north", "navigation", "Add a north arrow"], ["i:inset", "picture_in_picture", "Add an inset map"],
     ["i:image", "image", "Add a picture"], ["i:frame", "crop_square", "Add a rectangle"], ["i:ellipse", "circle", "Add an ellipse"],
@@ -62,6 +63,8 @@
       else if (k === "zout" && typeof zoomStep === "function") zoomStep(-1);
       else if (k === "z100" && typeof setCanvasZoom === "function") setCanvasZoom(100);
       else if (k === "zfit" && typeof setCanvasZoom === "function") setCanvasZoom(null);
+      else if (k === "mlayer" && GIS.mapActions) { var al = GIS.active() || GIS.layers.filter(function (l) { return l.kind !== "xyz"; })[0]; if (al) GIS.mapActions.zoomToLayer(al); }
+      else if (k === "mall" && GIS.mapActions) GIS.mapActions.fitAll();
       else if (k === "move") { var mv = $("gisMoveBtn"); if (mv) mv.click(); }
       else if (k === "select") { if (window.fabricCanvas) { fabricCanvas.discardActiveObject(); fabricCanvas.requestRenderAll(); } }
       else if (k === "i:mapframe") { var ins = document.querySelector(".arc-insert button"); if (ins) ins.click(); }

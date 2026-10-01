@@ -24,7 +24,7 @@
     legend: { title: "Legend", fontSize: 11, frame: true, background: "#ffffff", showLayerNames: true, boxW: 0, boxH: 0, hidden: [], hiddenEntries: {}, onlyVisible: true },
     scalebar: { style: "single", segments: 4, units: "auto", width: 170, height: 6, fontSize: 10, frame: false, color: INK, labels: "all" },
     north: { style: "arrow", size: 56, color: INK, fill2: "#ffffff", label: true, followMap: true },
-    inset: { basemap: "opentopomap", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1 },
+    inset: { basemap: "opentopomap", zoomOffset: -4, w: 220, h: 160, extentColor: "#e03131", showLayers: false, frameWidth: 1, grid: true },
     colorbar: { layerId: null, mode: "auto", classes: 6, orientation: "horizontal", length: 220, thickness: 12, extend: "neither", ticks: 5, decimals: -1, title: "", fontSize: 10, frame: true, color: INK }
   };
   GIS.ITEM_DEFAULTS = DEFAULTS;
@@ -276,9 +276,32 @@
   GIS.legendLayers = function (o) {
     o = o || {};
     return GIS.layers.filter(function (l) {
-      return l.kind !== "xyz" && (l.visible || o.onlyVisible === false) && l.legend !== false && (o.hidden || []).indexOf(l.id) < 0;
+      return (l.visible || o.onlyVisible === false) && l.legend !== false && (o.hidden || []).indexOf(l.id) < 0;
     });
   };
+  // Legend of a tile layer (XYZ / GFW / Earth Engine…): the layer's own
+  // legendSpec when it has one ({ramp: [colors], min, max} or {entries:
+  // [{color, label}]}), else what its tile URL tells (GFW, Hansen, GBIF), else
+  // one neutral swatch with the layer name, as QGIS shows a raster layer.
+  var TILE_LEGENDS = [
+    [/umd_tree_cover_density|tree_cover_density/i, { ramp: ["#e5f5e0", "#74c476", "#00441b"], min: "0%", max: "100%" }],
+    [/gain/i, { entries: [{ color: "#6d6de5", label: "" }] }],
+    [/integrated_alerts|radd|glad|alert/i, { entries: [{ color: "#ee9faa", label: "Low confidence" }, { color: "#dc6699", label: "High confidence" }, { color: "#b8186b", label: "Highest confidence" }] }],
+    [/viirs|fire/i, { entries: [{ color: "#ef6c00", label: "" }] }],
+    [/primary_forest/i, { entries: [{ color: "#4a7a2c", label: "" }] }],
+    [/mangrove/i, { entries: [{ color: "#1b9e77", label: "" }] }],
+    [/peat/i, { entries: [{ color: "#8c6d31", label: "" }] }],
+    [/intact_forest|ifl_/i, { entries: [{ color: "#6b8e23", label: "" }] }],
+    [/tree_cover_loss|lossyear|hansen/i, { ramp: ["#ee9faa", "#dc6699", "#b8186b"], min: "2001", max: "2024" }],
+    [/gbif\.org\/v2\/map\/occurrence\/density/i, { ramp: ["#ffff7a", "#fd8d3c", "#bd0026"], min: "Few", max: "Many records" }]
+  ];
+  function tileLegend(l) {
+    if (l.legendSpec) return l.legendSpec;
+    var u = String(l.url || "") + " " + l.name;
+    for (var i = 0; i < TILE_LEGENDS.length; i++) if (TILE_LEGENDS[i][0].test(u)) return TILE_LEGENDS[i][1];
+    return { entries: [{ color: "#b8c2bb", label: "" }] };
+  }
+  GIS.tileLegend = tileLegend;
 
   function buildLegend(o) {
     // Spacing (Legend ▸ Spacing): rows, symbol size, symbol-label gap, columns, padding.
@@ -303,6 +326,31 @@
     }
     var layers = GIS.legendLayers(o);
     layers.forEach(function (l) {
+      if (l.kind === "xyz") {
+        var spec = tileLegend(l);
+        if (spec.ramp) {
+          newBlock();
+          var rh = text(lname(l), pad, y, fs, { fontWeight: "bold" });
+          add(rh); maxW = Math.max(maxW, rh.width); y += row;
+          newBlock();
+          var rw = Math.max(110, fs * 11);
+          var rb = new fabric.Rect({ left: pad, top: y, width: rw, height: 10, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false });
+          rb.set("fill", new fabric.Gradient({ type: "linear", coords: { x1: 0, y1: 0, x2: rw, y2: 0 }, colorStops: spec.ramp.map(function (c, i) { return { offset: i / (spec.ramp.length - 1 || 1), color: c }; }) }));
+          add(rb, text(spec.min, pad, y + 13, fs - 1, { fill: "#4a4a46" }), text(spec.max, pad + rw, y + 13, fs - 1, { originX: "right", fill: "#4a4a46" }));
+          maxW = Math.max(maxW, rw); y += 13 + fs + 8;
+          return;
+        }
+        var te = spec.entries || [];
+        if (te.length > 1 && o.showLayerNames) { newBlock(); var th = text(lname(l), pad, y, fs, { fontWeight: "bold" }); add(th); maxW = Math.max(maxW, th.width); y += row; }
+        te.forEach(function (e) {
+          newBlock();
+          var cy = y + row / 2 - 2;
+          add(new fabric.Rect({ left: pad, top: cy - 6, width: sw, height: 12, fill: e.color, stroke: "#9a978c", strokeWidth: 0.6, selectable: false, evented: false }));
+          var tt = text(e.label || lname(l), pad + sw + lg, cy - fs * 0.62, fs);
+          add(tt); maxW = Math.max(maxW, sw + lg + tt.width); y += row;
+        });
+        return;
+      }
       var hiddenE = (o.hiddenEntries || {})[l.id] || [];
       var entries = GIS.sym.legendEntries(l).filter(function (e) { return hiddenE.indexOf(String(e.label)) < 0; }), kind = l.kind === "vector" ? GIS.geometryKind(l) : "raster";
       var ren = l.kind === "vector" ? l.style.renderer || "simple" : "simple";
@@ -372,12 +420,12 @@
       }
       if (l.kind === "raster" && l.raster.legend) {
         newBlock();
-        var lg = l.raster.legend, gw = 14, gh = Math.max(60, fs * 6);
+        var rl = l.raster.legend, gw = 14, gh = Math.max(60, fs * 6); // not "lg": that is the symbol-label gap
         var grad = new fabric.Rect({ left: pad, top: y, width: gw, height: gh, selectable: false, evented: false, stroke: "#9a978c", strokeWidth: 0.6 });
         grad.set("fill", new fabric.Gradient({ type: "linear", coords: { x1: 0, y1: 0, x2: 0, y2: gh },
-          colorStops: lg.colors.map(function (c, i) { return { offset: i / (lg.colors.length - 1 || 1), color: c }; }).reverse().map(function (s, i, arr) { return { offset: i / (arr.length - 1 || 1), color: s.color }; }) }));
+          colorStops: rl.colors.map(function (c, i) { return { offset: i / (rl.colors.length - 1 || 1), color: c }; }).reverse().map(function (s, i, arr) { return { offset: i / (arr.length - 1 || 1), color: s.color }; }) }));
         add(grad);
-        var hi = text(numFmt(lg.max), pad + gw + 8, y - 2, fs), lo = text(numFmt(lg.min), pad + gw + 8, y + gh - fs - 2, fs);
+        var hi = text(numFmt(rl.max), pad + gw + 8, y - 2, fs), lo = text(numFmt(rl.min), pad + gw + 8, y + gh - fs - 2, fs);
         add(hi, lo); maxW = Math.max(maxW, gw + 8 + Math.max(hi.width, lo.width)); y += gh + 8;
         return;
       }
@@ -552,6 +600,36 @@
     });
   }
 
+  // A light graticule on the inset: 3 to 5 lines each way at a round
+  // interval, labelled along the top and left edges (degrees, minutes).
+  function insetGrid(ctx, im, W, H) {
+    var b = im.getBounds(), span = Math.max(b.getEast() - b.getWest(), b.getNorth() - b.getSouth());
+    var steps = [1 / 60, 2 / 60, 5 / 60, 10 / 60, 0.25, 0.5, 1, 2, 5, 10, 15, 30], st = steps[steps.length - 1];
+    for (var i = 0; i < steps.length; i++) if (span / steps[i] <= 5) { st = steps[i]; break; }
+    function fmt(v, pos, neg) {
+      var a = Math.abs(v), d = Math.floor(a + 1e-9), mnt = Math.round((a - d) * 60);
+      if (mnt === 60) { d++; mnt = 0; }
+      return d + "°" + (mnt ? mnt + "′" : "") + (v < 0 ? neg : v > 0 ? pos : "");
+    }
+    ctx.save();
+    ctx.lineWidth = 0.5; ctx.strokeStyle = "rgba(40,50,60,.45)"; ctx.setLineDash([2, 2]);
+    ctx.font = "600 7px Inter, Arial, sans-serif"; ctx.fillStyle = "#1a1a1a"; ctx.lineJoin = "round";
+    function label(t, x, y, align) { ctx.textAlign = align; ctx.setLineDash([]); ctx.lineWidth = 2.2; ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.strokeText(t, x, y); ctx.fillText(t, x, y); ctx.lineWidth = 0.5; ctx.strokeStyle = "rgba(40,50,60,.45)"; ctx.setLineDash([2, 2]); }
+    for (var x = Math.ceil(b.getWest() / st) * st; x <= b.getEast(); x += st) {
+      var p = im.project([x, (b.getNorth() + b.getSouth()) / 2]).x;
+      if (p < 4 || p > W - 4) continue;
+      ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, H); ctx.stroke();
+      ctx.textBaseline = "top"; label(fmt(x, "E", "W"), p, 2.5, "center");
+    }
+    for (var y = Math.ceil(b.getSouth() / st) * st; y <= b.getNorth(); y += st) {
+      var q = im.project([(b.getEast() + b.getWest()) / 2, y]).y;
+      if (q < 8 || q > H - 4) continue;
+      ctx.beginPath(); ctx.moveTo(0, q); ctx.lineTo(W, q); ctx.stroke();
+      ctx.textBaseline = "middle"; label(fmt(y, "N", "S"), 3, q, "left");
+    }
+    ctx.restore();
+  }
+
   function renderInset(o) {
     var main = GIS.map();
     if (!main) return Promise.resolve(null);
@@ -584,6 +662,7 @@
           ctx.closePath();
           ctx.fillStyle = o.extentColor + "22"; ctx.fill();
           ctx.lineWidth = 1.5; ctx.strokeStyle = o.extentColor; ctx.stroke();
+          if (o.grid !== false) insetGrid(ctx, im, W, H);
           if (o.frameWidth > 0) { ctx.lineWidth = o.frameWidth; ctx.strokeStyle = INK; ctx.strokeRect(o.frameWidth / 2, o.frameWidth / 2, W - o.frameWidth, H - o.frameWidth); }
           ctx.restore();
           res(cv.toDataURL("image/png"));

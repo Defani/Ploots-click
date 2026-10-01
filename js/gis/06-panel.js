@@ -260,7 +260,7 @@
 
   var SYMS = [["single", "Single"], ["categorized", "Categorized"], ["graduated", "Graduated"]];
   var DASHES = [["solid", "Solid"], ["dash", "Dash"], ["dot", "Dot"], ["dashdot", "Dash dot"]];
-  var METHODS = [["jenks", "Natural breaks (Jenks)"], ["quantile", "Quantile"], ["equal", "Equal interval"]];
+  var METHODS = [["jenks", "Natural breaks"], ["quantile", "Quantile"], ["equal", "Equal interval"]];
 
   function renderStyle() {
     var box = $("gisStyle"), l = GIS.active();
@@ -468,7 +468,7 @@
     } else if (o.gisItem === "inset") {
       h += field("Basemap", select("item:basemap", GIS.BASEMAPS.map(function (b) { return [b.id, b.label]; }), p.basemap));
       h += pair(field("Zoom offset", num("item:zoomOffset", p.zoomOffset, -12, 0, 1)), field("Extent color", color("item:extentColor", p.extentColor)));
-      h += field("Frame width", num("item:frameWidth", p.frameWidth, 0, 8, 0.5)) + check("item:showLayers", p.showLayers, "Show layers");
+      h += field("Frame width", num("item:frameWidth", p.frameWidth, 0, 8, 0.5)) + check("item:showLayers", p.showLayers, "Show layers") + check("item:grid", p.grid !== false, "Coordinate grid");
     }
     box.innerHTML = h;
   }
