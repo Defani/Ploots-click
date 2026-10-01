@@ -296,3 +296,57 @@ html:not([data-theme=dark]) .side-section, html:not([data-theme=dark]) .ag-kpi, 
 .pb-launch { background: linear-gradient(145deg, #6fae3f, #3f7424) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .35) !important; border-radius: 50% !important; box-shadow: 0 10px 26px rgba(63, 116, 36, .45), inset 0 1px 0 rgba(255, 255, 255, .35) !important; }
 .pb-launch > .material-symbols-outlined { font-size: 23px; font-variation-settings: "FILL" 1, "wght" 400; }
 .pb-avatar { background: linear-gradient(145deg, #6fae3f, #3f7424) !important; }
+
+/* Narrow windows: the top bar never cuts menus off, the map toolbar stays one row. */
+.topbar-center { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.topbar-center::-webkit-scrollbar { display: none; }
+.gis-map-tools-analysis { flex-wrap: nowrap !important; max-width: calc(100% - 24px); overflow-x: auto; scrollbar-width: none; }
+.gis-map-tools-analysis::-webkit-scrollbar { display: none; }
+@media (max-width: 1240px) {
+  .topbar-center .tool-btn { font-size: 0 !important; gap: 0 !important; padding: 0 8px !important; }
+  .topbar-center .tool-btn .material-symbols-outlined { font-size: 20px !important; }
+  .topbar-center .tool-btn::after { margin-left: 2px; }
+  .topbar-center .tb-lbl { display: none !important; }
+}
+@media (max-width: 900px) {
+  .brand-repo-text { display: none; }
+}
+
+/* Clean panels: no explanatory hint text anywhere (status and errors stay). */
+.gfw-note, .gfw-foot, .ag-note, .pl-note, .kobo-note, .gproc-help, .gloc-note, .gis-expr-hint, .dg-hint, .cp-hint, .cat-desc, .fb-prev-note:not(.error), .ag-nav3d p { display: none !important; }
+
+/* Earth Engine control (maplibre-gl-earth-engine) living in the GEE sidebar panel. */
+.gee-ctl-host { margin-top: 10px; }
+.gee-ctl-host .plugin-control-toggle, .gee-ctl-host .plugin-control-close { display: none !important; }
+.gee-ctl-host > .plugin-control { background: none !important; box-shadow: none !important; border: 0 !important; }
+.gee-ctl-host .plugin-control-panel { position: static !important; inset: auto !important; transform: none !important; width: 100% !important; max-width: none !important; max-height: none !important; height: auto !important; box-shadow: none !important; border: 1px solid var(--g-line) !important; border-radius: 10px !important; background: var(--g-glass) !important; color: var(--ink) !important; }
+.gee-ctl-host .plugin-control-header { display: none !important; }
+.gee-ctl-host .plugin-control-tabs { flex-wrap: wrap; gap: 4px; }
+.gee-ctl-host .plugin-control-tab { background: var(--g-hover) !important; color: var(--ink) !important; border: 1px solid var(--g-line) !important; }
+.gee-ctl-host .plugin-control-tab.active { background: var(--accent-soft) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
+.gee-ctl-host input, .gee-ctl-host select, .gee-ctl-host textarea { background: var(--g-field, rgba(255,255,255,.06)) !important; color: var(--ink) !important; border: 1px solid var(--g-line) !important; }
+.gee-ctl-host button:not(.plugin-control-tab) { background: var(--g-hover) !important; color: var(--ink) !important; border: 1px solid var(--g-line) !important; border-radius: 7px !important; font-weight: 500 !important; text-align: left; white-space: normal; }
+.gee-ctl-host button:not(.plugin-control-tab):hover { border-color: var(--accent) !important; color: var(--accent) !important; }
+.gee-ctl-host .plugin-control-panel, .gee-ctl-host .plugin-control-panel * { box-sizing: border-box; max-width: 100%; min-width: 0; }
+.gee-ctl-host .plugin-control-panel { overflow: hidden !important; padding: 8px !important; }
+
+/* Fewer green blocks: primary actions in panels are outlined, not filled. */
+.sidebar .btn-primary, .gis-dock .btn-primary, .agro-app .btn-primary, .gis-dlg .btn-primary, .gis-dlg-back .btn-primary, .ag-dlg .btn-primary, .home-screen .btn-primary {
+  background: transparent !important; color: var(--accent) !important; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent) !important; box-shadow: none !important; text-shadow: none !important;
+}
+.sidebar .btn-primary:hover, .gis-dock .btn-primary:hover, .agro-app .btn-primary:hover, .gis-dlg .btn-primary:hover, .gis-dlg-back .btn-primary:hover, .ag-dlg .btn-primary:hover, .home-screen .btn-primary:hover { background: var(--accent-soft) !important; }
+.sidebar .btn-primary .material-symbols-outlined, .gis-dock .btn-primary .material-symbols-outlined { color: inherit !important; }
+.gee-ctl-host .plugin-control-tab.active { background: transparent !important; border-color: transparent !important; color: var(--accent) !important; font-weight: 600 !important; }
+.gee-ctl-host .plugin-control-tab { background: transparent !important; border-color: transparent !important; }
+#panel-gis-gee, #panel-gis-gee .gee-body, .gee-ctl-host { overflow-x: hidden !important; }
+.gee-ctl-host select { width: 100% !important; }
+
+/* Dropdowns: a thin, quiet chevron instead of the browser's arrow. */
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23939a90' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important; background-position: right 10px center !important; background-size: 10px 6px !important;
+  padding-right: 28px !important;
+}
+select:not([multiple]):not([size]):hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237cbf4a' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important; }
+select::-ms-expand { display: none; }
