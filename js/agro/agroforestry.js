@@ -61,6 +61,8 @@
     lamtoro: { label: "lamtoro", name: "Lamtoro (Leucaena leucocephala)", color: "#9bc53d", dbhInit: 0.01, dbhMax: 0.35, c: 1.5, k: 0.26, hA: 1.65, hB: 0.72, hMax: 15, cwA: 1.1, cwB: 0.34, depth: 0.45, por: 0.55, lmin: 0.35, lopt: 0.9, rho: 0.64, prune: 7, crMax: 2.2 },
     alpukat: { label: "alpukat", name: "Avocado (Persea americana)", color: "#5b8c2a", dbhInit: 0.01, dbhMax: 0.45, c: 1.6, k: 0.12, hA: 1.2, hB: 0.75, hMax: 18, cwA: 1.0, cwB: 0.3, depth: 0.6, por: 0.3, lmin: 0.3, lopt: 0.85, rho: 0.55, prune: 0 },
     jeruk: { label: "jeruk", name: "Orange (Citrus sp.)", color: "#e0a526", dbhInit: 0.01, dbhMax: 0.2, c: 1.7, k: 0.18, hA: 1.0, hB: 0.72, hMax: 6, cwA: 0.6, cwB: 0.3, depth: 0.75, por: 0.3, lmin: 0.35, lopt: 0.85, rho: 0.62, prune: 0 },
+    nangka: { label: "nangka", name: "Jackfruit (Artocarpus heterophyllus)", color: "#3f7a2c", dbhInit: 0.01, dbhMax: 0.6, c: 1.6, k: 0.1, hA: 1.4, hB: 0.72, hMax: 18, cwA: 1.2, cwB: 0.3, depth: 0.65, por: 0.25, lmin: 0.3, lopt: 0.85, rho: 0.6, prune: 0 },
+    pinus: { label: "pinus", name: "Pine (Pinus merkusii)", color: "#2e5a3c", dbhInit: 0.02, dbhMax: 0.8, c: 1.5, k: 0.08, hA: 2.2, hB: 0.68, hMax: 35, cwA: 1.0, cwB: 0.17, depth: 0.55, por: 0.5, lmin: 0.4, lopt: 0.95, rho: 0.55, prune: 0 },
     petai: { label: "petai", name: "Petai (Parkia speciosa)", color: "#2f6360", dbhInit: 0.01, dbhMax: 0.6, c: 1.5, k: 0.1, hA: 1.7, hB: 0.72, hMax: 25, cwA: 1.4, cwB: 0.32, depth: 0.45, por: 0.45, lmin: 0.35, lopt: 0.95, rho: 0.52, prune: 0 }
   };
 

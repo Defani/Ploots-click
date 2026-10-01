@@ -100,6 +100,33 @@
       }
     }));
   }
+  function avocadoLeafTex() {
+    return TEX.avo || (TEX.avo = canvasTex(64, 192, function (g, w, h) {
+      // Persea: long elliptic-lanceolate, leathery and glossy, pale midrib.
+      g.beginPath(); g.moveTo(w / 2, h * 0.02);
+      g.bezierCurveTo(w * 0.95, h * 0.25, w * 0.92, h * 0.75, w / 2, h * 0.99);
+      g.bezierCurveTo(w * 0.08, h * 0.75, w * 0.05, h * 0.25, w / 2, h * 0.02); g.closePath();
+      var gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, "#1d4a1c"); gr.addColorStop(0.5, "#2f6a28"); gr.addColorStop(1, "#1f4e1e");
+      g.fillStyle = gr; g.fill();
+      g.save(); g.clip(); g.fillStyle = "rgba(255,255,255,.12)"; g.fillRect(w * 0.15, 0, w * 0.25, h);
+      g.strokeStyle = "rgba(200,215,140,.6)"; g.lineWidth = 2; g.beginPath(); g.moveTo(w / 2, h * 0.03); g.lineTo(w / 2, h * 0.98); g.stroke();
+      g.lineWidth = 0.8; g.strokeStyle = "rgba(180,205,130,.3)";
+      for (var i = 1; i < 12; i++) { var y = h * (0.08 + i * 0.075); g.beginPath(); g.moveTo(w / 2, y); g.lineTo(w * 0.9, y - 16); g.moveTo(w / 2, y); g.lineTo(w * 0.1, y - 16); g.stroke(); }
+      g.restore();
+    }));
+  }
+  function pineTex() {
+    return TEX.pine || (TEX.pine = canvasTex(128, 128, function (g, w, h) {
+      // A tuft of long needles fanning from a twig.
+      var r = rng(41);
+      for (var i = 0; i < 140; i++) {
+        var a = -Math.PI / 2 + (r() - 0.5) * 2.2, L = 40 + r() * 70, x0 = w / 2 + (r() - .5) * 10, y0 = h * 0.98 - r() * 40;
+        g.strokeStyle = ["#24452e", "#2f5a3a", "#3b6a44", "#1e3b27"][i % 4]; g.lineWidth = 1.1;
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + Math.cos(a) * L, y0 + Math.sin(a) * L); g.stroke();
+      }
+      g.strokeStyle = "#5a4430"; g.lineWidth = 3; g.beginPath(); g.moveTo(w / 2, h); g.lineTo(w / 2, h * 0.6); g.stroke();
+    }));
+  }
   function grassTex() {
     var t = TEX.grass || (TEX.grass = canvasTex(512, 512, function (g, w, h) {
       g.fillStyle = "#5d7a33"; g.fillRect(0, 0, w, h);
@@ -285,6 +312,113 @@
     });
     return { stems: stems.geometry(), leaves: leaves.geometry(), fruit: fruit.geometry(), H: LAM_H, R: LAM_R };
   }
+  // Avocado: normalised to a 10 m tree with a 3.5 m crown radius.
+  var AVO_H = 10, AVO_R = 3.5;
+  var PEAR = (function () {
+    var pts = [];
+    for (var i = 0; i <= 12; i++) { var y = i / 12, rr = Math.sin(Math.PI * Math.pow(y, 0.75)) * (y < 0.6 ? 1 : 1 - (y - 0.6) * 1.2); pts.push(new THREE.Vector2(Math.max(0.02, rr * 0.5), y)); }
+    var g = new THREE.LatheGeometry(pts, 10); g.translate(0, -1, 0); // hangs from the stalk
+    return g;
+  })();
+  // Bumpy jackfruit: an elongated ellipsoid with knobbly skin.
+  var JACK = (function () {
+    var g = new THREE.SphereGeometry(1, 16, 12), p = g.attributes.position, v = new THREE.Vector3();
+    for (var i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); var n = 1 + 0.035 * Math.sin(v.x * 23) * Math.sin(v.y * 19) * Math.sin(v.z * 21); v.multiplyScalar(n); p.setXYZ(i, v.x, v.y - 1, v.z); }
+    g.computeVertexNormals();
+    return g;
+  })();
+  // Broadleaf fruit trees made of a trunk, a scaffold of branches and dense
+  // rosettes of big glossy leaves at the twig tips.
+  //   avocado: tall egg-shaped crown, pear fruit hanging from the rosettes
+  //   jackfruit: broad dome, huge knobbly fruit on the trunk and big limbs
+  function rosetteTree(seed, o) {
+    var r = rng(seed), stems = new Builder(), leaves = new Builder(), fruit = new Builder();
+    var cyl = new THREE.CylinderGeometry(0.7, 1, 1, 7, 1), bark = new THREE.Color(o.bark);
+    var trunkTop = new THREE.Vector3((r() - .5) * .4, o.trunkH, (r() - .5) * .4);
+    stems.add(cyl, between(new THREE.Vector3(), trunkTop, o.trunkR), bark);
+    var leader = trunkTop.clone().add(new THREE.Vector3(0, o.H - o.trunkH - 1.2, 0));
+    stems.add(cyl, between(trunkTop, leader, o.trunkR * 0.55), bark);
+    var tips = [], limbs = [];
+    for (var b = 0; b < o.branches; b++) {
+      var rel = b / o.branches, hy = o.trunkH + rel * (o.H - o.trunkH - 1.5);
+      var reach = o.R * o.reach(rel) * (0.8 + r() * 0.3), az = b * 2.399 + r() * 0.4, origin = trunkTop.clone().lerp(leader, rel);
+      var mid = origin.clone().add(new THREE.Vector3(Math.cos(az) * reach * 0.5, o.rise * 0.5 + r() * 0.4, Math.sin(az) * reach * 0.5));
+      var end = origin.clone().add(new THREE.Vector3(Math.cos(az) * reach, o.rise + r() * 0.6, Math.sin(az) * reach));
+      stems.add(cyl, between(origin, mid, o.trunkR * 0.45 * (1 - rel * .5)), bark); stems.add(cyl, between(mid, end, o.trunkR * 0.22), bark);
+      limbs.push([origin, mid]);
+      // side twigs, so the leaf mass fills the crown
+      for (var s = 0; s < 3; s++) {
+        var sa = az + (r() - .5) * 1.6, sp = mid.clone().lerp(end, r()), se = sp.clone().add(new THREE.Vector3(Math.cos(sa) * 0.9, 0.3 + r() * 0.5, Math.sin(sa) * 0.9));
+        stems.add(cyl, between(sp, se, 0.025), bark); tips.push(se);
+      }
+      tips.push(end, mid);
+    }
+    tips.push(leader);
+    tips.forEach(function (p) {
+      var nr = o.rosettes[0] + (r() * o.rosettes[1] | 0);
+      for (var k = 0; k < nr; k++) {
+        var c = p.clone().add(new THREE.Vector3((r() - .5) * 1.2, (r() - .5) * 0.9, (r() - .5) * 1.2)), n = 9 + (r() * 5 | 0);
+        for (var j = 0; j < n; j++) {
+          var a2 = j / n * Math.PI * 2 + r() * 0.3, up = 0.5 - (j % 3) * 0.3 + r() * 0.2;
+          leaves.add(LEAF_FOLD, leafMatrixF(c, new THREE.Vector3(Math.cos(a2), up, Math.sin(a2)), o.leafW * (0.85 + r() * .3), o.leafL * (0.85 + r() * .3), Math.PI / 2 + (r() - .5) * 0.6),
+            new THREE.Color().setHSL(0.28 + (r() - .5) * .04, 0.25, 0.62 + r() * .22));
+        }
+        if (o.fruitAt === "rosette" && r() < o.fruitP) {
+          var fn = 1 + (r() * 3 | 0);
+          for (var f = 0; f < fn; f++) {
+            var fp = c.clone().add(new THREE.Vector3((r() - .5) * 0.3, -0.08, (r() - .5) * 0.3));
+            stems.add(cyl, between(c, fp, 0.008), bark);
+            fruit.add(o.fruitGeo, new THREE.Matrix4().compose(fp, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(r(), 0, r()).normalize(), (r() - .5) * 0.3), o.fruitSize.clone()), new THREE.Color().setHSL(o.fruitHue, 0.55, 0.32 + r() * 0.08));
+          }
+        }
+      }
+    });
+    if (o.fruitAt === "trunk") {
+      // Cauliflory: fruit on the trunk and the bases of the big limbs.
+      var hang = function (p) { var fp = p.clone().add(new THREE.Vector3((r() - .5) * 0.2, -0.05, (r() - .5) * 0.2)); fruit.add(o.fruitGeo, new THREE.Matrix4().compose(fp, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(r(), 0, r()).normalize(), (r() - .5) * 0.25), o.fruitSize.clone().multiplyScalar(0.75 + r() * 0.45)), new THREE.Color().setHSL(o.fruitHue + (r() - .5) * .04, 0.48, 0.36 + r() * 0.1)); };
+      for (var tf = 0; tf < 7; tf++) { var ty = 1.2 + r() * (o.trunkH - 1.2), ta = r() * Math.PI * 2; hang(new THREE.Vector3(Math.cos(ta) * o.trunkR * 1.1, ty, Math.sin(ta) * o.trunkR * 1.1)); }
+      limbs.forEach(function (l) { if (r() < 0.5) hang(l[0].clone().lerp(l[1], 0.2 + r() * 0.5)); });
+    }
+    return { stems: stems.geometry(), leaves: leaves.geometry(), fruit: fruit.geometry(), H: o.H, R: o.R };
+  }
+  var AVO_H = 10, AVO_R = 3.5;
+  function avocadoTemplate(seed) {
+    return rosetteTree(seed, { H: AVO_H, R: AVO_R, trunkH: 3, trunkR: 0.22, bark: "#6b5640", branches: 30, rise: 1.2,
+      reach: function (rel) { return Math.sin(Math.PI * Math.min(1, 0.18 + rel * 0.85)); }, rosettes: [5, 4], leafW: 0.13, leafL: 0.34,
+      fruitAt: "rosette", fruitP: 0.3, fruitGeo: PEAR, fruitSize: new THREE.Vector3(0.12, 0.17, 0.12), fruitHue: 0.24 });
+  }
+  var JACK_H = 11, JACK_R = 4.5;
+  function jackfruitTemplate(seed) {
+    return rosetteTree(seed, { H: JACK_H, R: JACK_R, trunkH: 3.6, trunkR: 0.3, bark: "#7a6a55", branches: 24, rise: 1.0,
+      reach: function (rel) { return 0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, 0.35 + rel * 0.7)); }, rosettes: [5, 4], leafW: 0.16, leafL: 0.32,
+      fruitAt: "trunk", fruitGeo: JACK, fruitSize: new THREE.Vector3(0.26, 0.5, 0.26), fruitHue: 0.2 });
+  }
+  // Pine (Pinus merkusii): normalised to a 20 m tree with a 4 m crown radius.
+  var PINE_H = 20, PINE_R = 4;
+  function pineTemplate(seed) {
+    var r = rng(seed), stems = new Builder(), leaves = new Builder();
+    var cyl = new THREE.CylinderGeometry(0.65, 1, 1, 7, 1), bark = new THREE.Color("#7a4e34");
+    stems.add(cyl, between(new THREE.Vector3(), new THREE.Vector3(0, PINE_H, 0), 0.3), bark);
+    // Whorls of branches from 40% of the height, shorter toward the top.
+    for (var y = PINE_H * 0.38; y < PINE_H - 0.6; y += 0.9 + r() * 0.5) {
+      var rel = (y - PINE_H * 0.38) / (PINE_H * 0.62), reach = PINE_R * (1 - rel) * (0.7 + r() * 0.4) + 0.4, n = 4 + (r() * 3 | 0);
+      for (var k = 0; k < n; k++) {
+        var az = k / n * Math.PI * 2 + y * 1.7 + r() * 0.5, a = new THREE.Vector3(0, y, 0);
+        var b = a.clone().add(new THREE.Vector3(Math.cos(az) * reach, -0.2 + rel * 0.6 + (r() - .5) * 0.4, Math.sin(az) * reach));
+        stems.add(cyl, between(a, b, 0.05 * (1 - rel) + 0.015), bark);
+        var tufts = 4 + (reach * 2.5 | 0);
+        for (var q = 0; q < tufts; q++) {
+          var p = a.clone().lerp(b, 0.35 + q / tufts * 0.65).add(new THREE.Vector3((r() - .5) * .5, (r() - .2) * .4, (r() - .5) * .5));
+          for (var s = 0; s < 3; s++) {
+            var dir = new THREE.Vector3(Math.cos(az) + (r() - .5), 0.6 + r() * 0.6, Math.sin(az) + (r() - .5));
+            leaves.add(LEAF, leafMatrix(p, dir, 0.7 + r() * 0.3, 0.8 + r() * 0.3, r() * Math.PI), new THREE.Color().setHSL(0.36, 0.2, 0.6 + r() * 0.25));
+          }
+        }
+      }
+    }
+    for (var t2 = 0; t2 < 6; t2++) leaves.add(LEAF, leafMatrix(new THREE.Vector3(0, PINE_H - 0.3, 0), new THREE.Vector3((r() - .5), 1, (r() - .5)), 0.7, 0.9, r() * 3), new THREE.Color("#ffffff"));
+    return { stems: stems.geometry(), leaves: leaves.geometry(), fruit: null, H: PINE_H, R: PINE_R };
+  }
   function broadTemplate(seed, color) {
     var r = rng(seed), stems = new Builder(), leaves = new Builder(), cyl = new THREE.CylinderGeometry(0.7, 1, 1, 6, 1);
     var top = new THREE.Vector3(0, 5, 0);
@@ -311,6 +445,8 @@
       coffeeLeaf: (function () { var l = leafMat(coffeeLeafTex(), 0.32); l.m = new THREE.MeshPhysicalMaterial({ map: coffeeLeafTex(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.34, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.35 }); return l; })(),
       lamLeaf: leafMat(lamtoroLeafTex(), 0.8),
       broadLeaf: leafMat(broadLeafTex(), 0.7),
+      avoLeaf: (function () { var l = leafMat(avocadoLeafTex(), 0.35); l.m = new THREE.MeshPhysicalMaterial({ map: avocadoLeafTex(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.36, clearcoat: 0.45, clearcoatRoughness: 0.4 }); return l; })(),
+      pineLeaf: leafMat(pineTex(), 0.85),
       wood: new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9 }),
       bark: new THREE.MeshStandardMaterial({ map: barkTex(), vertexColors: true, roughness: 0.95 }),
       fruit: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35 }),
@@ -325,19 +461,22 @@
     var key = kind + (flowering ? ":f" : "") + (kind === "broad" ? ":" + color : "");
     if (TPL[key]) return TPL[key];
     var list = [];
-    for (var v = 0; v < 3; v++) list.push(kind === "coffee" ? coffeeTemplate(11 + v * 31, flowering) : kind === "lamtoro" ? lamtoroTemplate(5 + v * 17) : broadTemplate(3 + v * 13, color));
+    for (var v = 0; v < 3; v++) list.push(kind === "coffee" ? coffeeTemplate(11 + v * 31, flowering) : kind === "lamtoro" ? lamtoroTemplate(5 + v * 17) : kind === "avocado" ? avocadoTemplate(7 + v * 19) : kind === "jackfruit" ? jackfruitTemplate(9 + v * 29) : kind === "pine" ? pineTemplate(13 + v * 23) : broadTemplate(3 + v * 13, color));
     return (TPL[key] = list);
   }
   function kindOf(s) {
     if (s.crop || /kopi|coffee/i.test(s.label + " " + s.name)) return "coffee";
     if (/lamtoro|leucaena/i.test(s.label + " " + s.name)) return "lamtoro";
+    if (/alpukat|avocado|persea/i.test(s.label + " " + s.name)) return "avocado";
+    if (/pinus|pine/i.test(s.label + " " + s.name)) return "pine";
+    if (/nangka|jackfruit|artocarpus/i.test(s.label + " " + s.name)) return "jackfruit";
     return "broad";
   }
 
   // Level of detail: the plants nearest the camera (a budget per kind) get
   // the full procedural model; the others a light stand-in (a leafy bush or
   // an umbrella crown on a stem), which the mist hides at distance anyway.
-  var BUDGET = { coffee: 320, lamtoro: 150, broad: 120 };
+  var BUDGET = { coffee: 320, lamtoro: 150, avocado: 90, jackfruit: 90, pine: 90, broad: 120 };
   var SIMPLE = null;
   function simpleParts() {
     if (SIMPLE) return SIMPLE;
@@ -374,7 +513,8 @@
       tpls.forEach(function (tp, vi) {
         var mine = near.filter(function (t) { return t.id % tpls.length === vi; });
         if (!mine.length) return;
-        var parts = [["stems", kind === "coffee" ? M.wood : M.bark, null], ["leaves", kind === "coffee" ? M.coffeeLeaf.m : kind === "lamtoro" ? M.lamLeaf.m : M.broadLeaf.m, kind === "coffee" ? M.coffeeLeaf.d : kind === "lamtoro" ? M.lamLeaf.d : M.broadLeaf.d],
+        var LM = { coffee: M.coffeeLeaf, lamtoro: M.lamLeaf, avocado: M.avoLeaf, jackfruit: M.avoLeaf, pine: M.pineLeaf, broad: M.broadLeaf }[kind];
+        var parts = [["stems", kind === "coffee" ? M.wood : M.bark, null], ["leaves", LM.m, LM.d],
           ["fruit", M.fruit, null], ["flowers", M.flower, null]];
         parts.forEach(function (pt) {
           var geo = tp[pt[0]];
