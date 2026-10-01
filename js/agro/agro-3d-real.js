@@ -43,24 +43,26 @@
   var TEX = {};
   function coffeeLeafTex() {
     return TEX.coffee || (TEX.coffee = canvasTex(128, 256, function (g, w, h) {
-      // Elliptic, acuminate, glossy leaf with a pale midrib and veins.
+      // Arabica: broad elliptic blade, short acuminate tip, wavy margin,
+      // deep glossy green with a sunken pale midrib and arching veins.
       g.beginPath();
-      g.moveTo(w / 2, h * 0.02);
-      g.bezierCurveTo(w * 0.98, h * 0.2, w * 0.98, h * 0.72, w / 2, h * 0.98);
-      g.bezierCurveTo(w * 0.02, h * 0.72, w * 0.02, h * 0.2, w / 2, h * 0.02);
+      g.moveTo(w / 2, h * 0.015);
+      for (var i = 0; i <= 24; i++) { var y = i / 24, half = Math.sin(Math.pow(y, 0.8) * Math.PI) * 0.47 * (y < 0.12 ? y / 0.12 * 0.6 + 0.4 : 1); var wav = 1 + 0.035 * Math.sin(y * 40); g.lineTo(w / 2 + half * w * wav, h * (0.015 + y * 0.97)); }
+      for (var j = 24; j >= 0; j--) { var y2 = j / 24, half2 = Math.sin(Math.pow(y2, 0.8) * Math.PI) * 0.47 * (y2 < 0.12 ? y2 / 0.12 * 0.6 + 0.4 : 1); var wav2 = 1 + 0.035 * Math.sin(y2 * 40 + 1.3); g.lineTo(w / 2 - half2 * w * wav2, h * (0.015 + y2 * 0.97)); }
       g.closePath();
       var gr = g.createLinearGradient(0, 0, w, 0);
-      gr.addColorStop(0, "#1c4a1f"); gr.addColorStop(0.45, "#2f6e2c"); gr.addColorStop(0.55, "#3a7d34"); gr.addColorStop(1, "#1f5222");
+      gr.addColorStop(0, "#1f5a22"); gr.addColorStop(0.42, "#2f7a2e"); gr.addColorStop(0.5, "#3b8a36"); gr.addColorStop(0.58, "#2f7a2e"); gr.addColorStop(1, "#215c24");
       g.fillStyle = gr; g.fill();
       g.save(); g.clip();
-      g.fillStyle = "rgba(255,255,255,.10)"; g.fillRect(w * 0.18, 0, w * 0.22, h); // sheen
-      g.strokeStyle = "rgba(190,220,150,.55)"; g.lineWidth = 3;
+      var sh = g.createLinearGradient(0, 0, w, h); sh.addColorStop(0, "rgba(255,255,255,0)"); sh.addColorStop(0.45, "rgba(255,255,255,.16)"); sh.addColorStop(0.6, "rgba(255,255,255,0)");
+      g.fillStyle = sh; g.fillRect(0, 0, w, h); // wax sheen
+      g.strokeStyle = "rgba(170,205,120,.6)"; g.lineWidth = 2.6;
       g.beginPath(); g.moveTo(w / 2, h * 0.04); g.lineTo(w / 2, h * 0.97); g.stroke();
-      g.lineWidth = 1.4; g.strokeStyle = "rgba(170,210,140,.35)";
-      for (var i = 1; i < 9; i++) {
-        var y = h * (0.1 + i * 0.09);
-        g.beginPath(); g.moveTo(w / 2, y); g.quadraticCurveTo(w * 0.75, y - 18, w * 0.93, y - 34); g.stroke();
-        g.beginPath(); g.moveTo(w / 2, y); g.quadraticCurveTo(w * 0.25, y - 18, w * 0.07, y - 34); g.stroke();
+      g.lineWidth = 1.2; g.strokeStyle = "rgba(150,195,110,.32)";
+      for (var k = 1; k < 10; k++) {
+        var vy = h * (0.12 + k * 0.08);
+        g.beginPath(); g.moveTo(w / 2, vy); g.quadraticCurveTo(w * 0.78, vy - 14, w * 0.9, vy - 34); g.stroke();
+        g.beginPath(); g.moveTo(w / 2, vy); g.quadraticCurveTo(w * 0.22, vy - 14, w * 0.1, vy - 34); g.stroke();
       }
       g.restore();
     }));
@@ -113,9 +115,13 @@
     return t;
   }
   function barkTex() {
+    // Lamtoro bark: brown-grey with fine vertical fissures and paler flecks.
     return TEX.bark || (TEX.bark = canvasTex(64, 256, function (g, w, h) {
-      g.fillStyle = "#8b877c"; g.fillRect(0, 0, w, h);
-      for (var i = 0; i < 400; i++) { g.fillStyle = "rgba(" + (90 + Math.random() * 70 | 0) + "," + (86 + Math.random() * 60 | 0) + "," + (78 + Math.random() * 50 | 0) + ",.5)"; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 2 + Math.random() * 10); }
+      var gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, "#6f6250"); gr.addColorStop(0.5, "#8d7f6a"); gr.addColorStop(1, "#6a5d4b");
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      var r = rng(31);
+      for (var i = 0; i < 140; i++) { var x = r() * w; g.strokeStyle = "rgba(55,45,35," + (0.3 + r() * 0.4) + ")"; g.lineWidth = 0.6 + r(); g.beginPath(); g.moveTo(x, r() * h); g.lineTo(x + (r() - .5) * 2, r() * h); g.stroke(); }
+      for (var j = 0; j < 500; j++) { g.fillStyle = "rgba(" + (170 + r() * 40 | 0) + "," + (150 + r() * 30 | 0) + "," + (120 + r() * 30 | 0) + ",.35)"; g.fillRect(r() * w, r() * h, 1 + r() * 2, 2 + r() * 6); }
     }));
   }
 
@@ -152,6 +158,15 @@
   }
   // A leaf card: a plane, stem end at the origin, pointing along `dir`.
   var LEAF = (function () { var g = new THREE.PlaneGeometry(1, 1, 1, 1); g.translate(0, 0.5, 0); return g; })();
+  var LEAF_FOLD = (function () {
+    var g = new THREE.PlaneGeometry(1, 1, 2, 5); g.translate(0, 0.5, 0);
+    var p = g.attributes.position;
+    for (var i = 0; i < p.count; i++) { var x = p.getX(i), y = p.getY(i); p.setZ(i, Math.abs(x) * 0.14 - y * y * 0.16); }
+    g.computeVertexNormals();
+    return g;
+  })();
+  // Coffee blades: the fold and curl scale with the blade, not in metres.
+  function leafMatrixF(pos, dir, width, length, roll) { var m = leafMatrix(pos, dir, width, length, roll); m.scale(new THREE.Vector3(1, 1, length)); return m; }
   function leafMatrix(pos, dir, width, length, roll) {
     var q = new THREE.Quaternion().setFromUnitVectors(UP, dir.clone().normalize());
     q.multiply(new THREE.Quaternion().setFromAxisAngle(UP, roll));
@@ -164,65 +179,62 @@
   function coffeeTemplate(seed, flowering) {
     var r = rng(seed), stems = new Builder(), leaves = new Builder(), fruit = new Builder(), flowers = new Builder();
     var cyl = new THREE.CylinderGeometry(0.6, 1, 1, 5, 1), bead = new THREE.IcosahedronGeometry(1, 0);
-    var wood = new THREE.Color("#6b5236"), H = COFFEE_H;
-    stems.add(cyl, between(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, H, 0), 0.025), wood);
-    var node = 0;
-    for (var y = 0.18; y < H - 0.05; y += 0.075 + r() * 0.02, node++) {
-      var rel = y / H, maxL = 0.95 * (1 - Math.pow(rel, 1.35)) + 0.1;
-      for (var side = 0; side < 2; side++) {
-        var az = node * Math.PI / 2 + side * Math.PI + (r() - 0.5) * 0.4;
-        var L = maxL * (0.8 + r() * 0.3), droop = -0.12 - rel * 0.1 - r() * 0.08;
-        var dir = new THREE.Vector3(Math.cos(az), droop, Math.sin(az)).normalize();
-        var a = new THREE.Vector3(0, y, 0), b = a.clone().addScaledVector(dir, L);
-        b.y -= L * L * 0.12; // branches sag toward the tips
-        stems.add(cyl, between(a, b, 0.008), wood);
-        var bdir = new THREE.Vector3().subVectors(b, a), n = Math.max(4, Math.round(L / 0.05));
-        for (var k = 1; k <= n; k++) {
-          var t = k / (n + 0.4), p = a.clone().addScaledVector(bdir, t);
-          var young = t > 0.8, size = young ? 0.65 : 1;
-          var col = new THREE.Color(young ? "#9fd07a" : "#a9bea4");
-          for (var s2 = -1; s2 <= 1; s2 += 2) {
-            // Opposite leaves, spreading sideways and a little down.
-            var side3 = new THREE.Vector3().crossVectors(bdir, UP).normalize().multiplyScalar(s2);
-            var ld = side3.clone().multiplyScalar(0.85).add(bdir.clone().normalize().multiplyScalar(0.4)).add(new THREE.Vector3(0, -0.5 + r() * 0.25, 0));
-            var len = (0.13 + r() * 0.06) * size, wid = len * 0.44;
-            leaves.add(LEAF, leafMatrix(p, ld, wid, len, (r() - 0.5) * 0.8 + 1.1), col);
-          }
-          if (!young && t > 0.2 && t < 0.7 && r() < 0.35) {
-            var sd = new THREE.Vector3().crossVectors(bdir, UP).normalize().multiplyScalar(r() < 0.5 ? 1 : -1).add(bdir.clone().normalize()).normalize();
-            sd.y -= 0.25;
-            var sl = 0.14 + r() * 0.12, se = p.clone().addScaledVector(sd, sl);
-            stems.add(cyl, between(p, se, 0.005), wood);
-            for (var sk = 1; sk <= 3; sk++) {
-              var sp2 = p.clone().lerp(se, sk / 3.2);
-              for (var ss = -1; ss <= 1; ss += 2) {
-                var sdir = new THREE.Vector3().crossVectors(sd, UP).normalize().multiplyScalar(ss).add(sd.clone().multiplyScalar(0.4)).add(new THREE.Vector3(0, -0.45, 0));
-                leaves.add(LEAF, leafMatrix(sp2, sdir, 0.052, 0.12 + r() * 0.04, r() * 0.8 + 1.1), new THREE.Color("#ffffff"));
+    var wood = new THREE.Color("#4e4134"), H = COFFEE_H;
+    var nStem = 2;
+    for (var s = 0; s < nStem; s++) {
+      var sa = s * Math.PI + r() * 0.6, lean = 0.05 + r() * 0.05, top = new THREE.Vector3(Math.cos(sa) * lean * H, H * (0.94 + r() * 0.06), Math.sin(sa) * lean * H);
+      var base = new THREE.Vector3(Math.cos(sa) * 0.03, 0, Math.sin(sa) * 0.03);
+      stems.add(cyl, between(base, top, 0.022), wood);
+      var node = 0;
+      for (var y = 0.14; y < top.y - 0.03; y += 0.06 + r() * 0.02, node++) {
+        var rel = y / H;
+        // Hedge-like: nearly the same reach from the ground up, rounding off near the top.
+        var maxL = 0.8 * Math.sqrt(Math.max(0, 1 - Math.pow(rel / 1.02, 2.4))) + 0.07; // beehive: wide skirt, rounded top
+        var c = new THREE.Vector3().lerpVectors(base, top, (y - base.y) / (top.y - base.y));
+        for (var side = 0; side < 2; side++) {
+          var az = node * Math.PI / 2 + side * Math.PI + s * 0.8 + (r() - 0.5) * 0.5;
+          var L = maxL * (0.82 + r() * 0.28), droop = -0.02 - rel * 0.06 - r() * 0.05;
+          var dir = new THREE.Vector3(Math.cos(az), droop, Math.sin(az)).normalize();
+          var a2 = c.clone(), mid = a2.clone().addScaledVector(dir, L * 0.5), b2 = a2.clone().addScaledVector(dir, L);
+          mid.y -= L * L * 0.05; b2.y -= L * L * 0.16; // plagiotropic branches arch down toward the tips
+          stems.add(cyl, between(a2, mid, 0.006), wood); stems.add(cyl, between(mid, b2, 0.004), wood);
+          var n = Math.max(4, Math.round(L / 0.045));
+          for (var k = 1; k <= n; k++) {
+            var tt = k / (n + 0.3), p = tt < 0.5 ? a2.clone().lerp(mid, tt * 2) : mid.clone().lerp(b2, (tt - 0.5) * 2);
+            var bdir = tt < 0.5 ? new THREE.Vector3().subVectors(mid, a2) : new THREE.Vector3().subVectors(b2, mid);
+            var young = tt > 0.82, size = young ? 0.7 : 1;
+            var col = young ? new THREE.Color().setHSL(0.24, 0.75, 0.82) : new THREE.Color().setHSL(0.3 + (r() - 0.5) * 0.04, 0.22, 0.6 + r() * 0.2);
+            for (var s2 = -1; s2 <= 1; s2 += 2) {
+              if (!young && r() < 0.15) continue; // a few fallen leaves leave gaps
+              // Opposite pairs, held out to the side and hanging a little, never in neat rows.
+              var side3 = new THREE.Vector3().crossVectors(bdir, UP).normalize().multiplyScalar(s2);
+              var ld = side3.clone().add(bdir.clone().normalize().multiplyScalar(0.2 + r() * 0.2)).add(new THREE.Vector3((r() - 0.5) * 0.4, -0.18 + r() * 0.26, (r() - 0.5) * 0.4));
+              var len = (0.18 + r() * 0.08) * size, wid = len * 0.45;
+              leaves.add(LEAF_FOLD, leafMatrixF(p, ld, wid, len, Math.PI / 2 + (r() - 0.5) * 0.7), col); // blade faces up
+            }
+            // Cherries clustered in the axils along the older wood.
+            if (!young && tt > 0.12 && tt < 0.72 && r() < 0.3) {
+              var cnt = 3 + (r() * 6 | 0);
+              for (var cc = 0; cc < cnt; cc++) {
+                var ang = cc / cnt * Math.PI * 2, off = new THREE.Vector3(Math.cos(ang) * 0.016, -0.008 - r() * 0.01, Math.sin(ang) * 0.016);
+                var ripe = r(), fc = ripe < 0.2 ? "#a8201c" : ripe < 0.3 ? "#c9471f" : ripe < 0.4 ? "#b5a032" : ripe < 0.75 ? "#4f8a2c" : "#3d7424";
+                fruit.add(bead, new THREE.Matrix4().compose(p.clone().add(off), new THREE.Quaternion(), new THREE.Vector3(0.0075, 0.009, 0.0075)), new THREE.Color(fc));
               }
             }
-          }
-          // Cherries in the axils of the older part of the branch.
-          if (!young && t > 0.15 && t < 0.75 && r() < 0.55) {
-            var cnt = 3 + (r() * 7 | 0);
-            for (var c = 0; c < cnt; c++) {
-              var off = new THREE.Vector3((r() - 0.5) * 0.035, -0.012 - r() * 0.02, (r() - 0.5) * 0.035);
-              var ripe = r(), fc = ripe < 0.45 ? "#b3261e" : ripe < 0.6 ? "#d9731f" : ripe < 0.72 ? "#c9b233" : "#5f8f32";
-              fruit.add(bead, new THREE.Matrix4().compose(p.clone().add(off), new THREE.Quaternion(), new THREE.Vector3(0.0085, 0.01, 0.0085)), new THREE.Color(fc));
-            }
-          }
-          if (flowering && !young && t > 0.1 && r() < 0.35) {
-            for (var f = 0; f < 5; f++) {
-              var fo = new THREE.Vector3((r() - 0.5) * 0.05, 0.005 + r() * 0.015, (r() - 0.5) * 0.05);
-              flowers.add(bead, new THREE.Matrix4().compose(p.clone().add(fo), new THREE.Quaternion(), new THREE.Vector3(0.012, 0.006, 0.012)), new THREE.Color("#f6f3ea"));
+            if (flowering && !young && tt > 0.1 && r() < 0.4) {
+              for (var f = 0; f < 6; f++) {
+                var fo = new THREE.Vector3((r() - 0.5) * 0.04, 0.004 + r() * 0.012, (r() - 0.5) * 0.04);
+                flowers.add(bead, new THREE.Matrix4().compose(p.clone().add(fo), new THREE.Quaternion(), new THREE.Vector3(0.011, 0.006, 0.011)), new THREE.Color("#f6f3ea"));
+              }
             }
           }
         }
       }
-    }
-    // A crown of young leaves at the top.
-    for (var tp = 0; tp < 10; tp++) {
-      var ta = r() * Math.PI * 2;
-      leaves.add(LEAF, leafMatrix(new THREE.Vector3(0, H - 0.02, 0), new THREE.Vector3(Math.cos(ta) * 0.6, 0.8, Math.sin(ta) * 0.6), 0.04, 0.1, r() * 3), new THREE.Color("#a6dc7c"));
+      // Young light-green flush at the top of each stem.
+      for (var tp = 0; tp < 8; tp++) {
+        var ta = r() * Math.PI * 2;
+        leaves.add(LEAF_FOLD, leafMatrixF(top.clone().add(new THREE.Vector3(0, -0.04, 0)), new THREE.Vector3(Math.cos(ta), -0.15, Math.sin(ta)), 0.05, 0.11, Math.PI / 2 + (r() - 0.5) * 0.6), new THREE.Color().setHSL(0.26, 0.6, 0.7));
+      }
     }
     return { stems: stems.geometry(), leaves: leaves.geometry(), fruit: fruit.geometry(), flowers: flowering ? flowers.geometry() : null, H: COFFEE_H, R: COFFEE_R };
   }
@@ -262,11 +274,14 @@
         var tint = new THREE.Color().setHSL(0.24 + (r() - 0.5) * 0.03, 0.35 + r() * 0.1, 0.55 + r() * 0.12);
         leaves.add(LEAF, leafMatrix(q, dir, 0.55 + r() * 0.25, 0.7 + r() * 0.35, r() * 6), tint);
       }
-      for (var pd = 0; pd < 3; pd++) {
-        if (r() < 0.45) continue;
+      for (var pd = 0; pd < 5; pd++) {
+        if (r() < 0.35) continue;
         var pp = p.clone().add(new THREE.Vector3((r() - 0.5) * 1.2, -0.3 - r() * 0.4, (r() - 0.5) * 1.2));
-        fruit.add(new THREE.BoxGeometry(1, 1, 1), new THREE.Matrix4().compose(pp.clone().add(new THREE.Vector3(0, -0.08, 0)), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(r(), 0, r()).normalize(), 0.2), new THREE.Vector3(0.018, 0.17, 0.004)), new THREE.Color(r() < 0.5 ? "#6b4a2b" : "#8a6a3a"));
+        // Flat pods, reddish brown when ripe, green when young.
+        fruit.add(new THREE.BoxGeometry(1, 1, 1), new THREE.Matrix4().compose(pp.clone().add(new THREE.Vector3(0, -0.1, 0)), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(r(), 0, r()).normalize(), 0.25), new THREE.Vector3(0.022, 0.19, 0.004)), new THREE.Color(["#7a3f2a", "#8a4a30", "#6b5a2e", "#5f7a34"][r() * 4 | 0]));
       }
+      // Pom-pom flower heads, creamy white.
+      if (r() < 0.5) fruit.add(new THREE.IcosahedronGeometry(1, 1), new THREE.Matrix4().compose(p.clone().add(new THREE.Vector3((r() - .5) * .8, .1, (r() - .5) * .8)), new THREE.Quaternion(), new THREE.Vector3(0.025, 0.025, 0.025)), new THREE.Color("#f1ead2"));
     });
     return { stems: stems.geometry(), leaves: leaves.geometry(), fruit: fruit.geometry(), H: LAM_H, R: LAM_R };
   }
@@ -293,7 +308,7 @@
       return { m: m, d: d };
     }
     MAT = {
-      coffeeLeaf: leafMat(coffeeLeafTex(), 0.38),
+      coffeeLeaf: (function () { var l = leafMat(coffeeLeafTex(), 0.32); l.m = new THREE.MeshPhysicalMaterial({ map: coffeeLeafTex(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.34, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.35 }); return l; })(),
       lamLeaf: leafMat(lamtoroLeafTex(), 0.8),
       broadLeaf: leafMat(broadLeafTex(), 0.7),
       wood: new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9 }),
@@ -366,6 +381,7 @@
           if (!geo || !geo.attributes.position.count) return;
           var im = instanced(geo, pt[1], mine, function (t, m) {
             var sy = t.h / tp.H, sxz = Math.max(0.3, t.r / tp.R);
+            if (kind === "coffee") sxz = Math.min(sxz, 1.05);
             if (pt[0] === "fruit" || pt[0] === "flowers") sxz = Math.min(sxz, sy * 1.3);
             q.setFromAxisAngle(UP, (t.id * 2.3999) % (Math.PI * 2));
             m.compose(new THREE.Vector3(t.x, t.base, t.z), q, new THREE.Vector3(sxz, sy, sxz));
@@ -385,8 +401,53 @@
     });
     return grp;
   }
-  function ground(w, h, heightAt) {
-    var tex = grassTex().clone(); tex.needsUpdate = true; tex.repeat.set(w / 6, h / 6);
+  // Garden floor: grass, bare soil, leaf litter (serasah), or soil rows with
+  // grass alleys between them.
+  function soilTex() {
+    var t = TEX.soil || (TEX.soil = canvasTex(512, 512, function (g, w, h) {
+      g.fillStyle = "#5b4430"; g.fillRect(0, 0, w, h);
+      var r = rng(19);
+      for (var i = 0; i < 60; i++) { g.fillStyle = "rgba(" + (70 + r() * 40 | 0) + "," + (50 + r() * 30 | 0) + "," + (32 + r() * 20 | 0) + ",.5)"; g.beginPath(); g.ellipse(r() * w, r() * h, 10 + r() * 50, 6 + r() * 30, r() * 3, 0, Math.PI * 2); g.fill(); }
+      for (var j = 0; j < 7000; j++) { g.fillStyle = ["#4a3624", "#6e543a", "#3c2c1e", "#7b6146", "#584230"][j % 5]; g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 3); }
+      for (var k = 0; k < 120; k++) { g.strokeStyle = "rgba(120,100,70,.5)"; g.lineWidth = 1; var x = r() * w, y = r() * h; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - .5) * 20, y + (r() - .5) * 20); g.stroke(); } // twigs
+    }));
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  }
+  function litterTex() {
+    var t = TEX.litter || (TEX.litter = canvasTex(512, 512, function (g, w, h) {
+      g.fillStyle = "#4b3a28"; g.fillRect(0, 0, w, h);
+      var r = rng(23), cols = ["#7a5a32", "#8f6b3a", "#5f4529", "#a07c45", "#6b5a2e", "#4f5a2a", "#8a7440"];
+      for (var i = 0; i < 1400; i++) {
+        var x = r() * w, y = r() * h, a = r() * Math.PI * 2, L = 8 + r() * 18;
+        g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = cols[i % cols.length]; g.globalAlpha = 0.85;
+        g.beginPath(); g.ellipse(0, 0, L * 0.38, L, 0, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = "rgba(40,28,16,.45)"; g.lineWidth = 0.8; g.beginPath(); g.moveTo(0, -L); g.lineTo(0, L); g.stroke();
+        g.restore();
+      }
+      g.globalAlpha = 1;
+    }));
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  }
+  // Soil under the coffee rows and grass in the alleys: blended by a mask
+  // made from the row spacing.
+  function rowsTex(w, h, rowY) {
+    var px = 8, c = document.createElement("canvas"); c.width = Math.max(64, Math.round(w * px)); c.height = Math.max(64, Math.round(h * px));
+    var g = c.getContext("2d"), grass = grassTex().image, soil = soilTex().image;
+    var pg = g.createPattern(grass, "repeat"), ps = g.createPattern(soil, "repeat");
+    g.save(); g.scale(0.35, 0.35); g.fillStyle = pg; g.fillRect(0, 0, c.width / 0.35, c.height / 0.35); g.restore();
+    g.save(); g.scale(0.35, 0.35); g.fillStyle = ps;
+    rowY.forEach(function (y) { var yy = (h - y) * px / 0.35, band = 1.3 * px / 0.35; g.beginPath(); for (var x = 0; x <= c.width / 0.35; x += 12) { var j = Math.sin(x * 0.05 + y) * 6; g.lineTo(x, yy - band / 2 + j); } for (var x2 = c.width / 0.35; x2 >= 0; x2 -= 12) { var j2 = Math.cos(x2 * 0.04 + y) * 6; g.lineTo(x2, yy + band / 2 + j2); } g.closePath(); g.fill(); });
+    g.restore();
+    var tx = new THREE.CanvasTexture(c); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = 4;
+    return tx;
+  }
+  function ground(w, h, heightAt, type, rowY) {
+    type = type || "grass";
+    var tex;
+    if (type === "rows" && rowY && rowY.length) tex = rowsTex(w, h, rowY);
+    else { tex = (type === "soil" ? soilTex() : type === "litter" ? litterTex() : grassTex()).clone(); tex.needsUpdate = true; tex.repeat.set(w / 6, h / 6); }
     var seg = heightAt ? 60 : 1, g = new THREE.PlaneGeometry(w, h, seg, seg);
     g.rotateX(-Math.PI / 2); g.translate(w / 2, 0, h / 2);
     if (heightAt) { var pos = g.attributes.position; for (var i = 0; i < pos.count; i++) pos.setY(i, heightAt(pos.getX(i), pos.getZ(i))); g.computeVertexNormals(); }

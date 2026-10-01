@@ -211,6 +211,12 @@
     }
     return n;
   }
+  function example40() {
+    P.w = 22.5; P.h = 10;
+    for (var i = 0; i < 9; i++) for (var j = 0; j < 4; j++) addTree("kopi", 1.25 + i * 2.5, 1.25 + j * 2.5);
+    [3.75, 8.75, 13.75, 18.75].forEach(function (x, k) { addTree("lamtoro", x, k % 2 ? 7.5 : 2.5); });
+    return 40;
+  }
   function plantRandom(key, n, seed) {
     var s = seed || 42;
     function rnd() { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }
@@ -297,7 +303,7 @@
 
   /* --------------------------------------------------------------- 2D */
 
-  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = false, realistic = false, flowering = false, look3d = "sexi";
+  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = false, realistic = true, flowering = false, look3d = "real";
   // Camera presets: the whole plot from above a corner, or standing in a
   // coffee row at eye height (1.6 m), looking along the row.
   function camPreset(k) {
@@ -466,7 +472,9 @@
       var R3 = window.PlootsAgroReal, bySp = {};
       R3.atmosphere(sc, G3.r);
       G3.hemi.intensity = 0.85;
-      grp.add(R3.ground(P.w, P.h, P.topo ? function (x, z) { return alt(x, P.h - z); } : null));
+      // Rows for the soil-and-grass floor: the y positions of the coffee rows.
+      var rowY = Array.from(new Set(P.trees.filter(function (t) { return t.alive && sp(t).crop; }).map(function (t) { return Math.round(t.y * 2) / 2; })));
+      grp.add(R3.ground(P.w, P.h, P.topo ? function (x, z) { return alt(x, P.h - z); } : null, P.floor || "grass", rowY));
       Object.keys(P.species).forEach(function (k) {
         bySp[k] = P.trees.filter(function (t) { return t.alive && t.sp === k; }).map(function (t) {
           return { id: t.id, x: t.x, z: P.h - t.y, base: alt(t.x, t.y), h: t.h, r: t.r };
@@ -728,7 +736,8 @@
       '<label class="field-label">Stand name</label><input name="name" value="' + esc(P && P.name || "Kopi Gayo – lamtoro") + '">' +
       '<div class="num-pair"><div><label class="field-label">Width X (m)</label><input name="w" type="number" min="10" max="400" value="100"></div><div><label class="field-label">Length Y (m)</label><input name="h" type="number" min="10" max="400" value="100"></div></div>' +
       '<div class="num-pair"><div><label class="field-label">Slope (%)</label><input name="slope" type="number" min="0" max="100" value="0"></div><div><label class="field-label">Slope faces</label><select name="aspect"><option value="0">North (Y+)</option><option value="90">East (X+)</option><option value="180">South (Y−)</option><option value="270">West (X−)</option></select></div></div>' +
-      '<label class="field-label">Start with</label><select name="start"><option value="pattern">Coffee 2.5 × 2.5 m under lamtoro 5 × 5 m</option><option value="coffee">Coffee only, 2.5 × 2.5 m</option><option value="empty">An empty stand</option></select>' +
+      '<label class="field-label">Garden floor</label><select name="floor"><option value="grass">Grass</option><option value="soil">Bare soil</option><option value="litter">Leaf litter (serasah)</option><option value="rows">Soil under the rows, grass in the alleys</option></select>' +
+      '<label class="field-label">Start with</label><select name="start"><option value="ex40">Example: 40 plants (36 coffee, 4 lamtoro), grown 5 years</option><option value="pattern">Coffee 2.5 × 2.5 m under lamtoro 5 × 5 m</option><option value="coffee">Coffee only, 2.5 × 2.5 m</option><option value="empty">An empty stand</option></select>' +
       '<p class="ag-note">Trees can be added later by pattern, by clicking, or from a SExI-FS tree file.</p>' +
       '<div class="ag-dlg-foot"><button type="button" data-cancel>Cancel</button><button type="submit" class="btn-primary">Create stand</button></div></form>';
     root.appendChild(back);
@@ -739,7 +748,7 @@
     f.addEventListener("submit", function (e) {
       e.preventDefault();
       var v = f.elements, w = clamp(+v.w.value || 100, 10, 400), h = clamp(+v.h.value || 100, 10, 400), slope = clamp(+v.slope.value || 0, 0, 100) / 100, asp = +v.aspect.value;
-      P = newProject(); P.name = v.name.value || P.name; P.w = w; P.h = h;
+      P = newProject(); P.name = v.name.value || P.name; P.w = w; P.h = h; P.floor = v.floor.value;
       if (slope > 0) {
         // A plane rising toward the chosen side, as SExI-FS topography points every 5 m.
         var rows = ["X Y Altitude"];
@@ -749,7 +758,8 @@
         }
         importTopo(rows.join("\n"));
       }
-      if (v.start.value !== "empty") plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false);
+      if (v.start.value === "ex40") { example40(); crownIndices(); record(); for (var yy = 0; yy < 5; yy++) step(); }
+      else if (v.start.value !== "empty") plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false);
       if (v.start.value === "pattern") plantPattern("lamtoro", 5, 5, 2.5, 2.5, true);
       crownIndices(); record(); sel = null; info(); syncInputs(); save();
       back.remove();
@@ -803,7 +813,7 @@
         '<div class="ag-float" id="agFloat2d"><div class="ag-seg ag-paint">' + ["outline", "opaque", "transparent", "shaded"].map(function (m) { return '<button type="button" data-paint="' + m + '"' + (m === paint ? ' class="active"' : "") + ">" + m.charAt(0).toUpperCase() + m.slice(1) + "</button>"; }).join("") + "</div>" +
           '<span class="ag-fsep"></span><label class="check-row"><input type="checkbox" id="agShowInfo">Show info</label><label class="check-row"><input type="checkbox" id="agLight">Light map</label></div>' +
         '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b>' +
-          '<span class="ag-fsep"></span><div class="ag-seg ag-look"><button type="button" data-look="sexi" class="active">SExI-FS</button><button type="button" data-look="real">Realistic</button></div><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
+          '<span class="ag-fsep"></span><select id="agFloor" title="Garden floor"><option value="grass">Floor: grass</option><option value="soil">Floor: soil</option><option value="litter">Floor: leaf litter</option><option value="rows">Floor: soil rows, grass alleys</option></select><span class="ag-fsep"></span><div class="ag-seg ag-look"><button type="button" data-look="real" class="active">Realistic</button><button type="button" data-look="sexi">SExI-FS</button></div><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
           '<span class="ag-fsep"></span><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
         '<div class="ag-info" id="agInfo" hidden></div></main>' +
       '<aside class="ag-right"><h4>' + sym("monitoring") + 'Plot summary</h4><div id="agStats"></div>' +
@@ -812,7 +822,7 @@
 
     var saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { }
     P = saved && saved.trees ? saved : newProject();
-    if (!saved) { plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false); plantPattern("lamtoro", 5, 5, 2.5, 2.5, true); crownIndices(); record(); setTimeout(newStand, 300); }
+    if (!saved) { P.name = "Example: 40 plants"; example40(); crownIndices(); record(); for (var yy = 0; yy < 5; yy++) { step(); } setTimeout(newStand, 300); }
     syncInputs();
 
     root.querySelector(".ag-close").addEventListener("click", close);
@@ -849,6 +859,7 @@
       Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("active", x === b); });
       if (G3) build3d();
     });
+    $("agFloor").addEventListener("change", function () { P.floor = this.value; save(); if (G3) build3d(); });
     root.querySelector(".ag-paint").addEventListener("click", function (e) { var b = e.target.closest("[data-paint]"); if (b) setPaint(b.dataset.paint); });
     $("agShowInfo").addEventListener("change", function () { showInfo = this.checked; draw2d(); });
     wireMenus();
@@ -911,7 +922,7 @@
       "<span>Crown radius " + fmt(sel.r, 2) + " m · depth " + fmt(sel.depth, 1) + " m</span><span>Light (CP) " + fmt(sel.cp, 2) + " · crown form " + fmt(sel.cf, 2) + " · age " + sel.age + "</span><em>Delete removes this tree</em>";
   }
   function syncInputs() {
-    $("agW").value = P.w; $("agH").value = P.h;
+    $("agW").value = P.w; $("agH").value = P.h; $("agFloor").value = P.floor || "grass";
     $("agStandLbl").textContent = (P.name || "Stand") + " · " + P.w + " × " + P.h + " m" + (P.topo ? " · with topography" : "");
     speciesForm();
     var ck = cropKey(); $("agPruneC").value = ck ? P.species[ck].prune : "";
