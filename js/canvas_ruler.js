@@ -1,6 +1,6 @@
 // Canvas rulers: only the top (horizontal) and left (vertical) rulers exist.
-// Plain drag on a ruler pans the canvas (canvasScroll). Alt+drag on a ruler
-// still creates a snap guide, same behavior as before. Mouse wheel over the
+// Drag from a ruler pulls out a snap guide (as in QGIS); Alt+drag on a ruler
+// pans the canvas (canvasScroll). Mouse wheel over the
 // canvas area zooms in/out instead of scrolling.
 
 function rulerPxPerUnit(unit) {
@@ -272,12 +272,13 @@ function startRulerPan(e, axis, rulerEl) {
   var rulerTop = document.getElementById('rulerTop');
   var rulerLeft = document.getElementById('rulerLeft');
   if (rulerTop) rulerTop.addEventListener('mousedown', function (e) {
-    if (e.altKey) startRulerGuideDrag(e, 'h');
-    else startRulerPan(e, 'h', rulerTop);
+    // Like QGIS: drag from a ruler to pull out a guide; Alt+drag pans.
+    if (e.altKey) startRulerPan(e, 'h', rulerTop);
+    else startRulerGuideDrag(e, 'h');
   });
   if (rulerLeft) rulerLeft.addEventListener('mousedown', function (e) {
-    if (e.altKey) startRulerGuideDrag(e, 'v');
-    else startRulerPan(e, 'v', rulerLeft);
+    if (e.altKey) startRulerPan(e, 'v', rulerLeft);
+    else startRulerGuideDrag(e, 'v');
   });
 
   // Like QGIS: the mouse wheel (and a trackpad pinch, which browsers report

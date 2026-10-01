@@ -27,7 +27,56 @@
   function mode() { return document.body.classList.contains("gis-carto") ? "cartography" : "analysis"; }
   function go(v) { var b = seg() && seg().querySelector('[data-v="' + v + '"]'); if (b) b.click(); }
 
-  var sw = null, tb = null, scaleIn = null;
+  var sw = null, tb = null, scaleIn = null, ins = null;
+  // Layout view: an Insert menu, as ArcMap's (Insert > Title, Text, Legend…).
+  var INSERT = [
+    ["title", "title", "Title"], ["text", "text_fields", "Text"], ["credits", "info", "Credits (sources, CRS, author)"], "-",
+    ["legend", "format_list_bulleted", "Legend"], ["scalebar", "straighten", "Scale bar"], ["scaletext", "linear_scale", "Scale text (1:…)"],
+    ["north", "navigation", "North arrow"], ["inset", "picture_in_picture", "Inset map"], ["colorbar", "gradient", "Color bar"], "-",
+    ["frame", "crop_square", "Rectangle"], ["ellipse", "circle", "Ellipse"], ["line", "horizontal_rule", "Line"], ["arrow", "arrow_right_alt", "Arrow"], "-",
+    ["image", "image", "Picture…"]
+  ];
+  function insertItem(v) {
+    var c = window.fabricCanvas, bar = document.querySelector(".carto-bar");
+    if (!c) return;
+    var cx = (window.state && state.canvasWidthPx || 800) / 2, cy = (window.state && state.canvasHeightPx || 600) / 2, o = null;
+    if (v.indexOf("map:") === 0 && GIS.mapFrames) {
+      var id = v.slice(4);
+      if (id === "__new") { var nm = window.prompt("Name of the new map", "Map " + (GIS.maps.length + 1)); if (!nm) return; id = GIS.addMap(nm.trim()).id; }
+      GIS.mapFrames.add(id);
+      return;
+    }
+    if (v === "ellipse") o = new fabric.Ellipse({ left: cx - 60, top: cy - 40, rx: 60, ry: 40, fill: "rgba(255,255,255,0)", stroke: "#222222", strokeWidth: 1.5, gisItem: true });
+    else if (v === "arrow") {
+      o = new fabric.Path("M 0 0 L 140 0 M 128 -8 L 140 0 L 128 8", { left: cx - 70, top: cy, fill: "", stroke: "#222222", strokeWidth: 2, strokeLineCap: "round", strokeLineJoin: "round", gisItem: true });
+    } else if (v === "scaletext") {
+      var s = GIS.getScale && GIS.getScale();
+      o = new fabric.Textbox("Scale 1:" + (s ? Math.round(s).toLocaleString("en-US") : "—"), { left: cx - 70, top: cy, width: 160, fontSize: 13, fontFamily: (window.state && state.fontBody) || "Inter", fill: "#222222", gisItem: true });
+    } else {
+      var b = bar && bar.querySelector('[data-act="' + v + '"]');
+      if (b) b.click();
+      return;
+    }
+    c.add(o); c.setActiveObject(o); c.requestRenderAll();
+    c.fire("object:modified", { target: o });
+    if (typeof historyNotifyChange === "function") historyNotifyChange();
+  }
+  var pop = null;
+  GIS.arcInsert = function (v) { insertItem(v); };
+  function closePop() { if (pop) { pop.remove(); pop = null; } }
+  function openInsert(btn) {
+    if (pop) { closePop(); return; }
+    pop = document.createElement("div");
+    pop.className = "gis-ctx arc-insert-menu";
+    // Map frames: one per map of the project (multiple maps), or a new map.
+    var maps = (GIS.maps || []).map(function (m) { return ["map:" + m.id, "add_photo_alternate", "Map frame: " + m.name]; }).concat([["map:__new", "add_location_alt", "Map frame: new map…"], "-"]);
+    pop.innerHTML = maps.concat(INSERT).map(function (it) { return it === "-" ? "<hr>" : '<button type="button" data-v="' + it[0] + '">' + sym(it[1]) + "<span>" + it[2] + "</span></button>"; }).join("");
+    document.body.appendChild(pop);
+    var r = btn.getBoundingClientRect();
+    pop.style.left = Math.min(r.left, innerWidth - 240) + "px"; pop.style.top = (r.bottom + 6) + "px";
+    pop.addEventListener("click", function (e) { var b = e.target.closest("[data-v]"); if (b) { closePop(); insertItem(b.dataset.v); } });
+    setTimeout(function () { document.addEventListener("mousedown", function off(e) { if (pop && !pop.contains(e.target) && !btn.contains(e.target)) { closePop(); } if (!pop) document.removeEventListener("mousedown", off, true); }, true); }, 0);
+  }
   function build() {
     if (sw) return;
     sw = document.createElement("div");
@@ -50,6 +99,11 @@
     scaleIn.addEventListener("keydown", function (e) { e.stopPropagation(); if (e.key === "Enter") setFromInput(); if (e.key === "Escape") scaleIn.blur(); });
     var center = document.querySelector(".topbar-center");
     if (center) center.insertBefore(tb, center.firstChild.nextSibling);
+    ins = document.createElement("div");
+    ins.className = "tool-group arc-insert";
+    ins.innerHTML = '<button type="button" class="tool-btn tb-btn tb-drop" title="Insert layout items">' + sym("add_box") + '<span class="tb-lbl">Insert</span></button>';
+    ins.firstChild.addEventListener("click", function () { openInsert(this); });
+    if (center) center.insertBefore(ins, center.firstChild.nextSibling);
     place();
     new MutationObserver(place).observe(document.body, { attributes: true, attributeFilter: ["class"] });
     setInterval(tick, 400);
@@ -63,6 +117,7 @@
     if (host && sw.parentNode !== host) host.insertBefore(sw, host.firstChild);
     sw.style.display = inGis ? "" : "none";
     tb.style.display = inGis && m === "analysis" ? "" : "none";
+    if (ins) ins.style.display = inGis && m === "cartography" ? "" : "none";
     // The map toolbar moves from over the map into the top bar.
     var tools = document.querySelector(".gis-map-tools-analysis");
     if (tools && inGis && m === "analysis" && tools.parentNode !== tb) { tools.classList.add("arc-map-tools"); tb.appendChild(tools); }

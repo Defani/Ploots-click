@@ -400,3 +400,101 @@ body.gis-mode .gisw-seg { display: none !important; }
 .gis-map-tools.arc-map-tools { position: static !important; display: flex !important; flex-wrap: nowrap !important; max-width: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; transform: none !important; gap: 1px !important; }
 .gis-map-tools.arc-map-tools button { width: 30px !important; height: 30px !important; }
 .gis-map-tools.arc-map-tools .gis-tools-sep { height: 18px; margin: 0 4px; }
+
+/* Layout view: insert tools live in the Insert menu, not in toolbars. */
+body.gis-carto .carto-bar .carto-grp:nth-child(2) { display: none !important; }
+body.gis-carto #toolAddText, body.gis-carto #toolAddShape, body.gis-carto #toolAddImage, body.gis-carto .draw-tool-wrap, body.gis-carto #toolLatex, body.gis-carto [id^="toolAddMath"], body.gis-carto [title="LaTeX"] { display: none !important; }
+.arc-insert-menu { position: fixed; z-index: 3000; min-width: 230px; padding: 5px; border-radius: 10px; background: var(--g-glass-strong, var(--panel)); border: 1px solid var(--g-line); box-shadow: 0 16px 40px rgba(0,0,0,.28); -webkit-backdrop-filter: blur(var(--g-blur)); backdrop-filter: blur(var(--g-blur)); }
+.arc-insert-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--ink); font: 400 12.5px Inter, Arial, sans-serif; text-align: left; cursor: pointer; }
+.arc-insert-menu button:hover { background: var(--accent-soft); color: var(--accent); }
+.arc-insert-menu .material-symbols-outlined { font-size: 18px; color: var(--ink-soft); }
+.arc-insert-menu button:hover .material-symbols-outlined { color: var(--accent); }
+.arc-insert-menu hr { border: 0; border-top: 1px solid var(--g-line); margin: 4px 2px; }
+body.gis-carto #mainTools [title="Insert a LaTeX formula"], body.gis-carto #mainTools [title="Add a layout item"] { display: none !important; }
+
+/* ---- Layout view frame (QGIS Layout-like) -------------------------------- */
+body.gis-carto #gisDock, body.gis-carto .sidebar { display: none !important; }
+body.gis-carto .sidebar-nav > .nav-btn:not(.nav-home) { display: none !important; }
+body.gis-carto .sidebar-nav { width: 46px !important; }
+body.gis-carto .sidebar-container { width: 46px !important; }
+.lt-tools { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; }
+.lt-tools button { width: 34px; height: 32px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 7px; background: transparent; color: var(--ink-soft); cursor: pointer; }
+.lt-tools button:hover { background: var(--g-hover); color: var(--accent); }
+.lt-tools .material-symbols-outlined { font-size: 20px; }
+.lt-sep { width: 22px; height: 1px; background: var(--g-line); margin: 5px 0; }
+body.gis-carto .sidebar-nav .nav-home { width: 46px !important; }
+body.gis-carto .sidebar-nav .nav-home .nav-lbl { display: none; }
+
+.carto-dock { width: 300px; flex: none; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--g-line); background: var(--g-glass); -webkit-backdrop-filter: blur(var(--g-blur)) saturate(160%); backdrop-filter: blur(var(--g-blur)) saturate(160%); }
+.cd-body { flex: 1; min-height: 0; overflow-y: auto; }
+.cd-pane { display: none; }
+.cd-pane.on { display: block; }
+.cd-empty { padding: 16px 14px; font-size: 12.5px; color: var(--ink-soft); }
+#cartoDock .sidebar-panel { display: none !important; position: static !important; width: auto !important; height: auto !important; transform: none !important; opacity: 1 !important; }
+#cartoDock .sidebar-panel.cd-on, #cartoDock #panel-export, #cartoDock #layersPanel { display: block !important; }
+#cartoDock .sp-head, #cartoDock #panel-export > .sp-head { display: none !important; }
+#cartoDock .cd-export { border-top: 1px solid var(--g-line); }
+#cartoDock .cd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+#cartoDock .cd-grid label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--ink-soft); }
+#cartoDock .cd-grid select { height: 28px; font-size: 12.5px; }
+
+/* Dock tabs (both docks): a quiet segmented control. */
+.cd-tabs, .gisw-dock-tabs { display: flex !important; gap: 2px !important; margin: 8px 10px 6px !important; padding: 2px !important; border-radius: 8px !important; background: var(--g-hover) !important; border: 1px solid var(--g-line) !important; }
+.cd-tabs button, .gisw-dock-tabs > button { flex: 1 1 0 !important; height: 26px !important; min-height: 0 !important; padding: 0 6px !important; display: flex !important; align-items: center; justify-content: center; gap: 5px; border: 0 !important; border-radius: 6px !important; background: transparent !important; color: var(--ink-soft) !important; font: 500 12px Inter, Arial, sans-serif !important; white-space: nowrap; box-shadow: none !important; }
+.cd-tabs button.on, .gisw-dock-tabs > button.active, .gisw-dock-tabs > button.on { background: var(--g-glass-strong, var(--panel)) !important; color: var(--accent) !important; box-shadow: 0 1px 2px rgba(0,0,0,.15) !important; }
+.gisw-dock-tabs > button::after, .gisw-dock-tabs > button::before { display: none !important; }
+.gisw-dock-tabs > button .material-symbols-outlined { font-size: 15px !important; }
+
+/* Canvas: no zoom slider or scroll arrows (mouse wheel zooms and scrolls). */
+#czZoomSlider, #czZoomOut, #czZoomIn, .cvs-arrow { display: none !important; }
+
+
+/* Same property sheets in the Layout dock. */
+/* Property-sheet sidebar (as in QGIS/ArcGIS item properties): flat sections
+   separated by hairlines, compact headers, small outlined buttons. */
+#cartoDock .side-section { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--g-line) !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+#cartoDock .side-section-head { min-height: 36px !important; padding: 0 12px !important; font-size: 12.5px !important; font-weight: 600 !important; background: transparent !important; }
+#cartoDock .side-section-head .ss-lbl .material-symbols-outlined { font-size: 17px !important; color: var(--ink-soft) !important; }
+#cartoDock .side-section.open > .side-section-head .ss-lbl .material-symbols-outlined { color: var(--accent) !important; }
+#cartoDock .side-section-head .ss-chev { font-size: 18px !important; color: var(--ink-soft) !important; }
+#cartoDock .side-section-body { padding: 2px 12px 12px !important; gap: 6px !important; }
+#cartoDock .side-section-body button:not(.ss-icon):not(.sp-close):not([class*="swatch"]):not(.sw) {
+  min-height: 28px !important; height: auto !important; padding: 4px 10px !important; font-size: 12px !important; font-weight: 500 !important;
+  border-radius: 6px !important; background: transparent !important; border: 1px solid var(--g-line) !important; color: var(--ink) !important; box-shadow: none !important;
+}
+#cartoDock .side-section-body button:not(.ss-icon):not(.sp-close):hover { border-color: color-mix(in srgb, var(--accent) 60%, transparent) !important; color: var(--accent) !important; background: transparent !important; }
+#cartoDock .side-section-body button .material-symbols-outlined { font-size: 16px !important; }
+#cartoDock .side-section-body .field-label, #cartoDock .field-label { font-size: 11px !important; margin: 6px 0 3px !important; color: var(--ink-soft) !important; text-transform: none !important; letter-spacing: 0 !important; }
+#cartoDock .side-section-body input[type=text], #cartoDock .side-section-body input[type=number], #cartoDock .side-section-body select { height: 28px !important; font-size: 12.5px !important; border-radius: 6px !important; }
+#cartoDock .side-section-body .check-row { font-size: 12.5px !important; min-height: 26px; }
+#cartoDock .side-section-body .anim-row, #cartoDock .side-section-body .num-pair { gap: 6px !important; }
+#cartoDock .btn-primary { background: transparent !important; color: var(--accent) !important; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent) !important; box-shadow: none !important; }
+#cartoDock .btn-primary:hover { background: var(--accent-soft) !important; }
+#cartoDock .side-section-head .ss-lbl { text-transform: none !important; letter-spacing: 0 !important; }
+#cartoDock .side-section-head .ss-lbl .material-symbols-outlined { background: none !important; width: auto !important; height: auto !important; }
+
+/* Layout view: no floating UI. The layout toolbar sits in the top bar and the
+   zoom bar is a plain strip along the bottom of the page view. */
+.carto-bar.in-topbar { position: static !important; transform: none !important; display: flex !important; gap: 2px !important; padding: 0 !important; margin: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.carto-bar.in-topbar .carto-grp { background: transparent !important; border: 0 !important; padding: 0 4px !important; box-shadow: none !important; border-left: 1px solid var(--g-line) !important; border-radius: 0 !important; }
+.carto-bar.in-topbar button { height: 30px !important; min-width: 30px; padding: 0 6px !important; }
+.carto-bar.in-topbar button span:not(.material-symbols-outlined) { font-size: 12px; }
+body:not(.gis-carto) .carto-bar.in-topbar { display: none !important; }
+body.gis-carto #canvasZoomBar { left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important; transform: none !important; width: auto !important; border-radius: 0 !important; justify-content: flex-start !important; padding: 3px 10px !important; background: var(--g-glass-strong, var(--g-glass)) !important; border: 0 !important; border-top: 1px solid var(--g-line) !important; box-shadow: none !important; }
+body.gis-carto #czZoomPct { margin-left: auto; }
+body.gis-carto #objFormatBar, body.gis-carto .obj-float-bar, body.gis-carto #selHud { display: none !important; }
+#cartoDock #panel-export { padding: 6px 12px 14px !important; }
+
+/* Top bar: icons only everywhere; the name shows in a quick tooltip. */
+.carto-bar.in-topbar { flex: none !important; overflow: visible !important; }
+.topbar .tb-lbl, .carto-bar.in-topbar button span:not(.material-symbols-outlined) { display: none !important; }
+.topbar-center .tool-btn { font-size: 0 !important; gap: 0 !important; padding: 0 7px !important; }
+.topbar-center .tool-btn .material-symbols-outlined { font-size: 20px !important; }
+.gcs-tip { position: fixed; z-index: 5000; pointer-events: none; padding: 4px 8px; border-radius: 6px; background: rgba(20, 22, 20, .92); color: #f2f4f0; font: 500 11.5px Inter, Arial, sans-serif; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.3); opacity: 0; transform: translateY(-2px); transition: opacity .12s, transform .12s; }
+.gcs-tip.on { opacity: 1; transform: none; }
+body.gis-carto #tfbMini { display: none !important; }
+
+/* Export: a round icon button, no label (its name shows as a tooltip). */
+.tb-export { width: 36px !important; height: 36px !important; min-width: 0 !important; padding: 0 !important; border-radius: 50% !important; font-size: 0 !important; gap: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; }
+.tb-export .material-symbols-outlined { font-size: 19px !important; margin: 0 !important; }
+.tb-export > :not(.material-symbols-outlined) { display: none !important; }

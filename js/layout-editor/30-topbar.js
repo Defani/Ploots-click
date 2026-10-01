@@ -236,6 +236,7 @@
   var exportBtn = document.createElement('button');
   exportBtn.type = 'button';
   exportBtn.className = 'btn-primary tb-export';
+  exportBtn.title = 'Export';
   exportBtn.innerHTML = '<span class="material-symbols-outlined">ios_share</span>Export';
   exportBtn.addEventListener('click', function () { activateSidebarPanel('panel-export'); });
   if (right) right.insertBefore(exportBtn, right.firstChild);

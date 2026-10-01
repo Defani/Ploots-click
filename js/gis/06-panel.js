@@ -386,7 +386,7 @@
       (state.mapGridType === "utm"
         ? pair(field("UTM zone", select("map:mapGridUtmZone", [[0, "Auto (map center)"]].concat(d3.range(1, 61).map(function (z) { return [z, "Zone " + z]; })), state.mapGridUtmZone)),
             field("Units", select("map:mapGridUnits", [["m", "Meters"], ["km", "Kilometers"]], state.mapGridUnits)))
-        : field("Format", select("map:mapGridFormat", [["dms", "Degrees, minutes"], ["decimal", "Decimal degrees"]], state.mapGridFormat))) +
+        : field("Format", select("map:mapGridFormat", [["dms", "Degrees, minutes (seconds when needed)"], ["dmsfull", "D° M′ S″ (always)"], ["decimal", "Decimal degrees"]], state.mapGridFormat))) +
       pair(field("Labels", select("map:mapGridLabels", [["lb", "Left & bottom"], ["all", "All sides"], ["none", "None"]], state.mapGridLabels)),
         field("Label position", select("map:mapGridLabelPos", [["inside", "Inside frame"], ["outside", "Outside frame"]], state.mapGridLabelPos))) +
       field("Style", select("map:mapGridStyle", [["lines", "Lines"], ["crosses", "Crosses"]], state.mapGridStyle)) +

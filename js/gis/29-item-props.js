@@ -162,9 +162,9 @@
     if (!carto()) return;
     var c = fc(), o = c && c.getActiveObject();
     cur = o && o.type !== "activeSelection" ? o : null;
-    var k = kindOf(cur);
-    if (k === "map") { activateSidebarPanel("panel-map"); return; }
-    if (cur) { activateSidebarPanel(PANEL); render(); }
+    // Like QGIS's Item Properties dock: nothing opens on its own; the panel,
+    // when open, follows the selection.
+    render();
   }
   function hook() {
     var c = fc();

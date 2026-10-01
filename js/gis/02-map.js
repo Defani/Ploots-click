@@ -676,6 +676,7 @@
     var d = Math.floor(a + 1e-9), mf = (a - d) * 60, m = Math.floor(mf + 1e-9), sec = Math.round((mf - m) * 60);
     if (sec === 60) { sec = 0; m++; }
     if (m === 60) { m = 0; d++; }
+    if (state.mapGridFormat === "dmsfull") return d + "°" + String(m).padStart(2, "0") + "′" + String(sec).padStart(2, "0") + "″" + hemi;
     return d + "°" + (m || sec ? String(m).padStart(2, "0") + "′" : "") + (sec ? String(sec).padStart(2, "0") + "″" : "") + hemi;
   }
   function utmLabel(v, axis) {
