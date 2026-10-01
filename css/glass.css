@@ -385,3 +385,18 @@ body:not(.gis-carto) .nav-carto[data-panel="panel-gis-item"] { display: none !im
 #gisItemBody .ip-btns button.on { color: var(--accent) !important; border-color: var(--accent) !important; }
 #gisItemBody .ip-sep { width: 1px; height: 18px; background: var(--g-line); margin: 0 4px; }
 #gisItemBody .ip-empty { padding: 16px 12px; font-size: 12.5px; color: var(--ink-soft); }
+
+/* ArcMap-style frame: view switch at the bottom left, map tools and scale on top. */
+body.gis-mode .gisw-seg { display: none !important; }
+.view-switch { display: inline-flex; gap: 2px; padding: 2px; margin-right: 8px; border-radius: 7px; border: 1px solid var(--g-line); background: var(--g-hover); flex: none; }
+.view-switch button { width: 26px !important; height: 22px !important; padding: 0 !important; display: flex !important; align-items: center; justify-content: center; border: 0 !important; border-radius: 5px !important; background: transparent !important; color: var(--ink-soft) !important; cursor: pointer; }
+.view-switch button .material-symbols-outlined { font-size: 16px !important; }
+.view-switch button.active { color: var(--accent) !important; background: var(--accent-soft) !important; }
+.view-switch button:hover { color: var(--ink) !important; }
+#canvasZoomBar .view-switch { margin-right: 10px; }
+.arc-tools { display: flex; align-items: center; gap: 6px; }
+.arc-scale { display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 0 4px 0 10px; border-radius: 8px; border: 1px solid var(--g-line); background: var(--g-hover); font-size: 12.5px; color: var(--ink-soft); flex: none; }
+.arc-scale input { width: 92px; height: 26px; border: 0 !important; background: transparent !important; color: var(--ink) !important; font: 500 12.5px Inter, Arial, sans-serif; font-variant-numeric: tabular-nums; padding: 0 4px !important; box-shadow: none !important; }
+.gis-map-tools.arc-map-tools { position: static !important; display: flex !important; flex-wrap: nowrap !important; max-width: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; transform: none !important; gap: 1px !important; }
+.gis-map-tools.arc-map-tools button { width: 30px !important; height: 30px !important; }
+.gis-map-tools.arc-map-tools .gis-tools-sep { height: 18px; margin: 0 4px; }

@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v36";
+const CACHE_NAME = "ploots-click-v37";
 
 const PRECACHE_URLS = [
   "./",
@@ -63,6 +63,7 @@ const PRECACHE_URLS = [
   "./js/gis/27-supabase.js",
   "./js/gis/28-desktop-engines.js",
   "./js/gis/29-item-props.js",
+  "./js/gis/30-arcmap-ui.js",
   "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",
