@@ -83,8 +83,9 @@ def copy_app() -> None:
     shutil.copytree(ROOT / "vendor", DIST / "vendor")
     shutil.copytree(ROOT / "css", DIST / "css")
     (DIST / "assets").mkdir()
-    for f in (ROOT / "assets").glob("logo*"):
-        shutil.copy2(f, DIST / "assets" / f.name)
+    for pat in ("logo*", "icon-*.png"):
+        for f in (ROOT / "assets").glob(pat):
+            shutil.copy2(f, DIST / "assets" / f.name)
     # Fonts and sprites for offline (PMTiles) basemaps.
     shutil.copytree(ROOT / "assets" / "basemaps-assets", DIST / "assets" / "basemaps-assets")
     shutil.copytree(ROOT / "assets" / "home", DIST / "assets" / "home")

@@ -1,6 +1,6 @@
 [package]
 name = "ploots-click"
-version = "1.0.2"
+version = "1.0.3"
 description = "GIS Consultant Studio desktop: charts, maps and page layout, offline"
 authors = ["Defani Arman"]
 license = "MIT"

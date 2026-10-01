@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = window.PLOOTS_VERSION = "1.0.2";
+  var VERSION = window.PLOOTS_VERSION = "1.0.3";
   var OWNER = "Defani Arman Alfitriansyah";
   var DURATION = 2400;
 
