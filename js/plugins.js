@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Plugins — install, enable and write add-ons for Ploots Click.
+   Plugins — install, enable and write add-ons for GIS Consultant Studio.
 
    Works like GeoLibre plugins. A plugin is a folder (or a .zip of it) with
    a manifest and one ES module:
@@ -394,7 +394,7 @@
       var d = dialog("Install plugin", '<div class="pl-confirm"><div class="pl-icon">' + sym(m.icon || "extension") + "</div><div><b>" + esc(m.name) + "</b> <em>" + esc(m.version || "") + "</em>" +
         (m.author ? "<div class=\"pl-meta\">" + esc(m.author) + "</div>" : "") + (m.description ? "<p>" + esc(m.description) + "</p>" : "") +
         (existing ? '<p class="pl-note">Replaces the installed version ' + esc(existing.manifest.version || "") + ".</p>" : "") +
-        '<p class="pl-warn">' + sym("shield") + "Plugins run with full access to Ploots Click and the data you open in it. Install only plugins you trust.</p></div></div>",
+        '<p class="pl-warn">' + sym("shield") + "Plugins run with full access to GIS Consultant Studio and the data you open in it. Install only plugins you trust.</p></div></div>",
         [["cancel", "Cancel"], ["install", existing ? "Update" : "Install", true]]);
       d.done(function (k) { resolve(k === "install"); });
     });
@@ -498,9 +498,9 @@
   function starter(v) {
     var manifest = { id: v.id, name: v.name || v.id, version: "0.1.0", entry: "index.js", style: "style.css", description: "", author: v.author || "", icon: v.icon || "extension", ploots: { apiVersion: API_VERSION } };
     var js = [
-      "// " + manifest.name + " — a Ploots Click plugin.",
+      "// " + manifest.name + " — a GIS Consultant Studio plugin.",
       "// Edit this file, zip the folder, then Plugins → Install .zip (or Install folder).",
-      "// Full API: PLUGINS.md in the Ploots Click repository.",
+      "// Full API: PLUGINS.md in the GIS Consultant Studio repository.",
       "",
       "export default {",
       "  activate(app) {",
@@ -547,7 +547,7 @@
     var css = "." + v.id + "-hello { font-weight: 600; margin: 4px 0 10px; }\n" +
       ".plugin-panel-body button { margin: 0 6px 6px 0; }\n" +
       ".plugin-panel-body pre { font-size: 11px; white-space: pre-wrap; }\n";
-    var readme = "# " + manifest.name + "\n\nA Ploots Click plugin.\n\n" +
+    var readme = "# " + manifest.name + "\n\nA GIS Consultant Studio plugin.\n\n" +
       "- `plugin.json`: id, name, version, entry, style, icon (a Material Symbols name).\n" +
       "- `index.js`: `export default { activate(app), deactivate(app) }`; one bundled ES module.\n" +
       "- `style.css`: optional styles.\n\nZip the folder and use **Plugins → Install .zip**, or **Install folder** while developing (then **Reload** after each change).\n";

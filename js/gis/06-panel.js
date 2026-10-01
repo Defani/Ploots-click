@@ -260,7 +260,7 @@
 
   var SYMS = [["single", "Single"], ["categorized", "Categorized"], ["graduated", "Graduated"]];
   var DASHES = [["solid", "Solid"], ["dash", "Dash"], ["dot", "Dot"], ["dashdot", "Dash dot"]];
-  var METHODS = [["jenks", "Natural breaks (Jenks)"], ["quantile", "Quantile"], ["equal", "Equal interval"]];
+  var METHODS = [["jenks", "Natural breaks"], ["quantile", "Quantile"], ["equal", "Equal interval"]];
 
   function renderStyle() {
     var box = $("gisStyle"), l = GIS.active();
@@ -386,7 +386,7 @@
       (state.mapGridType === "utm"
         ? pair(field("UTM zone", select("map:mapGridUtmZone", [[0, "Auto (map center)"]].concat(d3.range(1, 61).map(function (z) { return [z, "Zone " + z]; })), state.mapGridUtmZone)),
             field("Units", select("map:mapGridUnits", [["m", "Meters"], ["km", "Kilometers"]], state.mapGridUnits)))
-        : field("Format", select("map:mapGridFormat", [["dms", "Degrees, minutes"], ["decimal", "Decimal degrees"]], state.mapGridFormat))) +
+        : field("Format", select("map:mapGridFormat", [["dms", "Degrees, minutes (seconds when needed)"], ["dmsfull", "D° M′ S″ (always)"], ["decimal", "Decimal degrees"]], state.mapGridFormat))) +
       pair(field("Labels", select("map:mapGridLabels", [["lb", "Left & bottom"], ["all", "All sides"], ["none", "None"]], state.mapGridLabels)),
         field("Label position", select("map:mapGridLabelPos", [["inside", "Inside frame"], ["outside", "Outside frame"]], state.mapGridLabelPos))) +
       field("Style", select("map:mapGridStyle", [["lines", "Lines"], ["crosses", "Crosses"]], state.mapGridStyle)) +
@@ -468,7 +468,7 @@
     } else if (o.gisItem === "inset") {
       h += field("Basemap", select("item:basemap", GIS.BASEMAPS.map(function (b) { return [b.id, b.label]; }), p.basemap));
       h += pair(field("Zoom offset", num("item:zoomOffset", p.zoomOffset, -12, 0, 1)), field("Extent color", color("item:extentColor", p.extentColor)));
-      h += field("Frame width", num("item:frameWidth", p.frameWidth, 0, 8, 0.5)) + check("item:showLayers", p.showLayers, "Show layers");
+      h += field("Frame width", num("item:frameWidth", p.frameWidth, 0, 8, 0.5)) + check("item:showLayers", p.showLayers, "Show layers") + check("item:grid", p.grid !== false, "Coordinate grid");
     }
     box.innerHTML = h;
   }

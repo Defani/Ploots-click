@@ -18,19 +18,22 @@
     el.className = "home-screen";
     el.innerHTML =
       '<div class="home-card-wrap">' +
-        '<div class="home-head"><h1>Ploots Click</h1><p>What do you want to make?</p></div>' +
+        '<div class="home-head"><h1>GIS Consultant Studio</h1><p>What do you want to make?</p></div>' +
         '<div class="home-cards">' +
           '<div class="home-card" data-mode="chart">' +
+            (window.PlootsHomeThumbs ? '<div class="home-thumb">' + window.PlootsHomeThumbs.chart + '</div>' : '') +
             '<span class="material-symbols-outlined home-icon">bar_chart</span>' +
             "<h2>Chart</h2><p>Charts from tables: bar, line, scatter, distributions, flows.</p>" +
             '<div class="home-actions"><button data-go="chart-blank">Blank</button><button data-go="chart-sample" class="btn-primary">Sample data</button></div>' +
           "</div>" +
           '<div class="home-card" data-mode="map">' +
+            (window.PlootsHomeThumbs ? '<div class="home-thumb">' + window.PlootsHomeThumbs.map + '</div>' : '') +
             '<span class="material-symbols-outlined home-icon">map</span>' +
             "<h2>Map</h2><p>Spatial data: vector and raster layers, symbology, map layout.</p>" +
-            '<div class="home-actions"><button data-go="map-blank">Blank</button><button data-go="map-sample" class="btn-primary">Sample map</button></div>' +
+            '<div class="home-actions"><button data-go="map-blank">Blank</button><button data-go="map-project" class="btn-primary">Open project</button><button data-go="map-sample">Sample</button></div>' +
           "</div>" +
           '<div class="home-card" data-mode="agro">' +
+            (window.PlootsHomeThumbs ? '<div class="home-thumb">' + window.PlootsHomeThumbs.agro + '</div>' : '') +
             '<span class="material-symbols-outlined home-icon">forest</span>' +
             "<h2>Agroforestry</h2><p>Gayo coffee under lamtoro shade: plant, grow and see the plot in 2D and 3D; SExI-FS data.</p>" +
             '<div class="home-actions"><button data-go="agro" class="btn-primary">Open simulator</button></div>' +
@@ -41,6 +44,7 @@
         '<button class="home-close" title="Close"><span class="material-symbols-outlined">close</span></button>' +
       "</div>";
     document.body.appendChild(el);
+    if (window.PlootsHomeThumbs) window.PlootsHomeThumbs.hydrate(el);
     el.addEventListener("click", function (e) {
       if (e.target === el || e.target.closest(".home-close")) { hide(); return; }
       if (e.target.closest("[data-about]")) { if (window.PlootsIntro) window.PlootsIntro.about(); return; }
@@ -67,6 +71,8 @@
     GIS.enterMapMode();
     activateSidebarPanel("panel-map");
     if (what === "map-sample" && !GIS.layers.length) GIS.loadSampleLayer();
+    if (what === "map-blank" && GIS.project) GIS.project.reset();
+    if (what === "map-project" && GIS.project) GIS.project.open();
   }
 
   function addNavButton() {

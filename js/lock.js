@@ -147,7 +147,7 @@
     b.type = "button";
     b.id = "appLockBtn";
     b.className = "theme-toggle-btn app-lock-btn";
-    b.title = "Lock Ploots Click";
+    b.title = "Lock GIS Consultant Studio";
     b.innerHTML = '<span class="material-symbols-outlined">lock</span>';
     b.addEventListener("click", function () { L.lock(); });
     right.appendChild(b);

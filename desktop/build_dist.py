@@ -40,6 +40,11 @@ HERE = Path(__file__).resolve().parent
 DIST = HERE / "dist"
 CACHE = HERE / ".cache"
 OFFLINE = "vendor/offline"
+# Libraries that only work online anyway (they talk to an online service),
+# so they stay on the CDN in the desktop build.
+ONLINE_ONLY = (
+    "https://cdn.jsdelivr.net/npm/maplibre-gl-earth-engine@",  # Earth Engine control (needs Google)
+)
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 TEXT = {".html", ".js", ".css", ".json"}
 
@@ -78,10 +83,13 @@ def copy_app() -> None:
     shutil.copytree(ROOT / "vendor", DIST / "vendor")
     shutil.copytree(ROOT / "css", DIST / "css")
     (DIST / "assets").mkdir()
-    for f in (ROOT / "assets").glob("logo_*"):
-        shutil.copy2(f, DIST / "assets" / f.name)
+    for pat in ("logo*", "icon-*.png"):
+        for f in (ROOT / "assets").glob(pat):
+            shutil.copy2(f, DIST / "assets" / f.name)
     # Fonts and sprites for offline (PMTiles) basemaps.
     shutil.copytree(ROOT / "assets" / "basemaps-assets", DIST / "assets" / "basemaps-assets")
+    shutil.copytree(ROOT / "assets" / "home", DIST / "assets" / "home")
+    shutil.copytree(ROOT / "assets" / "landing", DIST / "assets" / "landing")
 
 
 def text_files() -> list[Path]:
@@ -196,10 +204,32 @@ def localize_duckdb() -> None:
     print(f"  DuckDB {DUCKDB_CORE} and {', '.join(DUCKDB_EXTENSIONS)}: {size / 1e6:.1f} MB")
 
 
+def minify() -> None:
+    """Make the app's own JS and CSS smaller (GeoLibre-style lean desktop
+    bundle). Vendor files are already minified; skipped if the minifiers are
+    not installed."""
+    try:
+        import rjsmin, rcssmin
+    except ImportError:
+        print("  rjsmin/rcssmin not installed; skipping minification")
+        return
+    before = after = 0
+    for f in list((DIST / "js").rglob("*.js")) + list((DIST / "css").rglob("*.css")) + list((DIST / "plugins").rglob("*.js")):
+        if f.name.endswith(".min.js"):
+            continue
+        src = f.read_text(encoding="utf-8")
+        out = rjsmin.jsmin(src) if f.suffix == ".js" else rcssmin.cssmin(src)
+        before += len(src.encode()); after += len(out.encode())
+        f.write_text(out, encoding="utf-8")
+    print(f"  minified app code: {before / 1e6:.2f} MB -> {after / 1e6:.2f} MB")
+
+
 def check() -> None:
     left = []
     for p in text_files():
         for m in LEFTOVER_RE.findall(p.read_text(encoding="utf-8", errors="ignore")):
+            if any(m.startswith(u) for u in ONLINE_ONLY):
+                continue
             left.append(f"{p.relative_to(DIST)}: {m}")
     if left:
         print("CDN URLs left in dist:\n  " + "\n  ".join(left))
@@ -219,6 +249,8 @@ def main() -> None:
     localize_icons()
     print("Bundling the desktop engines…")
     localize_duckdb()
+    print("Minifying the app code…")
+    minify()
     check()
 
 

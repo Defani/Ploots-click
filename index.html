@@ -5,7 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4e8a2e">
-<title>Ploots Click</title>
+<title>GIS Consultant Studio</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1827,17 +1830,17 @@ body:not(.gis-mode) .nav-btn[data-panel="panel-map"]{display:none}
 body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-panel="panel-axis"],body.gis-mode .nav-btn[data-panel="panel-legend"],body.gis-mode .nav-btn[data-panel="panel-color"],body.gis-mode #navDataToggle,body.gis-mode .nav-sep-chart{display:none}
 </style>
 <link rel="stylesheet" href="css/glass.css" />
-<link rel="stylesheet" href="css/agro.css" />
+<link rel="stylesheet" href="css/home.css" />
+<link rel="stylesheet" href="css/splash.css" />
 </head>
 <body>
 <script src="js/lock.js"></script>
+<script src="js/splash.js"></script>
 <script src="js/intro.js"></script>
 <div class="topbar glass">
   <a class="brand brand-repo-link" href="https://github.com/Defani/Ploots-click" target="_blank" title="View on GitHub">
-  <svg viewBox="0 0 16 16" fill="currentColor" class="brand-gh-icon">
-    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-  </svg>
-  <span class="brand-repo-text">Defani/Ploots-click</span>
+  <img src="assets/logo.svg" alt="" class="brand-gh-icon brand-mark" width="26" height="26">
+  <span class="brand-repo-text">GIS Consultant Studio</span>
 </a>
   
   <!-- CENTER TOOLBAR (Contextual) -->
@@ -3276,6 +3279,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/04-raster.js"></script>
 <script src="js/gis/05-attribute-table.js"></script>
 <script src="js/gis/06-panel.js"></script>
+<script src="js/home-thumbs.js"></script>
 <script src="js/gis/07-home.js"></script>
 <script src="js/gis/08-catalog.js"></script>
 <script src="js/gis/09-layer-menu.js"></script>
@@ -3297,6 +3301,14 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/gis/26-maps.js"></script>
 <script src="js/gis/27-supabase.js"></script>
 <script src="js/gis/28-desktop-engines.js"></script>
+<script src="js/gis/29-item-props.js"></script>
+<script src="js/gis/30-arcmap-ui.js"></script>
+<script src="js/gis/31-layout-dock.js"></script>
+<script src="js/gis/32-geopdf.js"></script>
+<script src="js/gis/33-project.js"></script>
+<script src="js/gis/34-native.js"></script>
+<script src="js/tooltip.js"></script>
+<script src="js/glass-select.js"></script>
 <script src="js/d3-engine/99-integration.js"></script>
 <!-- Wraps render() after the D3 dispatch so axis controls resync for every engine -->
 <script src="js/layout-editor/28-axis-controls-sync.js"></script>
@@ -3306,8 +3318,7 @@ body.gis-mode .nav-btn[data-panel="panel-chart"],body.gis-mode .nav-btn[data-pan
 <script src="js/undo_redo.js"></script>
 <script src="js/desktop-shell.js"></script>
 <script src="js/local-fonts.js"></script>
-<script src="js/agro/agro-3d-real.js"></script>
-<script src="js/agro/agroforestry.js"></script>
+<script src="js/agro/agro-loader.js"></script>
 <script src="js/plugins.js"></script>
 <script src="js/formats.js"></script>
 <script src="js/file-browser.js"></script>

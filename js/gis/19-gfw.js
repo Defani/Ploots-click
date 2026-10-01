@@ -90,9 +90,11 @@
   function addTcl(o) {
     registerProtocol();
     var l = GIS.layers.filter(function (x) { return x.gfwTcl; })[0];
-    if (l) { l.url = tclUrl(o); l.name = "Tree cover loss " + o.y0 + "–" + o.y1 + " (>" + o.tcd + "% canopy)"; GIS.emit("layers"); return l; }
+    // Legend: the same pink ramp the tiles are drawn with, older to recent years.
+    var spec = { ramp: ["rgb(220,102,153)", "rgb(220,62,123)"], min: String(o.y0), max: String(o.y1) };
+    if (l) { l.url = tclUrl(o); l.name = "Tree cover loss " + o.y0 + "–" + o.y1 + " (>" + o.tcd + "% canopy)"; l.legendSpec = spec; GIS.emit("layers"); return l; }
     l = GIS.addXYZ(tclUrl(o), "Tree cover loss " + o.y0 + "–" + o.y1 + " (>" + o.tcd + "% canopy)", ATTR);
-    l.gfwTcl = true;
+    l.gfwTcl = true; l.legendSpec = spec;
     GIS.move(l.id, 0);
     return l;
   }
@@ -100,7 +102,7 @@
   // Other layers, by GFW dataset id (added through the catalog's asset lookup).
   var LAYERS = [
     ["umd_tree_cover_density_2000", "Tree cover density (2000)", "park", "Hansen/UMD canopy density in 2000."],
-    ["umd_tree_cover_gain", "Tree cover gain", "trending_up", "Hansen/UMD tree cover gain 2000–2020."],
+    ["umd_tree_cover_gain_from_height", "Tree cover gain", "trending_up", "Hansen/UMD tree cover gain 2000–2020 (from canopy height)."],
     ["umd_regional_primary_forest_2001", "Primary forests (2001)", "forest", "Humid tropical primary forest (Turubanova et al.)."],
     ["gfw_integrated_alerts", "Integrated deforestation alerts", "notification_important", "GLAD-L, GLAD-S2 and RADD alerts combined."],
     ["wur_radd_alerts", "RADD alerts (radar)", "radar", "Wageningen RADD Sentinel-1 disturbance alerts."],

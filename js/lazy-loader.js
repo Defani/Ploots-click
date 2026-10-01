@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ploots Click — lazy loader for heavy CDN libraries.
+   GIS Consultant Studio — lazy loader for heavy CDN libraries.
 
    Previously all 8 of these loaded blocking in <head> on every visit, even
    for panels the user never opens. This file replaces that with 3 tiers:
@@ -138,9 +138,25 @@
   Lazy.ensureFabric();
   Lazy.ensurePapaParse();
 
-  // --- Tier 2: fire once idle, so it never competes with Tier 1 ---
-  whenIdle(function () { Lazy.ensureMathJs(); }, 2000);
-  whenIdle(function () { Lazy.ensureMathJax(); }, 3000);
+  // --- Tier 2, on intent: MathJax (2 MB) and math.js (0.7 MB) load the
+  // first time their tools come into reach (the LaTeX panel, a formula on
+  // the page, the Data View), not at every start. ---
+  function onIntent(match, fn) {
+    var done = false;
+    function check(e) {
+      if (done) return;
+      var t = e.target;
+      if (t && t.closest && t.closest(match)) { done = true; fn(); document.removeEventListener("pointerdown", check, true); document.removeEventListener("focusin", check, true); }
+    }
+    document.addEventListener("pointerdown", check, true);
+    document.addEventListener("focusin", check, true);
+  }
+  onIntent('[data-panel="panel-latex"], #panel-latex, #latexBtn, [data-act="latex"]', function () { Lazy.ensureMathJax(); });
+  onIntent('#paneData, [data-view="data"], #viewDataBtn, .dv-shelf, [data-panel="panel-data"]', function () { Lazy.ensureMathJs(); });
+  // A page that already holds formulas (undo, opened project) needs MathJax to redraw them.
+  document.addEventListener("ploots:canvasready", function () {
+    setTimeout(function () { var c = window.fabricCanvas; if (c && c.getObjects().some(function (o) { return o.isMathObject; })) Lazy.ensureMathJax(); }, 500);
+  });
 
   // Tier 3 (AG Grid, XLSX, marked) is intentionally NOT called here —
   // see the on-demand call sites listed in the header comment above.

@@ -1,7 +1,7 @@
 /* ==========================================================================
    GIS — Claude bridge and chat bubble.
 
-   Connects Ploots Click to the geolibre-live MCP server (the same server as
+   Connects GIS Consultant Studio to the geolibre-live MCP server (the same server as
    the GeoLibre "Live MCP Bridge" plugin), so Claude Desktop / Claude Code
    can read and drive this page and chat with you here:
 
@@ -63,7 +63,7 @@
     var welcomed = false;
     sock.onopen = function () {
       sock.send(JSON.stringify({ type: "hello", token: cfg.token || "", plugin: { id: "ploots-click", version: VERSION },
-        app: { name: "Ploots Click", renderer: "maplibre", locale: navigator.language || "en", url: location.origin } }));
+        app: { name: "GIS Consultant Studio", renderer: "maplibre", locale: navigator.language || "en", url: location.origin } }));
     };
     sock.onmessage = function (ev) {
       var msg;
@@ -98,7 +98,7 @@
   function handle(sock, msg) {
     var fn = HANDLERS[msg.method];
     Promise.resolve().then(function () {
-      if (!fn) throw new Error("Method '" + msg.method + "' is not available in Ploots Click.");
+      if (!fn) throw new Error("Method '" + msg.method + "' is not available in GIS Consultant Studio.");
       return fn(msg.params || {});
     }).then(function (result) {
       send(sock, { type: "response", id: msg.id, ok: true, result: result === undefined ? null : result });
@@ -113,7 +113,7 @@
   function map() { return GIS.map && GIS.map(); }
   function needMap() {
     var m = map();
-    if (!m) throw new Error("The map is not open. Switch Ploots Click to the Map workspace first.");
+    if (!m) throw new Error("The map is not open. Switch GIS Consultant Studio to the Map workspace first.");
     return m;
   }
   function findLayer(ref) {
@@ -148,11 +148,11 @@
   /* --------------------------------------------------------- handlers */
 
   var HANDLERS = {};
-  HANDLERS.ping = function () { return { pong: true, app: "Ploots Click", version: VERSION }; };
+  HANDLERS.ping = function () { return { pong: true, app: "GIS Consultant Studio", version: VERSION }; };
   HANDLERS.get_state = function () {
     var k = kobo(), act = GIS.active && GIS.active();
     return {
-      app: "Ploots Click", version: VERSION, mode: document.body.classList.contains("gis-mode") ? "map" : "chart",
+      app: "GIS Consultant Studio", version: VERSION, mode: document.body.classList.contains("gis-mode") ? "map" : "chart",
       camera: camera(), basemap: state.mapBasemap, layers: GIS.layers.map(layerInfo), activeLayer: act ? act.id : null,
       koboDashboardOpen: document.body.classList.contains("kobo-dash-open"),
       kobo: k ? k.summary({ brief: true }) : null
@@ -162,7 +162,7 @@
   HANDLERS.get_project = function () {
     var s = {};
     Object.keys(state).forEach(function (k) { if (/^map[A-Z]/.test(k)) s[k] = state[k]; });
-    return { app: "Ploots Click", map: s, layers: GIS.layers.map(layerInfo) };
+    return { app: "GIS Consultant Studio", map: s, layers: GIS.layers.map(layerInfo) };
   };
   HANDLERS.get_layer_features = function (p) {
     var l = findLayer(p.layer);
@@ -232,7 +232,7 @@
     return layerInfo(l);
   };
   ["ui_list", "ui_click", "ui_hover", "ui_type", "ui_key", "ui_read", "exec_js", "activate_plugin"].forEach(function (m) {
-    HANDLERS[m] = function () { throw new Error(m + " is a GeoLibre-only tool and is not available in Ploots Click."); };
+    HANDLERS[m] = function () { throw new Error(m + " is a GeoLibre-only tool and is not available in GIS Consultant Studio."); };
   });
   ["summary", "fields", "rows", "aggregate", "load"].forEach(function (m) {
     HANDLERS["kobo_" + m] = function (p) { return needKobo()[m](p || {}); };
@@ -260,7 +260,7 @@
   }
 
   function context() {
-    var ctx = { app: "Ploots Click" }, k = kobo();
+    var ctx = { app: "GIS Consultant Studio" }, k = kobo();
     try {
       var cam = camera();
       if (cam) { ctx.center = cam.center; ctx.zoom = cam.zoom; ctx.bounds = cam.bounds; }
@@ -387,12 +387,12 @@
     launch.type = "button";
     launch.className = "pb-launch";
     launch.title = "Claude";
-    launch.innerHTML = sym("smart_toy") + '<i class="pb-dot"></i><b class="pb-badge" hidden></b>';
+    launch.innerHTML = sym("auto_awesome") + '<i class="pb-dot"></i><b class="pb-badge" hidden></b>';
     var card = document.createElement("div");
     card.className = "pb-chat";
     card.hidden = true;
     card.innerHTML =
-      '<div class="pb-head"><div class="pb-avatar">' + sym("smart_toy") + '</div><div class="pb-who"><b>Claude</b><span class="pb-status"></span></div>' +
+      '<div class="pb-head"><div class="pb-avatar">' + sym("auto_awesome") + '</div><div class="pb-who"><b>Claude</b><span class="pb-status"></span></div>' +
         '<button data-pb="settings" title="Connection">' + sym("settings_ethernet") + '</button><button data-pb="clear" title="Clear chat">' + sym("delete_sweep") + '</button><button data-pb="close" title="Close">' + sym("close") + "</button></div>" +
       '<div class="pb-settings" hidden>' +
         '<div class="pb-set-row"><label>Port<input type="number" data-set="port" min="1" max="65535"></label><label>Token<input type="password" data-set="token" autocomplete="off"></label></div>' +

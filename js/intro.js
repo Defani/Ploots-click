@@ -1,7 +1,7 @@
 /* ==========================================================================
    Intro — the launch screen, sign-in, and the About screen.
 
-   When Ploots Click opens: a welcome, what the app is for, that it is
+   When GIS Consultant Studio opens: a welcome, what the app is for, that it is
    Defani's private tool and not shared, the version and where the data
    lives. With js/lock.js the same screen asks for the username and
    password (or, on the very first launch, sets up the account) and stays
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = window.PLOOTS_VERSION = "1.0.0";
+  var VERSION = window.PLOOTS_VERSION = "1.2.0";
   var OWNER = "Defani Arman Alfitriansyah";
   var DURATION = 2400;
 
@@ -25,15 +25,25 @@
 
   // mode: "intro" (auto-closes), "signin", "setup", "about"
   function build(mode) {
+    // Launch and lock: the full-screen showcase with sign-in at the top right.
+    if (mode !== "about" && window.GCSSplash) {
+      return window.GCSSplash.build({
+        form: mode === "signin" ? signinForm() : mode === "setup" ? setupForm() : "",
+        button: mode === "setup" ? "Set up account" : mode === "signin" ? "Sign in" : "Open the app",
+        owner: esc(OWNER),
+        privacy: desktop ? "Runs on this computer. Your files are never uploaded." : "Runs in your browser. Your files are never uploaded.",
+        version: "Version " + VERSION + (desktop ? " · Desktop" : " · Web") + " · © 2026 " + esc(OWNER)
+      });
+    }
     var el = document.createElement("div");
     el.className = "intro" + (mode === "about" ? " intro-about" : "");
     el.setAttribute("role", "dialog");
-    el.setAttribute("aria-label", "Ploots Click");
+    el.setAttribute("aria-label", "GIS Consultant Studio");
     el.innerHTML =
       '<div class="intro-card">' +
         (mode === "about" ? '<button type="button" class="intro-close" title="Close">' + sym("close") + "</button>" : "") +
-        '<div class="intro-logo"><img class="brand-logo-light" src="assets/logo_mark_light.png" alt="Ploots Click"><img class="brand-logo-dark" src="assets/logo_mark_dark.png" alt="Ploots Click"></div>' +
-        '<h1 class="intro-welcome">Welcome to Ploots Click</h1>' +
+        '<div class="intro-logo">' + (window.GCSSplash ? window.GCSSplash.logo(64) : "") + "</div>" +
+        '<h1 class="intro-welcome">Welcome to GIS Consultant Studio</h1>' +
         '<p class="intro-tag">Personal GIS, data analysis, visualization and field monitoring</p>' +
         '<div class="intro-rule"></div>' +
         '<p class="intro-owner">A private tool of<b>' + esc(OWNER) + "</b></p>" +
@@ -64,13 +74,14 @@
       field("user", "Username", "text", "username") + field("pass", "Password (8+ characters)", "password", "new-password") + field("pass2", "Confirm password", "password", "new-password") +
       '<p class="intro-err" aria-live="polite"></p>' +
       '<button type="submit" class="btn-primary intro-submit">Create account</button>' +
-      '<p class="intro-note">The password protects Ploots Click on this device. It cannot be recovered.</p></form>';
+      '<p class="intro-note">The password protects GIS Consultant Studio on this device. It cannot be recovered.</p></form>';
   }
 
   function close(el) {
     if (!el || el.classList.contains("out")) return;
     el.classList.add("out");
     document.removeEventListener("keydown", el._key, true);
+    if (el.classList.contains("intro-splash") && window.PlootsHome && !document.body.classList.contains("gis-mode") && !document.body.classList.contains("agro-open")) setTimeout(function () { window.PlootsHome.show(); }, 300);
     setTimeout(function () { el.remove(); }, 450);
   }
 
@@ -114,10 +125,11 @@
         form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake");
       });
     });
-    setTimeout(function () { var f = form.querySelector("input"); if (f) f.focus(); }, 350);
+    if (!el.classList.contains("intro-splash")) setTimeout(function () { var f = form.querySelector("input"); if (f) f.focus(); }, 350);
   }
 
   function lockScreen() {
+    return; // no account in this app
     if (document.querySelector(".intro.intro-locked:not(.out)")) return;
     var L = Lk(), el = build(L.configured() ? "signin" : "setup");
     el.classList.add("intro-locked");
@@ -125,13 +137,19 @@
     wireForm(el, function () { close(el); });
   }
 
-  function launch() {
-    if (!Lk()) { plainIntro(); return; }
-    lockScreen();
-  }
+  // No account: the app opens straight to the splash and then Home.
+  function launch() { plainIntro(); }
 
   function plainIntro() {
     var el = build("intro");
+    if (el.classList.contains("intro-splash")) {
+      // Loading, the welcome, then Home on its own (a click or key goes there at once).
+      el.addEventListener("click", function () { close(el); });
+      el._key = function (e) { if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) close(el); };
+      document.addEventListener("keydown", el._key, true);
+      setTimeout(function () { close(el); }, 6200);
+      return;
+    }
     el._key = function (e) { if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) close(el); };
     el.addEventListener("click", function () { close(el); });
     document.addEventListener("keydown", el._key, true);
@@ -185,7 +203,7 @@
       err.textContent = "";
       var p;
       if (b.dataset.btn === "remove") {
-        if (!confirm("Remove the password? Anyone who opens Ploots Click on this device can then use it.")) return;
+        if (!confirm("Remove the password? Anyone who opens GIS Consultant Studio on this device can then use it.")) return;
         p = L.remove(v.cur);
       } else {
         if (v.next !== v.next2) { err.textContent = "The new passwords do not match."; return; }
@@ -201,9 +219,9 @@
 
   function forgot() {
     var d = modal("Forgot password",
-      "<p>The password cannot be recovered. Resetting removes the account <b>and everything Ploots Click saved on this device</b>: plugins, connected folders, Kobo and chat settings. Files on disk are not touched.</p>" +
+      "<p>The password cannot be recovered. Resetting removes the account <b>and everything GIS Consultant Studio saved on this device</b>: plugins, connected folders, Kobo and chat settings. Files on disk are not touched.</p>" +
       '<label class="field-label">Type RESET to confirm</label><input type="text" data-reset spellcheck="false">',
-      [["cancel", "Cancel"], ["reset", "Reset Ploots Click", true]]);
+      [["cancel", "Cancel"], ["reset", "Reset GIS Consultant Studio", true]]);
     d.el.addEventListener("click", function (e) {
       var b = e.target.closest("[data-btn]");
       if (!b) return;

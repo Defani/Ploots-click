@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ploots Click — service worker.
+   GIS Consultant Studio — service worker.
 
    Strategy
    --------
@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v22";
+const CACHE_NAME = "ploots-click-v59";
 
 const PRECACHE_URLS = [
   "./",
@@ -62,6 +62,14 @@ const PRECACHE_URLS = [
   "./js/gis/26-maps.js",
   "./js/gis/27-supabase.js",
   "./js/gis/28-desktop-engines.js",
+  "./js/gis/29-item-props.js",
+  "./js/gis/30-arcmap-ui.js",
+  "./js/gis/31-layout-dock.js",
+  "./js/gis/32-geopdf.js",
+  "./js/gis/33-project.js",
+  "./js/gis/34-native.js",
+  "./js/tooltip.js",
+  "./js/glass-select.js",
   "./js/d3-engine/99-integration.js",
   "./js/lazy-loader.js",
   "./js/chart-builder/01-config.js",
@@ -130,6 +138,18 @@ const PRECACHE_URLS = [
   "./js/desktop-shell.js",
   "./css/glass.css",
   "./css/agro.css",
+  "./css/home.css",
+  "./js/home-thumbs.js",
+  "./js/splash.js",
+  "./js/agro/agro-loader.js",
+  "./css/splash.css",
+  "./assets/logo.svg",
+  "./assets/icon-192.png",
+  "./assets/icon-512.png",
+  "./assets/landing/defani.jpg",
+  "./assets/home/agro-eye-1.jpg",
+  "./assets/home/agro-eye-3.jpg",
+  "./assets/home/agro-eye-6.jpg",
   "./js/agro/agro-3d-real.js",
   "./js/agro/agroforestry.js",
   "./js/local-fonts.js",
@@ -214,6 +234,8 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  // Video (range requests) goes straight to the network.
+  if (req.headers.has("range") || /\.(webm|mp4)$/i.test(url.pathname)) return;
 
   if (url.origin === self.location.origin) {
     event.respondWith(networkFirst(req));

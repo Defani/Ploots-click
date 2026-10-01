@@ -1182,7 +1182,7 @@
     version: "1.0.0",
     summary: function (p) {
       p = p || {};
-      var base = { app: "Ploots Click", connected: !!K.asset, form: K.asset ? K.asset.name : null, assetUid: K.asset ? K.asset.uid : null,
+      var base = { app: "GIS Consultant Studio", connected: !!K.asset, form: K.asset ? K.asset.name : null, assetUid: K.asset ? K.asset.uid : null,
         loadedSubmissions: K.rows.length, dashboardFilter: Object.assign({}, K.filter), today: today(), updated: K.lastFetch ? new Date(K.lastFetch).toISOString() : null,
         autoRefreshMinutes: K.cfg.refreshMin, fieldMap: Object.assign({}, K.fm), derivedFields: Object.keys(DERIVED), qc: { minInterviewMin: K.cfg.minDur, maxGpsAccuracyM: K.cfg.maxAcc } };
       if (p.brief || !K.asset) return base;

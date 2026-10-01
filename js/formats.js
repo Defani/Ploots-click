@@ -511,7 +511,7 @@
       }
     });
     if (!wpts.length && !trks.length) throw new Error("No features to export.");
-    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Ploots Click" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>' + xmlEsc(name) + "</name></metadata>\n" + wpts.concat(trks).join("\n") + "\n</gpx>\n";
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="GIS Consultant Studio" xmlns="http://www.topografix.com/GPX/1/1"><metadata><name>' + xmlEsc(name) + "</name></metadata>\n" + wpts.concat(trks).join("\n") + "\n</gpx>\n";
   }
 
   /* ------------------------------------------------------------ entry */

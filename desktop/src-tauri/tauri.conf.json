@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Ploots Click",
-  "version": "1.0.0",
+  "productName": "GIS Consultant Studio",
+  "version": "1.2.0",
   "identifier": "io.github.defani.plootsclick",
   "build": {
     "frontendDist": "../dist"
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Ploots Click",
+        "title": "GIS Consultant Studio",
         "width": 1440,
         "height": 900,
         "minWidth": 1024,
@@ -32,7 +32,7 @@
     "copyright": "Copyright (c) 2026 Defani Arman Alfitriansyah",
     "category": "Productivity",
     "shortDescription": "Charts, maps and page layout, offline",
-    "longDescription": "Ploots Click desktop: publication charts, a GIS map workspace with print layout, and KoboToolbox monitoring. Runs on your computer; files you open are never uploaded.",
+    "longDescription": "GIS Consultant Studio desktop: publication charts, a GIS map workspace with print layout, and KoboToolbox monitoring. Runs on your computer; files you open are never uploaded.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

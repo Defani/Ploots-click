@@ -1,4 +1,4 @@
-// Map coordinates — example Ploots Click plugin.
+// Map coordinates — example GIS Consultant Studio plugin.
 //
 // Shows the coordinates under the cursor in a small box on the map, in
 // decimal degrees, degrees-minutes-seconds and UTM. A right-click on the

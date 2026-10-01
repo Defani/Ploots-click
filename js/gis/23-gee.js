@@ -6,6 +6,16 @@
                - Sign in with Google: an OAuth client ID (type "Web
                  application") from that project, with this app's address
                  as an authorised JavaScript origin;
+                 - in the desktop app, first choice: the Earth Engine sign-in
+                 already on this computer (earthengine authenticate /
+                 ee.Authenticate() in Python, geemap), as GeoLibre does:
+                 nothing to set up, the token comes from earthengine-api;
+               - in the desktop app, Sign in with Google opens the default
+                 browser (Chrome…) instead: an OAuth client of type "Desktop
+                 app" (client ID and its secret), the code comes back to a
+                 one-time listener on 127.0.0.1 (see desktop/src-tauri) and
+                 the token is refreshed by itself, so the next start needs
+                 no browser;
                - an access token pasted from `gcloud auth print-access-token`
                  (valid about an hour).
              The project and client ID are remembered on this computer; a
@@ -25,7 +35,7 @@
 
   var GIS = window.PlootsGIS;
   var EE_JS = "https://cdn.jsdelivr.net/npm/@google/earthengine@1.7.46/build/ee_api_js.js";
-  var PANEL = "panel-gis-gee", K_PROJ = "ploots-gee-project", K_CLIENT = "ploots-gee-client", K_CODE = "ploots-gee-code";
+  var PANEL = "panel-gis-gee", K_PROJ = "ploots-gee-project", K_CLIENT = "ploots-gee-client", K_CODE = "ploots-gee-code", K_SECRET = "ploots-gee-secret", K_REFRESH = "ploots-gee-refresh";
   var ATTR = "Google Earth Engine";
   function $(id) { return document.getElementById(id); }
   function sym(n) { return '<span class="material-symbols-outlined">' + n + "</span>"; }
@@ -46,36 +56,175 @@
     });
     return eeP;
   }
+  // As GeoLibre: only the scopes Earth Engine needs (no cloud-platform or full
+  // Drive), and the auth library loaded before the click so Google's popup
+  // opens straight from the user's gesture instead of being blocked.
+  var SCOPES = ["https://www.googleapis.com/auth/earthengine", "https://www.googleapis.com/auth/drive.file"];
+  var DEFAULT_PROJECT = "ee-defaniarman";
+  var authLib = null;
+  function preload() {
+    if (authLib) return authLib;
+    authLib = loadEE().then(function () {
+      return new Promise(function (res) { if (ee.apiclient && ee.apiclient.ensureAuthLibLoaded) ee.apiclient.ensureAuthLibLoaded(res); else res(); });
+    }).catch(function (e) { authLib = null; throw e; });
+    return authLib;
+  }
   function init(project) {
     return new Promise(function (res, rej) {
-      ee.initialize(null, null, function () { ready = true; res(); }, function (e) { rej(new Error(String(e && e.message || e))); }, null, project);
+      ee.initialize(null, null, function () { ready = true; res(); }, function (e) { rej(new Error(explain(e))); }, null, project);
     });
   }
-  function connect() {
-    var project = $("geeProject").value.trim(), how = $("geeHow").value;
-    if (!project) { status("Enter your Google Cloud project ID (registered for Earth Engine).", false); return; }
-    put(K_PROJ, project);
-    status("Connecting…", true);
-    loadEE().then(function () {
-      if (how === "token") {
-        var tok = $("geeToken").value.trim();
-        if (!tok) throw new Error("Paste an access token (gcloud auth print-access-token).");
-        return new Promise(function (res) {
-          ee.data.setAuthToken("", "Bearer", tok, 3600, [], function () { res(); }, false);
-        }).then(function () { return init(project); });
-      }
-      var client = $("geeClient").value.trim();
-      if (!client) throw new Error("Enter your OAuth client ID (Web application).");
-      put(K_CLIENT, client);
-      return new Promise(function (res, rej) {
-        ee.data.authenticateViaOauth(client, function () { res(); }, function (e) { rej(new Error(String(e))); }, [], function () {
-          ee.data.authenticateViaPopup(function () { res(); }, function (e) { rej(new Error(String(e))); });
-        });
-      }).then(function () { return init(project); });
+  // Turn Google's terse errors into what to do about them.
+  function explain(e) {
+    var m = String(e && (e.message || e.details || e.error) || e);
+    if (/idpiframe|origin|redirect_uri|invalid_client|origin_mismatch/i.test(m)) return "Google refused this address. In Google Cloud > APIs & Services > Credentials, open the OAuth client and add " + location.origin + " to Authorized JavaScript origins, then wait a few minutes. (" + m + ")";
+    if (/popup/i.test(m)) return "The sign-in popup was blocked or closed. Allow popups for this site and press Connect again. (" + m + ")";
+    if (/access_denied|consent/i.test(m)) return "Google sign-in was cancelled or the account is not a test user of the OAuth consent screen. Add your Google account under OAuth consent screen > Test users. (" + m + ")";
+    if (/not registered|not been used|disabled|SERVICE_DISABLED|PERMISSION_DENIED|403/i.test(m)) return "The project cannot use Earth Engine yet. Enable the Earth Engine API for " + (($("geeProject") || {}).value || DEFAULT_PROJECT) + " and register it at code.earthengine.google.com/register, and make sure the signed-in account has access. (" + m + ")";
+    return m;
+  }
+  var desktop = !!window.__TAURI__ || /^tauri:|\.localhost$/.test(location.protocol + location.hostname) && location.hostname !== "localhost";
+  var token = null; // the current access token (desktop sign-in or pasted)
+  function tauri(cmd, args) {
+    return window.__TAURI__.core.invoke(cmd, args).then(function (r) {
+      var j = {}; try { j = JSON.parse(r.body || "{}"); } catch (e) { }
+      if (r.status >= 400 || !j.access_token) throw new Error(explain(j.error_description || j.error || ("HTTP " + r.status)));
+      return j;
+    });
+  }
+  function useToken(client, j) {
+    token = j.access_token;
+    if (j.refresh_token) put(K_REFRESH, j.refresh_token);
+    return loadEE().then(function () {
+      return new Promise(function (res) { ee.data.setAuthToken(client, "Bearer", j.access_token, j.expires_in || 3600, SCOPES, function () { res(); }, false); });
     }).then(function () {
-      status("Connected to Earth Engine (" + project + ").", true);
-      $("geeWork").hidden = false;
-    }).catch(function (e) { ready = false; status(e.message, false); });
+      // About an hour later Earth Engine asks for a new token: get it without the browser.
+      ee.data.setAuthTokenRefresher(function (args, cb) {
+        refresh(client).then(function (k) { token = k.access_token; cb({ access_token: k.access_token, token_type: "Bearer", expires_in: k.expires_in || 3600 }); })
+          .catch(function (e) { cb({ error: e.message }); });
+      });
+    });
+  }
+  function refresh(client) {
+    var rt = get(K_REFRESH);
+    if (!rt) return Promise.reject(new Error("Sign in again."));
+    return tauri("google_refresh", { clientId: client, clientSecret: get(K_SECRET) || null, refreshToken: rt });
+  }
+  // The Earth Engine sign-in already on this computer (earthengine-api).
+  function localToken() {
+    return window.__TAURI__.core.invoke("ee_local_token").then(function (r) {
+      var j = {}; try { j = JSON.parse(r.body || "{}"); } catch (e) { }
+      if (j.access_token) return j;
+      var why = { noee: "Python with the earthengine-api package was not found on this computer (pip install earthengine-api).",
+        nopython: "Python was not found on this computer.",
+        nologin: "There is no Earth Engine sign-in on this computer yet: run  earthengine authenticate  once in a terminal, then press Connect.",
+        refresh: "The saved Earth Engine sign-in could not be renewed: run  earthengine authenticate  again. (" + (j.detail || "") + ")" }[j.error];
+      throw new Error(why || j.detail || "Could not use the Earth Engine sign-in of this computer.");
+    });
+  }
+  function localSignIn() {
+    status("Using the Earth Engine sign-in of this computer…", true);
+    return localToken().then(function (j) {
+      var pr = $("geeProject"), project = pr.value.trim() || j.project || DEFAULT_PROJECT;
+      pr.value = project; put(K_PROJ, project);
+      token = j.access_token;
+      return loadEE().then(function () {
+        return new Promise(function (res) { ee.data.setAuthToken("", "Bearer", j.access_token, j.expires_in || 3300, SCOPES, function () { res(); }, false); });
+      }).then(function () {
+        ee.data.setAuthTokenRefresher(function (args, cb) {
+          localToken().then(function (k) { token = k.access_token; cb({ access_token: k.access_token, token_type: "Bearer", expires_in: k.expires_in || 3300 }); })
+            .catch(function (e) { cb({ error: e.message }); });
+        });
+        return init(project);
+      }).then(done);
+    }).catch(fail);
+  }
+  function desktopSignIn(project, client) {
+    var secret = $("geeSecret").value.trim();
+    put(K_CLIENT, client); put(K_SECRET, secret);
+    // Signed in before: renew silently; otherwise open the browser.
+    var first = get(K_REFRESH) ? refresh(client).catch(function () { put(K_REFRESH, ""); return null; }) : Promise.resolve(null);
+    first.then(function (j) {
+      if (j) return j;
+      status("Sign in to Google in your browser, then come back here…", true);
+      return tauri("google_signin", { clientId: client, clientSecret: secret || null, scopes: SCOPES.join(" ") });
+    }).then(function (j) { status("Signed in. Opening " + project + "…", true); return useToken(client, j); })
+      .then(function () { return init(project); }).then(done).catch(fail);
+  }
+  function connect() {
+    var project = $("geeProject").value.trim() || DEFAULT_PROJECT, how = $("geeHow").value;
+    $("geeProject").value = project;
+    put(K_PROJ, project);
+    if (how === "local") { localSignIn(); return; }
+    if (how === "token") {
+      var tok = $("geeToken").value.trim().replace(/^Bearer\s+/i, "");
+      if (!tok) { status("Paste an access token (gcloud auth print-access-token).", false); return; }
+      status("Connecting…", true);
+      loadEE().then(function () {
+        return new Promise(function (res) { ee.data.setAuthToken("", "Bearer", tok, 3600, [], function () { res(); }, false); });
+      }).then(function () { token = tok; return init(project); }).then(done).catch(fail);
+      return;
+    }
+    var client = $("geeClient").value.trim();
+    if (!client) { status("Enter your OAuth client ID (" + (desktop ? "Desktop app" : "Web application") + ") from the " + project + " project.", false); return; }
+    if (desktop) { desktopSignIn(project, client); return; }
+    put(K_CLIENT, client);
+    status("Opening Google sign-in…", true);
+    if (!window.ee || !ee.data || !authLib) { preload().then(function () { status("Ready. Press Connect again to open Google sign-in.", true); }).catch(fail); return; }
+    // Called synchronously inside the click, so the popup is allowed.
+    new Promise(function (res, rej) {
+      if (ee.data.getAuthToken && ee.data.getAuthToken()) { res(); return; }
+      ee.data.authenticateViaOauth(client, res, function (e) { rej(new Error(explain(e))); }, SCOPES, function () {
+        ee.data.authenticateViaPopup(res, function (e) { rej(new Error(explain(e))); });
+      }, true);
+    }).then(function () { status("Signed in. Opening " + project + "…", true); return init(project); }).then(done).catch(fail);
+    function done() { status("Connected to Earth Engine (" + project + ").", true); $("geeWork").hidden = false; }
+  }
+  function fail(e) { ready = false; status(e && e.message ? e.message : explain(e), false); }
+  function done() { status("Connected to Earth Engine (" + (($("geeProject") || {}).value) + ").", true); $("geeWork").hidden = false; }
+  // The Earth Engine control GeoLibre uses (maplibre-gl-earth-engine, MIT,
+  // opengeos): Catalog, Search, Load, Layers, Inspector, Code and Auth tabs,
+  // added on the map with this project and OAuth client filled in.
+  var EECTL = "https://cdn.jsdelivr.net/npm/maplibre-gl-earth-engine@0.4.2/dist/index.mjs";
+  var EECSS = "https://cdn.jsdelivr.net/npm/maplibre-gl-earth-engine@0.4.2/dist/maplibre-gl-earth-engine.css";
+  var ctl = null, ctlMap = null, ctlP = null;
+  function openControl() {
+    var map = GIS.map();
+    // The desktop app signs in through the browser first, then opens the control with that token.
+    if (desktop && !token && $("geeHow").value === "local") {
+      localSignIn();
+      var w2 = setInterval(function () { if (token) { clearInterval(w2); openControl(); } else if (/error/.test($("geeStatus").className)) clearInterval(w2); }, 400);
+      return;
+    }
+    if (desktop && !token && $("geeHow").value === "oauth" && $("geeClient").value.trim()) {
+      var c = $("geeClient").value.trim(), pr = $("geeProject").value.trim() || DEFAULT_PROJECT;
+      desktopSignIn(pr, c);
+      var wait = setInterval(function () { if (token) { clearInterval(wait); openControl(); } else if (/error/.test($("geeStatus").className)) clearInterval(wait); }, 400);
+      return;
+    }
+    if (!map) return;
+    if (ctl && ctlMap === map) { ctl.expand(); return; }
+    if (ctl) { try { ctl.onRemove(); } catch (e) { } ctl = null; }
+    if (!document.querySelector('link[href="' + EECSS + '"]')) { var l = document.createElement("link"); l.rel = "stylesheet"; l.href = EECSS; document.head.appendChild(l); }
+    status("Loading the Earth Engine control…", true);
+    ctlP = ctlP || import(/* webpackIgnore: true */ EECTL);
+    ctlP.then(function (mod) {
+      var project = ($("geeProject").value || "").trim() || DEFAULT_PROJECT, client = ($("geeClient").value || "").trim(), tok = ($("geeToken").value || "").trim().replace(/^Bearer\s+/i, "");
+      var opts = { title: "Earth Engine", collapsed: false, panelWidth: 280, storagePrefix: "ploots-gee", projectId: project };
+      if (client) opts.oauthClientId = client;
+      if ($("geeHow").value === "token" && tok) token = tok;
+      if (token && (desktop || $("geeHow").value !== "oauth")) { opts.accessToken = token; opts.tokenType = "Bearer"; opts.tokenExpiresIn = 3600; }
+      // Mounted inside this sidebar panel, not floating over the map.
+      ctl = new mod.PluginControl(opts); ctlMap = map;
+      var host = $("geeCtlHost"); host.innerHTML = ""; host.appendChild(ctl.onAdd(map)); host.hidden = false;
+      setTimeout(function () {
+        ctl.expand();
+        // The control builds its panel on the map; keep it in the sidebar instead.
+        var panel = map.getContainer().querySelector(".earth-engine-panel");
+        if (panel) host.appendChild(panel);
+      }, 0);
+      status("", true);
+    }).catch(function (e) { ctlP = null; status("Could not load the Earth Engine control: " + (e && e.message || e), false); });
   }
   function status(msg, ok) { var el = $("geeStatus"); el.style.display = msg ? "" : "none"; el.className = "status " + (ok === false ? "error" : "ok"); el.textContent = msg; }
 
@@ -181,13 +330,17 @@
     p.innerHTML =
       '<div class="sp-head"><span class="sp-title">Google Earth Engine</span><button type="button" class="sp-close" title="Close panel">' + sym("keyboard_double_arrow_left") + "</button></div>" +
       '<div class="gee-body">' +
-        '<label class="field-label">Cloud project ID</label><input type="text" id="geeProject" placeholder="my-ee-project" value="' + esc(get(K_PROJ)) + '">' +
-        '<label class="field-label">Sign-in</label><select id="geeHow"><option value="oauth">Sign in with Google (OAuth client ID)</option><option value="token">Access token (gcloud)</option></select>' +
-        '<div id="geeOauthWrap"><label class="field-label">OAuth client ID (Web application)</label><input type="text" id="geeClient" placeholder="…apps.googleusercontent.com" value="' + esc(get(K_CLIENT)) + '">' +
-          '<p class="gfw-note">Authorised JavaScript origin: <code>' + esc(location.origin) + "</code></p></div>" +
+        '<label class="field-label">Cloud project ID</label><input type="text" id="geeProject" placeholder="ee-defaniarman" value="' + esc(get(K_PROJ) || DEFAULT_PROJECT) + '">' +
+        '<label class="field-label">Sign-in</label><select id="geeHow">' + (desktop ? '<option value="local">This computer\'s Earth Engine sign-in (as GeoLibre)</option>' : "") + '<option value="oauth">' + (desktop ? "Sign in with Google (opens your browser)" : "Sign in with Google (OAuth client ID)") + '</option><option value="token">Access token (gcloud)</option></select>' +
+        '<div id="geeOauthWrap"><label class="field-label">OAuth client ID (' + (desktop ? "Desktop app" : "Web application") + ')</label><input type="text" id="geeClient" placeholder="…apps.googleusercontent.com" value="' + esc(get(K_CLIENT)) + '">' +
+          (desktop ? '<label class="field-label">Client secret (Desktop app)</label><input type="password" id="geeSecret" autocomplete="off" value="' + esc(get(K_SECRET)) + '">' +
+            '<p class="gfw-note">Google Cloud › Credentials › Create OAuth client ID › <b>Desktop app</b>, in this project; your Google account under <b>OAuth consent screen › Test users</b>.</p>'
+          : '<p class="gfw-note">In the OAuth client (Web application) of this project, add <code>' + esc(location.origin) + '</code> to <b>Authorized JavaScript origins</b>, and your Google account under <b>OAuth consent screen › Test users</b>.</p>') + "</div>" +
         '<div id="geeTokenWrap" hidden><label class="field-label">Access token</label><input type="password" id="geeToken" placeholder="ya29.…" autocomplete="off">' +
           '<p class="gfw-note">From <code>gcloud auth print-access-token</code>. Kept only for this session.</p></div>' +
-        '<button id="geeConnect" class="btn-primary" style="width:100%;margin-top:10px;">' + sym("link") + "Connect</button>" +
+        '<button id="geeOpenCtl" class="btn-primary" style="width:100%;margin-top:10px;">' + sym("public") + "Open Earth Engine (catalog, search, inspector)</button>" +
+        '<button id="geeConnect" style="width:100%;margin-top:6px;">' + sym("link") + "Connect for recipes and code</button>" +
+        '<div id="geeCtlHost" class="gee-ctl-host" hidden></div>' +
         '<p class="status" id="geeStatus" style="display:none;"></p>' +
         '<div id="geeWork" hidden>' +
           '<div class="gfw-sub">' + sym("crop_free") + "Area and dates</div>" +
@@ -195,7 +348,7 @@
           '<div class="num-pair"><div><label class="field-label">Start</label><input type="date" id="geeStart" value="' + yearAgo + '"></div><div><label class="field-label">End</label><input type="date" id="geeEnd" value="' + today + '"></div></div>' +
           '<div class="gfw-sub">' + sym("auto_awesome") + "Recipes</div>" +
           '<div class="gee-recipes">' + RECIPES.map(function (r) { return '<button type="button" data-r="' + r[0] + '">' + esc(r[1]) + "</button>"; }).join("") + "</div>" +
-          '<div class="gfw-sub">' + sym("code") + "Code</div>" +
+          '<div class="gfw-sub gee-code-head">' + sym("code") + 'Code<button type="button" id="geeWide" class="ss-icon" title="Wide editor">' + sym("open_in_full") + "</button></div>" +
           '<select id="geeExample"><option value="">Load an example…</option>' + RECIPES.map(function (r) { return '<option value="' + r[0] + '">' + esc(r[1]) + "</option>"; }).join("") + "</select>" +
           '<textarea id="geeCode" spellcheck="false" placeholder="// ee, Map.addLayer, Map.centerObject, print, aoi, start, end">' + esc(get(K_CODE)) + "</textarea>" +
           '<button id="geeRun" class="btn-primary" style="width:100%;margin-top:6px;">' + sym("play_arrow") + "Run (Ctrl+Enter)</button>" +
@@ -205,8 +358,11 @@
       "</div>";
     document.querySelector(".sidebar").appendChild(p);
     p.querySelector(".sp-close").addEventListener("click", function () { window.closeSidebar(); });
-    $("geeHow").addEventListener("change", function () { var t = this.value === "token"; $("geeTokenWrap").hidden = !t; $("geeOauthWrap").hidden = t; });
+    function showHow() { var v = $("geeHow").value; $("geeTokenWrap").hidden = v !== "token"; $("geeOauthWrap").hidden = v !== "oauth"; }
+    $("geeHow").addEventListener("change", showHow);
+    showHow();
     $("geeConnect").addEventListener("click", connect);
+    $("geeOpenCtl").addEventListener("click", function () { put(K_PROJ, $("geeProject").value.trim() || DEFAULT_PROJECT); put(K_CLIENT, $("geeClient").value.trim()); openControl(); });
     p.querySelector(".gee-recipes").addEventListener("click", function (e) {
       var b = e.target.closest("[data-r]");
       if (!b) return;
@@ -235,9 +391,15 @@
     rb.innerHTML = sym("satellite_alt") + '<span class="nav-lbl">GEE</span>';
     var gfw = nav.querySelector('[data-panel="panel-gis-gfw"]');
     if (gfw) gfw.after(rb); else nav.appendChild(rb);
-    rb.addEventListener("click", function () { if (rb.classList.contains("active")) window.closeSidebar(); else { GIS.enterMapMode(); fillArea(); activateSidebarPanel(PANEL); } });
+    rb.addEventListener("click", function () { if (rb.classList.contains("active")) window.closeSidebar(); else { GIS.enterMapMode(); fillArea(); activateSidebarPanel(PANEL); if (!desktop) preload().catch(function () { }); setTimeout(function () { var m = GIS.map(); if (m) m.resize(); }, 360); } });
+    // The code editor opens wide (the panel is wider while it is open), and wider still on demand.
+    $("geeWide").addEventListener("click", function () {
+      var sb = document.querySelector(".sidebar"), on = sb.classList.toggle("gee-wide");
+      this.innerHTML = sym(on ? "close_fullscreen" : "open_in_full"); this.title = on ? "Normal width" : "Wide editor";
+      setTimeout(function () { var m = GIS.map(); if (m) m.resize(); if (typeof onCanvasSizeChanged === "function") onCanvasSizeChanged(); }, 360);
+    });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(build, 80); }); else setTimeout(build, 80);
 
-  GIS.gee = { run: run, connected: function () { return ready; } };
+  GIS.gee = { run: run, connected: function () { return ready; }, openControl: openControl };
 })();

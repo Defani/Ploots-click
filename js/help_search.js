@@ -99,7 +99,7 @@
       desc: 'Connect folders on this computer and open CSV, Excel, GeoJSON, GeoTIFF and images from them.',
       kw: 'files folder browser open directory csv excel geojson tiff image explorer local disk connect' },
     { title: 'About', panel: null, section: null, icon: 'info',
-      desc: 'Ploots Click, a private tool of Defani Arman Alfitriansyah.',
+      desc: 'GIS Consultant Studio, a private tool of Defani Arman Alfitriansyah.',
       kw: 'about version author defani license intro',
       run: function () { if (window.PlootsIntro) window.PlootsIntro.about(); } },
     { title: 'Plugins', panel: 'panel-plugins', section: null, icon: 'extension',

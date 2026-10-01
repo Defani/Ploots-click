@@ -58,9 +58,11 @@
   // coffee is topped at ~1.8 m and lamtoro is lopped to keep 30-40 % shade.
   var PRESETS = {
     kopi: { label: "kopi", name: "Arabica coffee (Gayo)", color: "#2f6b33", dbhInit: 0.01, dbhMax: 0.12, c: 1.8, k: 0.22, hA: 0.95, hB: 0.72, hMax: 4.5, cwA: 0.45, cwB: 0.28, depth: 0.88, por: 0.25, lmin: 0.08, lopt: 0.55, rho: 0.6, prune: 1.8, crMax: 1.3, crop: true },
-    lamtoro: { label: "lamtoro", name: "Lamtoro (Leucaena leucocephala)", color: "#9bc53d", dbhInit: 0.01, dbhMax: 0.35, c: 1.5, k: 0.26, hA: 1.65, hB: 0.72, hMax: 15, cwA: 1.1, cwB: 0.34, depth: 0.45, por: 0.55, lmin: 0.35, lopt: 0.9, rho: 0.64, prune: 7, crMax: 2.2 },
+    lamtoro: { label: "lamtoro", name: "Lamtoro (Leucaena leucocephala)", color: "#9bc53d", dbhInit: 0.01, dbhMax: 0.35, c: 1.5, k: 0.26, hA: 1.65, hB: 0.72, hMax: 15, cwA: 1.1, cwB: 0.34, depth: 0.45, por: 0.55, lmin: 0.35, lopt: 0.9, rho: 0.64, prune: 8, crMax: 2.6 },
     alpukat: { label: "alpukat", name: "Avocado (Persea americana)", color: "#5b8c2a", dbhInit: 0.01, dbhMax: 0.45, c: 1.6, k: 0.12, hA: 1.2, hB: 0.75, hMax: 18, cwA: 1.0, cwB: 0.3, depth: 0.6, por: 0.3, lmin: 0.3, lopt: 0.85, rho: 0.55, prune: 0 },
     jeruk: { label: "jeruk", name: "Orange (Citrus sp.)", color: "#e0a526", dbhInit: 0.01, dbhMax: 0.2, c: 1.7, k: 0.18, hA: 1.0, hB: 0.72, hMax: 6, cwA: 0.6, cwB: 0.3, depth: 0.75, por: 0.3, lmin: 0.35, lopt: 0.85, rho: 0.62, prune: 0 },
+    nangka: { label: "nangka", name: "Jackfruit (Artocarpus heterophyllus)", color: "#3f7a2c", dbhInit: 0.01, dbhMax: 0.6, c: 1.6, k: 0.1, hA: 1.4, hB: 0.72, hMax: 18, cwA: 1.2, cwB: 0.3, depth: 0.65, por: 0.25, lmin: 0.3, lopt: 0.85, rho: 0.6, prune: 0 },
+    pinus: { label: "pinus", name: "Pine (Pinus merkusii)", color: "#2e5a3c", dbhInit: 0.02, dbhMax: 0.8, c: 1.5, k: 0.08, hA: 2.2, hB: 0.68, hMax: 35, cwA: 1.0, cwB: 0.17, depth: 0.55, por: 0.5, lmin: 0.4, lopt: 0.95, rho: 0.55, prune: 0 },
     petai: { label: "petai", name: "Petai (Parkia speciosa)", color: "#2f6360", dbhInit: 0.01, dbhMax: 0.6, c: 1.5, k: 0.1, hA: 1.7, hB: 0.72, hMax: 25, cwA: 1.4, cwB: 0.32, depth: 0.45, por: 0.45, lmin: 0.35, lopt: 0.95, rho: 0.52, prune: 0 }
   };
 
@@ -211,6 +213,15 @@
     }
     return n;
   }
+  // 40 plants at the densities of Gayo coffee agroforestry (Pramulya et al.
+  // 2026: coffee 1,359 ± 502 and overstory 394 ± 340 trees per ha): 32 coffee
+  // at 2.7 m (~1,370/ha) and 8 lamtoro at 5.4 m (~340/ha).
+  function example40() {
+    P.w = 21.6; P.h = 10.8;
+    for (var i = 0; i < 8; i++) for (var j = 0; j < 4; j++) addTree("kopi", 1.35 + i * 2.7, 1.35 + j * 2.7);
+    for (var a = 0; a < 4; a++) for (var b = 0; b < 2; b++) addTree("lamtoro", 2.7 + a * 5.4, 2.7 + b * 5.4);
+    return 40;
+  }
   function plantRandom(key, n, seed) {
     var s = seed || 42;
     function rnd() { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }
@@ -297,13 +308,16 @@
 
   /* --------------------------------------------------------------- 2D */
 
-  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = true, realistic = true, flowering = false;
+  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = false, realistic = true, flowering = false, look3d = "real";
   // Camera presets: the whole plot from above a corner, or standing in a
   // coffee row at eye height (1.6 m), looking along the row.
   function camPreset(k) {
     if (!G3) return;
     var c = G3.cam, ctl = G3.ctl;
-    if (k === "eye") {
+    if (k === "top") {
+      c.position.set(P.w / 2, Math.max(P.w, P.h) * 1.15, P.h / 2 + Math.max(P.w, P.h) * 0.02);
+      ctl.target.set(P.w / 2, 0, P.h / 2);
+    } else if (k === "eye") {
       // In the alley between two coffee rows (plants at 1.25 + 2.5 k).
       var x = Math.min(P.w - 1, 2.5 * Math.round(P.w / 5)), z0 = P.h - 2;
       c.position.set(x, 1.6 + alt(x, 3), z0);
@@ -316,6 +330,20 @@
     if (realistic) rebuildPlants();
     G3.dirty = true;
   }
+  // 2D view as SExI-FS draws it: white sheet, fine pink metre grid, crowns as
+  // wire meshes (outline, spokes and rings from the crown radii) in one of
+  // four paint modes, stems as dots, and optional tree labels.
+  var paint = "transparent", showInfo = false;
+  function crownPts(t, sc, px, py, f) {
+    var n = t.radii && t.radii.length > 1 ? t.radii.length : 0, pts = [], K = 48;
+    for (var k = 0; k < K; k++) {
+      var ang = k / K * Math.PI * 2 + (t.rot || 0) * Math.PI / 180, rr = t.r;
+      if (n) { var q = (k / K * n) % n, i0 = Math.floor(q), i1 = (i0 + 1) % n; rr = t.radii[i0] + (t.radii[i1] - t.radii[i0]) * (q - i0); }
+      pts.push([px + Math.cos(ang) * rr * sc * f, py - Math.sin(ang) * rr * sc * f]);
+    }
+    return pts;
+  }
+  function poly(g, pts) { g.beginPath(); pts.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.closePath(); }
   function draw2d() {
     var cv = $("agCanvas");
     if (!cv) return;
@@ -323,38 +351,71 @@
     if (box.width < 80 || box.height < 80) return; // hidden or not laid out yet
     cv.width = box.width * dpr; cv.height = box.height * dpr;
     cv.style.width = box.width + "px"; cv.style.height = box.height + "px";
-    var g = cv.getContext("2d"), pad = 40, sc = Math.min((box.width - 2 * pad) / P.w, (box.height - 2 * pad) / P.h);
+    var g = cv.getContext("2d"), pad = 46, sc = Math.min((box.width - 2 * pad) / P.w, (box.height - 2 * pad) / P.h);
     var ox = (box.width - P.w * sc) / 2, oy = (box.height - P.h * sc) / 2;
     cv._tx = { sc: sc, ox: ox, oy: oy };
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, box.width, box.height);
-    g.fillStyle = "#e9e3d3"; g.fillRect(ox, oy, P.w * sc, P.h * sc);
+    g.fillStyle = "#ffffff"; g.fillRect(0, 0, box.width, box.height);
     if (showLight) {
       var lm = lightMap(1.5);
       for (var j = 0; j < lm.ny; j++) for (var i = 0; i < lm.nx; i++) {
         var v = lm.v[j * lm.nx + i];
-        g.fillStyle = "rgba(20,40,30," + ((1 - v) * 0.55).toFixed(3) + ")";
+        g.fillStyle = "rgba(60,60,60," + ((1 - v) * 0.4).toFixed(3) + ")";
         g.fillRect(ox + i * CELL * sc, oy + (P.h - (j + 1) * CELL) * sc, CELL * sc + 0.5, CELL * sc + 0.5);
       }
     }
-    // grid every 10 m
-    g.strokeStyle = "rgba(0,0,0,.07)"; g.lineWidth = 1;
-    for (var x = 0; x <= P.w; x += 10) { g.beginPath(); g.moveTo(ox + x * sc, oy); g.lineTo(ox + x * sc, oy + P.h * sc); g.stroke(); }
-    for (var y = 0; y <= P.h; y += 10) { g.beginPath(); g.moveTo(ox, oy + y * sc); g.lineTo(ox + P.w * sc, oy + y * sc); g.stroke(); }
-    // lower crowns first
-    P.trees.filter(function (t) { return t.alive; }).sort(function (a, b) { return a.h - b.h; }).forEach(function (t) {
-      var s = sp(t), px = ox + t.x * sc, py = oy + (P.h - t.y) * sc;
-      g.beginPath();
-      if (t.radii && t.radii.length > 1) {
-        var n = t.radii.length;
-        for (var k = 0; k <= 36; k++) { var ang = k / 36 * Math.PI * 2 + (t.rot || 0) * Math.PI / 180, f = (k / 36 * n) % n, i0 = Math.floor(f), i1 = (i0 + 1) % n, rr = t.radii[i0] + (t.radii[i1] - t.radii[i0]) * (f - i0); var qx = px + Math.cos(ang) * rr * sc, qy = py - Math.sin(ang) * rr * sc; if (k) g.lineTo(qx, qy); else g.moveTo(qx, qy); }
-      } else g.arc(px, py, t.r * sc, 0, Math.PI * 2);
-      g.fillStyle = hexA(s.color, 0.55 - s.por * 0.3); g.fill();
-      g.strokeStyle = t === sel ? "#ff5a1f" : hexA(s.color, 0.95); g.lineWidth = t === sel ? 2.2 : 0.8; g.stroke();
-      g.fillStyle = "#4a3620"; g.beginPath(); g.arc(px, py, Math.max(1, t.dbh * 100 * sc / 200 + 0.8), 0, Math.PI * 2); g.fill();
+    // pink grid: every metre (when it reads), stronger every 10 m
+    var minor = sc >= 4 ? 1 : sc >= 1.2 ? 5 : 10;
+    g.lineWidth = 1;
+    for (var x = 0; x <= P.w + 1e-6; x += minor) { g.strokeStyle = x % 10 === 0 ? "rgba(214,72,110,.55)" : "rgba(232,140,165,.32)"; g.beginPath(); g.moveTo(ox + x * sc + .5, oy); g.lineTo(ox + x * sc + .5, oy + P.h * sc); g.stroke(); }
+    for (var y = 0; y <= P.h + 1e-6; y += minor) { g.strokeStyle = y % 10 === 0 ? "rgba(214,72,110,.55)" : "rgba(232,140,165,.32)"; g.beginPath(); g.moveTo(ox, oy + y * sc + .5); g.lineTo(ox + P.w * sc, oy + y * sc + .5); g.stroke(); }
+    // lower crowns first, so the canopy lies on top
+    var alive = P.trees.filter(function (t) { return t.alive; }).sort(function (a, b) { return a.h - b.h; });
+    alive.forEach(function (t) {
+      var s = sp(t), px = ox + t.x * sc, py = oy + (P.h - t.y) * sc, outer = crownPts(t, sc, px, py, 1);
+      if (paint !== "outline") {
+        poly(g, outer);
+        if (paint === "opaque") g.fillStyle = hexA(s.color, 1);
+        else if (paint === "transparent") g.fillStyle = hexA(s.color, 0.28);
+        else { var rg = g.createRadialGradient(px - t.r * sc * .35, py - t.r * sc * .35, t.r * sc * .1, px, py, t.r * sc * 1.05); rg.addColorStop(0, shade(s.color, 0.45)); rg.addColorStop(1, shade(s.color, -0.35)); g.fillStyle = rg; }
+        g.fill();
+      }
+      // the crown edge
+      var wire = paint === "opaque" ? shade(s.color, -0.45) : paint === "shaded" ? "rgba(0,0,0,.35)" : shade(s.color, -0.15);
+      g.strokeStyle = t === sel ? "#ff3d00" : wire; g.lineWidth = t === sel ? 2 : 0.8;
+      poly(g, outer); g.stroke();
+      g.fillStyle = "#3b2a1a"; g.beginPath(); g.arc(px, py, Math.max(1.2, t.dbh * sc / 2 + 0.8), 0, Math.PI * 2); g.fill();
     });
-    g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 1.2; g.strokeRect(ox, oy, P.w * sc, P.h * sc);
-    g.fillStyle = "rgba(0,0,0,.55)"; g.font = "11px Inter, Arial"; g.fillText("0", ox - 10, oy + P.h * sc + 12); g.fillText(P.w + " m", ox + P.w * sc - 20, oy + P.h * sc + 14); g.fillText(P.h + " m", ox - 34, oy + 4);
+    if (showInfo || sel) {
+      // Tallest trees first; a label that would overlap one already drawn is skipped.
+      g.font = "10px Inter, Arial"; g.textBaseline = "middle";
+      var placed = [];
+      alive.slice().sort(function (a, b) { return (b === sel) - (a === sel) || b.h - a.h; }).forEach(function (t) {
+        if (!(t === sel || showInfo)) return;
+        var px = ox + t.x * sc, py = oy + (P.h - t.y) * sc, label = sp(t).label + " " + t.id + " · " + fmt(t.h, 1) + " m";
+        var w = g.measureText(label).width + 8, r = [px + 4, py - 7, w, 14];
+        if (t !== sel && placed.some(function (q) { return r[0] < q[0] + q[2] && q[0] < r[0] + r[2] && r[1] < q[1] + q[3] && q[1] < r[1] + r[3]; })) return;
+        placed.push(r);
+        g.fillStyle = "rgba(255,255,255,.9)"; g.fillRect(r[0], r[1], r[2], r[3]);
+        g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 0.5; g.strokeRect(r[0], r[1], r[2], r[3]);
+        g.fillStyle = "#222"; g.fillText(label, px + 8, py);
+      });
+    }
+    g.strokeStyle = "#333"; g.lineWidth = 1.2; g.strokeRect(ox, oy, P.w * sc, P.h * sc);
+    // axis labels every 10 m
+    g.fillStyle = "#555"; g.font = "10px Inter, Arial"; g.textBaseline = "top"; g.textAlign = "center";
+    var step = P.w > 150 ? 50 : P.w > 60 ? 20 : 10;
+    for (var ax = 0; ax <= P.w; ax += step) g.fillText(ax + "", ox + ax * sc, oy + P.h * sc + 6);
+    g.textAlign = "right"; g.textBaseline = "middle";
+    for (var ay = 0; ay <= P.h; ay += step) g.fillText(ay + "", ox - 6, oy + (P.h - ay) * sc);
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    g.fillText(P.w + " × " + P.h + " m · " + alive.length + " trees · year " + P.year, ox, oy - 10);
+  }
+  function shade(c, f) {
+    var h = String(c).replace("#", ""); if (h.length === 3) h = h.split("").map(function (x) { return x + x; }).join("");
+    var r = parseInt(h.slice(0, 2), 16), gg = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    function m(v) { return Math.round(f >= 0 ? v + (255 - v) * f : v * (1 + f)); }
+    return "rgb(" + m(r) + "," + m(gg) + "," + m(b) + ")";
   }
   function hexA(c, a) {
     if (/^hsl/.test(c)) return c.replace("hsl(", "hsla(").replace(")", "," + a + ")");
@@ -377,28 +438,39 @@
     var host = $("agView3d"), W = host.clientWidth, H = host.clientHeight;
     if (!G3) {
       var r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-      r.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
-      r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+      r.setPixelRatio(Math.min(1.25, window.devicePixelRatio || 1));
+      // Shadows are drawn from the sun, so they only change when the plot or
+      // the sun changes, not when the camera moves: redraw them only then.
+      r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFShadowMap; r.shadowMap.autoUpdate = false;
       host.appendChild(r.domElement);
       var scene = new THREE.Scene();
       scene.background = new THREE.Color(0xcfe3ee);
       scene.fog = new THREE.Fog(0xcfe3ee, 180, 420);
       var cam = new THREE.PerspectiveCamera(45, W / H, 0.5, 2000);
       var ctl = new THREE.OrbitControls(cam, r.domElement);
-      ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.49;
+      ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.49; ctl.screenSpacePanning = false; ctl.panSpeed = 1.2; ctl.zoomSpeed = 1.1;
       var hemi = new THREE.HemisphereLight(0xeaf4ff, 0x6b5a3a, 0.55);
       var sun = new THREE.DirectionalLight(0xfff3dd, 1.0);
       sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
       scene.add(hemi, sun, sun.target);
       G3 = { r: r, scene: scene, cam: cam, ctl: ctl, sun: sun, hemi: hemi, group: null };
       // Render only when something changed (camera moving, scene rebuilt).
-      (function loop() {
+      // While the camera moves on a slow GPU, draw at a lower resolution so the
+      // motion stays fluid; back to full sharpness as soon as it stops.
+      var PR = Math.min(1.25, window.devicePixelRatio || 1), lastT = 0, still = 0, low = false, slowFrames = 0;
+      (function loop(now) {
         if (!G3) return;
         requestAnimationFrame(loop);
         if (view !== "3d") return;
-        var moved = G3.ctl.update();
-        if (moved || G3.dirty) { G3.r.render(G3.scene, G3.cam); G3.dirty = false; }
-      })();
+        var moved = G3.ctl.update(); syncCube();
+        var dt = now - lastT; lastT = now;
+        if (moved) {
+          still = 0;
+          slowFrames = dt > 34 ? slowFrames + 1 : 0;
+          if (!low && slowFrames >= 2) { low = true; G3.r.setPixelRatio(PR * 0.5); }
+        } else if (low && ++still > 6) { low = false; G3.r.setPixelRatio(PR); G3.sharp = true; }
+        if (moved || G3.dirty || G3.sharp) { if (G3.dirty) G3.r.shadowMap.needsUpdate = true; G3.r.render(G3.scene, G3.cam); G3.dirty = G3.sharp = false; }
+      })(0);
       // After a move, the nearest plants get the detailed models.
       ctl.addEventListener("end", function () { if (realistic && G3.lodAt && G3.cam.position.distanceTo(G3.lodAt) > 6) rebuildPlants(); });
       cam.position.set(-P.w * 0.25, Math.max(P.w, P.h) * 0.55, P.h * 1.25); ctl.target.set(P.w / 2, 0, P.h / 2);
@@ -406,13 +478,16 @@
     G3.r.setSize(W, H); G3.cam.aspect = W / H; G3.cam.updateProjectionMatrix(); G3.dirty = true; G3.bySp = null; G3.plants = null;
     if (G3.group) { G3.scene.remove(G3.group); G3.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
     var grp = new THREE.Group(), sc = G3.scene;
+    if (look3d === "sexi") { sexi3d(grp, sc); sc.add(grp); G3.group = grp; setSun(+($("agSun") ? $("agSun").value : 9)); return; }
     if (realistic && window.PlootsAgroReal) {
       // Realistic plants (js/agro/agro-3d-real.js): instanced procedural
       // coffee bushes, lamtoro trees and broadleaf trees.
       var R3 = window.PlootsAgroReal, bySp = {};
       R3.atmosphere(sc, G3.r);
       G3.hemi.intensity = 0.85;
-      grp.add(R3.ground(P.w, P.h, P.topo ? function (x, z) { return alt(x, P.h - z); } : null));
+      // Rows for the soil-and-grass floor: the y positions of the coffee rows.
+      var rowY = Array.from(new Set(P.trees.filter(function (t) { return t.alive && sp(t).crop; }).map(function (t) { return Math.round(t.y * 2) / 2; })));
+      grp.add(R3.ground(P.w, P.h, P.topo ? function (x, z) { return alt(x, P.h - z); } : null, P.floor || "grass", rowY));
       Object.keys(P.species).forEach(function (k) {
         bySp[k] = P.trees.filter(function (t) { return t.alive && t.sp === k; }).map(function (t) {
           return { id: t.id, x: t.x, z: P.h - t.y, base: alt(t.x, t.y), h: t.h, r: t.r };
@@ -460,13 +535,109 @@
     sc.add(grp); G3.group = grp;
     setSun(+($("agSun") ? $("agSun").value : 9));
   }
+  // "Virtual forest" as SExI-FS shows it: a white world, the plot as a floating
+  // slab of soil with thickness, crowns as lumpy textured volumes in varied
+  // greens (shaped by radius, depth and the crown radii), thin dark stems.
+  var SX = null;
+  function sexiParts() {
+    if (SX) return SX;
+    function tex(w, h, draw) { var c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); var tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; return tx; }
+    function rnd(i) { var x = Math.sin(i * 127.1) * 43758.5453; return x - Math.floor(x); }
+    var leaf = tex(256, 256, function (g, w, h) {
+      g.fillStyle = "#5f8f3a"; g.fillRect(0, 0, w, h);
+      var greens = ["#2f5a1f", "#3f7424", "#5a8f34", "#79a845", "#9cc25a", "#47702a", "#6d9a3c"];
+      for (var i = 0; i < 2600; i++) { g.fillStyle = greens[i % greens.length]; g.globalAlpha = 0.55 + rnd(i) * 0.45; g.beginPath(); g.ellipse(rnd(i + 1) * w, rnd(i + 2) * h, 2 + rnd(i + 3) * 5, 1.2 + rnd(i + 4) * 3, rnd(i + 5) * Math.PI, 0, Math.PI * 2); g.fill(); }
+      g.globalAlpha = 1;
+    });
+    var soil = tex(256, 256, function (g, w, h) {
+      g.fillStyle = "#8a6a43"; g.fillRect(0, 0, w, h);
+      for (var i = 0; i < 4000; i++) { g.fillStyle = ["#7a5a36", "#9a7a50", "#6d5030", "#a3865a", "#7f8a4a"][i % 5]; g.globalAlpha = 0.5; g.fillRect(rnd(i) * w, rnd(i + 9) * h, 2, 2); }
+      g.globalAlpha = 1;
+    });
+    var strata = tex(64, 256, function (g, w, h) {
+      var bands = ["#6b4a2b", "#7c5833", "#5c3f25", "#8a6740", "#4f3520", "#6e4d2d"];
+      var y = 0, i = 0; while (y < h) { var bh = 18 + rnd(i) * 40; g.fillStyle = bands[i % bands.length]; g.fillRect(0, y, w, bh); y += bh; i++; }
+      for (var k = 0; k < 600; k++) { g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(rnd(k) * w, rnd(k + 3) * h, 1.5, 1.5); }
+    });
+    // A lumpy crown: an icosphere pushed out and in by smooth noise.
+    function lumpy(seed) {
+      var geo = new THREE.IcosahedronGeometry(1, 3), pos = geo.attributes.position, v = new THREE.Vector3();
+      for (var i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        var n = 0.10 * Math.sin(v.x * 5.1 + seed) * Math.cos(v.y * 4.3 + seed * 1.3) + 0.07 * Math.sin(v.z * 7.7 + v.x * 3.1 + seed * 2.1) + 0.04 * Math.sin(v.y * 11 + seed);
+        v.multiplyScalar(1 + n); pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    }
+    var stem = new THREE.CylinderGeometry(0.55, 1, 1, 6); stem.translate(0, 0.5, 0);
+    function lumpyLL(seed) {
+      var geo = new THREE.SphereGeometry(1, 20, 14), pos = geo.attributes.position, v = new THREE.Vector3();
+      for (var i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        var n = 0.13 * Math.sin(v.x * 3.1 + seed) * Math.cos(v.z * 2.7 + seed * 1.7) + 0.08 * Math.sin(v.y * 4.3 + v.x * 2 + seed * 2.3);
+        v.multiplyScalar(1 + n); pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      return geo;
+    }
+    SX = { leaf: leaf, soil: soil, strata: strata, crowns: [lumpy(1.7), lumpy(4.2), lumpy(7.9)], wires: [lumpyLL(1.1), lumpyLL(3.6), lumpyLL(6.2), lumpyLL(9.4)], stem: stem,
+      crownMat: new THREE.MeshLambertMaterial({ map: leaf }), stemMat: new THREE.MeshLambertMaterial({ color: 0x3a2d22 }) };
+    return SX;
+  }
+  // SExI-FS 3D view: white world, a fine maroon grid on the plot, crowns as
+  // irregular wire-mesh volumes (no texture) in bright per-species colours
+  // with a faint fill, stems as thin dark lines. Seen from above by default.
+  var SEXI_COLORS = ["#c63fc3", "#a9cf2e", "#4f86e0", "#2fbcc6", "#e0567d", "#8a58d6", "#e0a326"];
+  function sexi3d(grp, sc) {
+    var S = sexiParts();
+    sc.background = new THREE.Color(0xffffff); sc.fog = null;
+    G3.hemi.color.set(0xffffff); G3.hemi.groundColor.set(0xffffff); G3.hemi.intensity = 1;
+    // Grid: every metre (every 2 or 5 m on big plots), following the topography.
+    var step = Math.max(P.w, P.h) > 150 ? 5 : Math.max(P.w, P.h) > 60 ? 2 : 1, pts = [], N = 4;
+    function seg(x0, y0, x1, y1) {
+      for (var k = 0; k < N; k++) {
+        var ta = k / N, tb = (k + 1) / N, xa = x0 + (x1 - x0) * ta, ya = y0 + (y1 - y0) * ta, xb = x0 + (x1 - x0) * tb, yb = y0 + (y1 - y0) * tb;
+        pts.push(xa, alt(xa, ya) + 0.02, P.h - ya, xb, alt(xb, yb) + 0.02, P.h - yb);
+      }
+    }
+    for (var x = 0; x <= P.w + 1e-6; x += step) seg(x, 0, x, P.h);
+    for (var y = 0; y <= P.h + 1e-6; y += step) seg(0, y, P.w, y);
+    var gg = new THREE.BufferGeometry(); gg.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    grp.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ color: 0x8e2240, transparent: true, opacity: 0.8 })));
+    var m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), UPV = new THREE.Vector3(0, 1, 0);
+    Object.keys(P.species).forEach(function (key, si) {
+      var list = P.trees.filter(function (t) { return t.alive && t.sp === key; });
+      if (!list.length) return;
+      var base = new THREE.Color(SEXI_COLORS[si % SEXI_COLORS.length]);
+      // stems: thin dark lines from the ground to the crown
+      var sp2 = [];
+      list.forEach(function (t) { var z0 = alt(t.x, t.y); sp2.push(t.x, z0, P.h - t.y, t.x, z0 + t.h - t.depth * 0.5, P.h - t.y); });
+      var sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.Float32BufferAttribute(sp2, 3));
+      grp.add(new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0x3a2d22 })));
+      S.wires.forEach(function (geo, vi) {
+        var mine = list.filter(function (t) { return t.id % S.wires.length === vi; });
+        if (!mine.length) return;
+        var wire = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ wireframe: true, transparent: true, opacity: 0.85 }), mine.length);
+        var fill = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.16, depthWrite: false }), mine.length);
+        mine.forEach(function (t, i) {
+          var z0 = alt(t.x, t.y), ry = t.depth / 2, rr = t.radii && t.radii.length ? t.radii.reduce(function (a, b) { return a + b; }, 0) / t.radii.length : t.r;
+          q.setFromAxisAngle(UPV, ((t.rot || 0) * Math.PI / 180) + t.id * 0.7);
+          m.compose(new THREE.Vector3(t.x, z0 + t.h - ry, P.h - t.y), q, new THREE.Vector3(rr * (1 + 0.08 * Math.sin(t.id)), ry, rr * (1 + 0.08 * Math.cos(t.id * 1.3))));
+          wire.setMatrixAt(i, m); fill.setMatrixAt(i, m);
+          c.copy(base).offsetHSL(Math.sin(t.id * 2.3) * 0.03, 0, Math.sin(t.id * 5.1) * 0.08);
+          wire.setColorAt(i, c); fill.setColorAt(i, c);
+        });
+        grp.add(fill, wire);
+      });
+    });
+  }
   function rebuildPlants() {
     if (!G3 || !G3.bySp) return;
     if (G3.plants) { G3.group.remove(G3.plants); G3.plants.traverse(function (o) { if (o.isInstancedMesh) o.dispose(); }); }
     var c = G3.cam.position, t = G3.ctl.target;
     // Detail around what the camera looks at when high up, around the camera at eye level.
     var at = c.y > 12 ? { x: t.x, z: t.z } : { x: c.x, z: c.z };
-    G3.plants = window.PlootsAgroReal.plants(P.species, G3.bySp, { flowering: flowering, cam: at });
+    G3.plants = window.PlootsAgroReal.plants(P.species, G3.bySp, { flowering: flowering, cam: at, close: c.y < 4 || c.distanceTo(t) < 9 });
     G3.group.add(G3.plants);
     G3.lodAt = c.clone();
     G3.dirty = true;
@@ -535,6 +706,150 @@
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(Object.assign({}, P, { history: P.history.slice(-60) }))); } catch (e) { } }
 
+  function menu(name, items) {
+    return '<div class="ag-menu"><button type="button" class="ag-menu-btn">' + name + '</button><div class="ag-menu-list">' +
+      items.map(function (it) { return it === "-" ? "<hr>" : '<button type="button" data-act="' + it[0] + '"><span>' + it[1] + "</span>" + (it[2] ? "<kbd>" + it[2] + "</kbd>" : "") + "</button>"; }).join("") + "</div></div>";
+  }
+  // 3D navigation: move over the ground, rotate around and tilt over the
+  // point looked at, zoom, and standard views.
+  function nav(k) {
+    if (!G3) return;
+    var c = G3.cam, tg = G3.ctl.target, off = new THREE.Vector3().subVectors(c.position, tg), dist = off.length();
+    var fwd = new THREE.Vector3(-off.x, 0, -off.z); if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1); fwd.normalize();
+    var right = new THREE.Vector3(-fwd.z, 0, fwd.x), step = Math.max(0.3, dist * 0.035), mv = new THREE.Vector3();
+    var S = Math.max(P.w, P.h);
+    if (k === "up") mv.copy(fwd).multiplyScalar(step);
+    else if (k === "down") mv.copy(fwd).multiplyScalar(-step);
+    else if (k === "left") mv.copy(right).multiplyScalar(-step);
+    else if (k === "right") mv.copy(right).multiplyScalar(step);
+    else if (k === "rotl" || k === "rotr") { off.applyAxisAngle(new THREE.Vector3(0, 1, 0), k === "rotl" ? 0.05 : -0.05); c.position.copy(tg).add(off); }
+    else if (k === "tiltu" || k === "tiltd") {
+      var sph = new THREE.Spherical().setFromVector3(off);
+      sph.phi = clamp(sph.phi + (k === "tiltu" ? -0.04 : 0.04), 0.02, G3.ctl.maxPolarAngle);
+      off.setFromSpherical(sph); c.position.copy(tg).add(off);
+    }
+    else if (k === "zin" || k === "zout") { off.multiplyScalar(k === "zin" ? 0.92 : 1.087); if (off.length() > 0.8 && off.length() < S * 6) c.position.copy(tg).add(off); }
+    else if (k === "home") { var d = new THREE.Vector3(P.w / 2, 0, P.h / 2).sub(tg); tg.add(d); c.position.add(d); }
+    else if (k.indexOf("v-") === 0) {
+      // ViewCube faces. The plot's north (+y) is -z in 3D, so FRONT looks from the south.
+      var v = k.slice(2), cx = P.w / 2, cz = P.h / 2, to = new THREE.Vector3();
+      var D = { top: [0, 1.15, 0.02], bottom: [0, 0.05, 1.05], front: [0, 0.18, 1.05], side: [1.05, 0.18, 0], back: [0, 0.18, -1.05], left: [-1.05, 0.18, 0], right: [1.05, 0.18, 0] }[v];
+      if (D) to.set(cx + S * D[0], S * D[1], cz + S * D[2]); else to.set(-P.w * 0.25, S * 0.55, P.h * 1.25);
+      return flyTo(to, new THREE.Vector3(cx, 0, cz));
+    }
+    else if (k.indexOf("h-") === 0 || k.indexOf("r-") === 0) {
+      // Compass letters: look from that side, keeping the tilt. Curved arrows: turn 90 degrees.
+      var sp2 = new THREE.Spherical().setFromVector3(off);
+      if (k[0] === "h") { sp2.theta = { n: Math.PI, e: Math.PI / 2, s: 0, w: -Math.PI / 2 }[k.slice(2)]; if (sp2.phi < 0.35) sp2.phi = 1.05; }
+      else sp2.theta += k === "r-l" ? -Math.PI / 2 : Math.PI / 2;
+      return flyTo(new THREE.Vector3().setFromSpherical(sp2).add(tg), tg.clone());
+    }
+    if (mv.lengthSq()) { tg.add(mv); c.position.add(mv); }
+    G3.ctl.update(); G3.dirty = true;
+    if (k.indexOf("v-") === 0 || k === "home") navStopLod();
+  }
+  // Smooth camera move (about a third of a second); the plants' detail follows at the end.
+  var fly = null;
+  function flyTo(pos, tgt) {
+    var c = G3.cam, ctl = G3.ctl, t0 = ctl.target.clone();
+    var s0 = new THREE.Spherical().setFromVector3(c.position.clone().sub(t0)), s1 = new THREE.Spherical().setFromVector3(pos.clone().sub(tgt)), start = performance.now();
+    var dth = ((s1.theta - s0.theta) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI; // the short way round
+    if (fly) cancelAnimationFrame(fly);
+    (function stepFly() {
+      var u = Math.min(1, (performance.now() - start) / 350), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      var sp = new THREE.Spherical(s0.radius + (s1.radius - s0.radius) * e, s0.phi + (s1.phi - s0.phi) * e, s0.theta + dth * e);
+      ctl.target.lerpVectors(t0, tgt, e); c.position.setFromSpherical(sp).add(ctl.target); ctl.update();
+      if (u < 1) fly = requestAnimationFrame(stepFly); else { fly = null; navStopLod(); }
+    })();
+  }
+  // The ViewCube turns with the camera.
+  var vcLast = "";
+  function syncCube() {
+    var cube = $("agVcCube"); if (!cube || !G3) return;
+    var sp = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(G3.cam.position, G3.ctl.target));
+    var t = "rotateX(" + (-(Math.PI / 2 - sp.phi)).toFixed(4) + "rad) rotateY(" + (-sp.theta).toFixed(4) + "rad)";
+    if (t === vcLast) return;
+    cube.style.transform = t; vcLast = t;
+    // Compass ring drawn flat on screen: an ellipse that opens up as the view
+    // tilts toward the top, with N / E / S / W where those directions point.
+    var RX = 46, RY = Math.max(9, RX * Math.cos(sp.phi)), cx = 50, cy = 50 + 30 * Math.sin(sp.phi) * 0.9, ring = $("agVcRing");
+    ring.style.cssText = "left:" + (cx - RX) + "px;top:" + (cy - RY) + "px;width:" + RX * 2 + "px;height:" + RY * 2 + "px";
+    Array.prototype.forEach.call(root.querySelectorAll(".vc-dir"), function (b) {
+      var a = { "h-n": Math.PI, "h-e": Math.PI / 2, "h-s": 0, "h-w": -Math.PI / 2 }[b.dataset.nav] - sp.theta;
+      var y = Math.cos(a);
+      b.style.left = (cx + (RX + 7) * Math.sin(a)) + "px"; b.style.top = (cy + (RY + 7) * y) + "px";
+      b.style.zIndex = y > -0.2 ? 3 : 0; // letters behind the cube go under it
+    });
+  }
+  function navStopLod() { if (realistic && G3) rebuildPlants(); }
+  function setPaint(m) {
+    paint = m;
+    Array.prototype.forEach.call(root.querySelectorAll("[data-paint]"), function (b) { b.classList.toggle("active", b.dataset.paint === m); });
+    if (view !== "2d") setView("2d"); else draw2d();
+  }
+  function wireMenus() {
+    var bar = root.querySelector(".ag-menubar"), open = null;
+    function shut() { if (open) open.classList.remove("open"); open = null; }
+    bar.addEventListener("click", function (e) {
+      var b = e.target.closest(".ag-menu-btn");
+      if (b) { var m = b.parentNode; if (open === m) shut(); else { shut(); m.classList.add("open"); open = m; } return; }
+      var a = e.target.closest("[data-act]");
+      if (!a) return;
+      shut();
+      var k = a.dataset.act, click = function (id) { var el = $(id); if (el) el.click(); };
+      if (k === "new") newStand();
+      else if (k === "open") click("agOpenP"); else if (k === "save") click("agSaveP");
+      else if (k === "imp") click("agImp"); else if (k === "exp") click("agExp"); else if (k === "topo") click("agTopo"); else if (k === "csv") click("agCsv");
+      else if (k === "close") close();
+      else if (k === "plant") click("agPlant"); else if (k === "click") click("agTool"); else if (k === "clear") click("agClear");
+      else if (k === "run") click("agRun"); else if (k === "step") click("agStep"); else if (k === "reset") click("agReset");
+      else if (k === "v2d") setView("2d"); else if (k === "v3d") setView("3d");
+      else if (k.indexOf("p-") === 0) setPaint(k.slice(2));
+      else if (k === "info") { showInfo = !showInfo; $("agShowInfo").checked = showInfo; if (view !== "2d") setView("2d"); else draw2d(); }
+      else if (k === "light") { showLight = !showLight; $("agLight").checked = showLight; if (view !== "2d") setView("2d"); else draw2d(); }
+    });
+    bar.addEventListener("mouseover", function (e) { var m = e.target.closest(".ag-menu"); if (open && m && m !== open) { shut(); m.classList.add("open"); open = m; } });
+    document.addEventListener("mousedown", function (e) { if (open && !e.target.closest(".ag-menubar")) shut(); });
+  }
+  // New stand: name and size of the plot, slope, and what to plant first.
+  function newStand() {
+    var back = document.createElement("div");
+    back.className = "ag-dlg-back";
+    back.innerHTML = '<form class="ag-dlg">' +
+      '<div class="ag-dlg-head"><b>New stand</b><span>Plot (stand) definition, as in SExI-FS</span></div>' +
+      '<label class="field-label">Stand name</label><input name="name" value="' + esc(P && P.name || "Kopi Gayo – lamtoro") + '">' +
+      '<div class="num-pair"><div><label class="field-label">Width X (m)</label><input name="w" type="number" min="10" max="400" value="100"></div><div><label class="field-label">Length Y (m)</label><input name="h" type="number" min="10" max="400" value="100"></div></div>' +
+      '<div class="num-pair"><div><label class="field-label">Slope (%)</label><input name="slope" type="number" min="0" max="100" value="0"></div><div><label class="field-label">Slope faces</label><select name="aspect"><option value="0">North (Y+)</option><option value="90">East (X+)</option><option value="180">South (Y−)</option><option value="270">West (X−)</option></select></div></div>' +
+      '<label class="field-label">Garden floor</label><select name="floor"><option value="grass">Grass</option><option value="soil">Bare soil</option><option value="litter">Leaf litter (serasah)</option><option value="rows">Soil under the rows, grass in the alleys</option></select>' +
+      '<label class="field-label">Start with</label><select name="start"><option value="ex40">Example: 40 plants (32 coffee, 8 lamtoro, paper densities), grown 5 years</option><option value="pattern">Coffee 2.5 × 2.5 m under lamtoro 5 × 5 m</option><option value="coffee">Coffee only, 2.5 × 2.5 m</option><option value="empty">An empty stand</option></select>' +
+      '<p class="ag-note">Trees can be added later by pattern, by clicking, or from a SExI-FS tree file.</p>' +
+      '<div class="ag-dlg-foot"><button type="button" data-cancel>Cancel</button><button type="submit" class="btn-primary">Create stand</button></div></form>';
+    root.appendChild(back);
+    var f = back.querySelector("form");
+    setTimeout(function () { f.elements.w.focus(); f.elements.w.select(); }, 50);
+    back.querySelector("[data-cancel]").addEventListener("click", function () { back.remove(); });
+    back.addEventListener("mousedown", function (e) { if (e.target === back) back.remove(); });
+    f.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = f.elements, w = clamp(+v.w.value || 100, 10, 400), h = clamp(+v.h.value || 100, 10, 400), slope = clamp(+v.slope.value || 0, 0, 100) / 100, asp = +v.aspect.value;
+      P = newProject(); P.name = v.name.value || P.name; P.w = w; P.h = h; P.floor = v.floor.value;
+      if (slope > 0) {
+        // A plane rising toward the chosen side, as SExI-FS topography points every 5 m.
+        var rows = ["X Y Altitude"];
+        for (var x = 0; x <= w; x += 5) for (var y = 0; y <= h; y += 5) {
+          var d = asp === 0 ? y : asp === 90 ? x : asp === 180 ? h - y : w - x;
+          rows.push(x + " " + y + " " + (d * slope).toFixed(2));
+        }
+        importTopo(rows.join("\n"));
+      }
+      if (v.start.value === "ex40") { example40(); crownIndices(); record(); for (var yy = 0; yy < 5; yy++) step(); }
+      else if (v.start.value !== "empty") plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false);
+      if (v.start.value === "pattern") plantPattern("lamtoro", 5, 5, 2.5, 2.5, true);
+      crownIndices(); record(); sel = null; info(); syncInputs(); save();
+      back.remove();
+      toast("Stand " + w + " × " + h + " m created");
+    });
+  }
   function build() {
     if (root) return;
     root = document.createElement("div");
@@ -544,6 +859,13 @@
         '<div class="ag-seg ag-views"><button data-view="2d" class="active">' + sym("grid_view") + '<span>2D plot</span></button><button data-view="3d">' + sym("view_in_ar") + "<span>3D</span></button></div>" +
         '<span class="ag-year" id="agYear">Year 0</span>' +
         '<button class="ag-close" title="Back to Home">' + sym("close") + "</button></header>" +
+      '<nav class="ag-menubar">' +
+        menu("File", [["new", "New stand…", "Ctrl+N"], ["open", "Open project…"], ["save", "Save project"], "-", ["imp", "Import trees (SExI-FS)…"], ["exp", "Export trees (SExI-FS)"], ["topo", "Import topography…"], "-", ["csv", "Export history (CSV)"], "-", ["close", "Close simulator"]]) +
+        menu("Stand", [["plant", "Plant pattern"], ["click", "Plant by clicking"], "-", ["clear", "Remove all trees"]]) +
+        menu("Simulation", [["run", "Run"], ["step", "One year"], ["reset", "Back to year 0"]]) +
+        menu("View", [["v2d", "2D plot"], ["v3d", "Virtual forest (3D)"], "-", ["p-outline", "Paint: outline"], ["p-opaque", "Paint: opaque"], ["p-transparent", "Paint: transparent"], ["p-shaded", "Paint: shaded"], "-", ["info", "Show info"], ["light", "Light map"]]) +
+        '<span class="ag-menu-stand" id="agStandLbl"></span>' +
+      "</nav>" +
       '<aside class="ag-left">' +
         '<section><h4>' + sym("crop_free") + 'Plot</h4><div class="num-pair"><div><label class="field-label">Width (m)</label><input type="number" id="agW" min="10" max="400"></div><div><label class="field-label">Length (m)</label><input type="number" id="agH" min="10" max="400"></div></div></section>' +
         '<section><h4>' + sym("grass") + 'Planting</h4>' +
@@ -572,10 +894,25 @@
           '<select id="agAddSp"><option value="">Add a species…</option>' + Object.keys(PRESETS).map(function (k) { return '<option value="' + k + '">' + esc(PRESETS[k].name) + "</option>"; }).join("") + "</select></section>" +
       "</aside>" +
       '<main class="ag-main"><div class="ag-view" id="agView2d"><canvas id="agCanvas"></canvas></div><div class="ag-view" id="agView3d" hidden></div>' +
-        '<div class="ag-float" id="agFloat2d"><label class="check-row"><input type="checkbox" id="agLight" checked>Light map (coffee layer)</label></div>' +
+        '<div class="ag-float" id="agFloat2d"><div class="ag-seg ag-paint">' + ["outline", "opaque", "transparent", "shaded"].map(function (m) { return '<button type="button" data-paint="' + m + '"' + (m === paint ? ' class="active"' : "") + ">" + m.charAt(0).toUpperCase() + m.slice(1) + "</button>"; }).join("") + "</div>" +
+          '<span class="ag-fsep"></span><label class="check-row"><input type="checkbox" id="agShowInfo">Show info</label><label class="check-row"><input type="checkbox" id="agLight">Light map</label></div>' +
         '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b>' +
-          '<span class="ag-fsep"></span><label class="check-row"><input type="checkbox" id="agReal" checked>Realistic</label><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
-          '<span class="ag-fsep"></span><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
+          '<span class="ag-fsep"></span><select id="agFloor" title="Garden floor"><option value="grass">Floor: grass</option><option value="soil">Floor: soil</option><option value="litter">Floor: leaf litter</option><option value="rows">Floor: soil rows, grass alleys</option></select><span class="ag-fsep"></span><div class="ag-seg ag-look"><button type="button" data-look="real" class="active">Realistic</button><button type="button" data-look="sexi">SExI-FS</button></div><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
+          '<span class="ag-fsep"></span><button type="button" data-cam="top" title="From above">' + sym("crop_free") + '</button><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
+        '<div class="ag-nav3d ag-vc" id="agNav3d" hidden>' +
+          '<button type="button" class="vc-home" data-nav="v-iso" title="Home view">' + sym("home") + '</button>' +
+          '<button type="button" class="vc-rot vc-rotl" data-nav="r-l" title="Rotate 90° left">' + sym("undo") + '</button>' +
+          '<button type="button" class="vc-rot vc-rotr" data-nav="r-r" title="Rotate 90° right">' + sym("redo") + '</button>' +
+          '<div class="vc-stage" id="agVcStage"><div class="vc-ring" id="agVcRing"></div><b class="vc-dir" data-nav="h-n">N</b><b class="vc-dir" data-nav="h-e">E</b><b class="vc-dir" data-nav="h-s">S</b><b class="vc-dir" data-nav="h-w">W</b><div class="vc-cube" id="agVcCube">' +
+            '<div class="vc-f vc-top" data-nav="v-top">TOP</div>' +
+            '<div class="vc-f vc-bottom" data-nav="v-bottom">BOTTOM</div>' +
+            '<div class="vc-f vc-front" data-nav="v-front">FRONT</div>' +
+            '<div class="vc-f vc-back" data-nav="v-back">BACK</div>' +
+            '<div class="vc-f vc-left" data-nav="v-left">LEFT</div>' +
+            '<div class="vc-f vc-right" data-nav="v-right">RIGHT</div>' +
+          '</div></div>' +
+          '<div class="vc-zoom"><button type="button" data-nav="zin" title="Zoom in (+)">' + sym("add") + '</button><button type="button" data-nav="zout" title="Zoom out (−)">' + sym("remove") + '</button></div>' +
+        "</div>" +
         '<div class="ag-info" id="agInfo" hidden></div></main>' +
       '<aside class="ag-right"><h4>' + sym("monitoring") + 'Plot summary</h4><div id="agStats"></div>' +
         '<p class="ag-note">Growth follows SExI-FS style species parameters; yield and carbon are indicative. Calibrate with your field data.</p></aside>';
@@ -583,7 +920,7 @@
 
     var saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { }
     P = saved && saved.trees ? saved : newProject();
-    if (!saved) { plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false); plantPattern("lamtoro", 5, 5, 2.5, 2.5, true); crownIndices(); record(); }
+    if (!saved) { P.name = "Example: 40 plants"; example40(); crownIndices(); record(); for (var yy = 0; yy < 5; yy++) { step(); } setTimeout(newStand, 300); }
     syncInputs();
 
     root.querySelector(".ag-close").addEventListener("click", close);
@@ -613,7 +950,45 @@
     $("agReset").addEventListener("click", function () { restore(0); redraw(); syncReplay(); });
     $("agReplay").addEventListener("input", function () { restore(+this.value); redraw(); });
     $("agLight").addEventListener("change", function () { showLight = this.checked; draw2d(); });
-    $("agReal").addEventListener("change", function () { realistic = this.checked; if (G3) build3d(); });
+    document.addEventListener("keydown", function (e) { if (root.classList.contains("show") && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); newStand(); } });
+    root.querySelector(".ag-look").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-look]"); if (!b) return;
+      look3d = b.dataset.look; realistic = look3d === "real";
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("active", x === b); });
+      if (G3) { build3d(); if (look3d === "sexi") camPreset("top"); }
+    });
+    var navHold = null;
+    function navStart(k) { nav(k); clearInterval(navHold); if (!/^v-|home/.test(k)) navHold = setInterval(function () { nav(k); }, 60); }
+    function navStop() { clearInterval(navHold); navHold = null; if (realistic && G3 && G3.lodAt && G3.cam.position.distanceTo(G3.lodAt) > 6) rebuildPlants(); }
+    $("agNav3d").addEventListener("mousedown", function (e) {
+      var b = e.target.closest("[data-nav]"); if (!b) return;
+      e.preventDefault();
+      if (!b.closest("#agVcStage")) { if (/^(v-|r-|h-)/.test(b.dataset.nav)) nav(b.dataset.nav); else navStart(b.dataset.nav); return; }
+      // On the cube: drag to orbit, click to pick a face or a compass letter.
+      var x0 = e.clientX, y0 = e.clientY, dragged = false;
+      function mv(ev) {
+        var dx = ev.clientX - x0, dy = ev.clientY - y0;
+        if (!dragged && Math.abs(dx) + Math.abs(dy) < 4) return;
+        dragged = true; x0 = ev.clientX; y0 = ev.clientY;
+        var tg = G3.ctl.target, sp = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(G3.cam.position, tg));
+        sp.theta -= dx * 0.012; sp.phi = clamp(sp.phi - dy * 0.012, 0.02, G3.ctl.maxPolarAngle);
+        G3.cam.position.setFromSpherical(sp).add(tg); G3.ctl.update();
+      }
+      function up() { document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); if (dragged) navStopLod(); else nav(b.dataset.nav); }
+      document.addEventListener("mousemove", mv); document.addEventListener("mouseup", up);
+    });
+    document.addEventListener("mouseup", function () { if (navHold) navStop(); });
+    var KEYS = { w: "up", arrowup: "up", s: "down", arrowdown: "down", a: "left", arrowleft: "left", d: "right", arrowright: "right", q: "rotl", e: "rotr", r: "tiltu", f: "tiltd", "+": "zin", "=": "zin", "-": "zout" };
+    document.addEventListener("keydown", function (e) {
+      if (!root.classList.contains("show") || view !== "3d" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input,select,textarea")) return;
+      var k = KEYS[e.key.toLowerCase()]; if (!k) return;
+      e.preventDefault(); nav(k);
+    });
+    document.addEventListener("keyup", function (e) { if (root.classList.contains("show") && view === "3d" && KEYS[e.key.toLowerCase()]) navStop(); });
+    $("agFloor").addEventListener("change", function () { P.floor = this.value; save(); if (G3) build3d(); });
+    root.querySelector(".ag-paint").addEventListener("click", function (e) { var b = e.target.closest("[data-paint]"); if (b) setPaint(b.dataset.paint); });
+    $("agShowInfo").addEventListener("change", function () { showInfo = this.checked; draw2d(); });
+    wireMenus();
     $("agFlower").addEventListener("change", function () { flowering = this.checked; if (G3) build3d(); });
     $("agFloat3d").addEventListener("click", function (e) { var b = e.target.closest("[data-cam]"); if (b) camPreset(b.dataset.cam); });
     $("agSun").addEventListener("input", function () { var h = +this.value; $("agSunLbl").textContent = String(Math.floor(h)).padStart(2, "0") + ":" + String(Math.round((h % 1) * 60)).padStart(2, "0"); setSun(h); });
@@ -673,7 +1048,8 @@
       "<span>Crown radius " + fmt(sel.r, 2) + " m · depth " + fmt(sel.depth, 1) + " m</span><span>Light (CP) " + fmt(sel.cp, 2) + " · crown form " + fmt(sel.cf, 2) + " · age " + sel.age + "</span><em>Delete removes this tree</em>";
   }
   function syncInputs() {
-    $("agW").value = P.w; $("agH").value = P.h;
+    $("agW").value = P.w; $("agH").value = P.h; $("agFloor").value = P.floor || "grass";
+    $("agStandLbl").textContent = (P.name || "Stand") + " · " + P.w + " × " + P.h + " m" + (P.topo ? " · with topography" : "");
     speciesForm();
     var ck = cropKey(); $("agPruneC").value = ck ? P.species[ck].prune : "";
     var sk = $("agPatSp2").value; $("agPruneS").value = P.species[sk] ? P.species[sk].prune : "";
@@ -685,7 +1061,7 @@
     view = v;
     Array.prototype.forEach.call(root.querySelectorAll(".ag-views [data-view]"), function (b) { b.classList.toggle("active", b.dataset.view === v); });
     $("agView2d").hidden = v !== "2d"; $("agView3d").hidden = v !== "3d";
-    $("agFloat2d").hidden = v !== "2d"; $("agFloat3d").hidden = v !== "3d";
+    $("agFloat2d").hidden = v !== "2d"; $("agFloat3d").hidden = v !== "3d"; $("agNav3d").hidden = v !== "3d";
     if (v === "3d") ensure3d().then(build3d).catch(function (e) { toast(e.message); setView("2d"); });
     else draw2d();
   }
@@ -709,5 +1085,5 @@
     for (var i = 0; i < (n || 10); i++) { G3.r.render(G3.scene, G3.cam); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); }
     return (performance.now() - t0) / (n || 10);
   }
-  window.PlootsAgro = { bench: bench, open: open, close: close, importSexi: function (t) { var r = importSexi(t); crownIndices(); record(); redraw(); return r; }, exportSexi: function () { return exportSexi(); }, step: function () { step(); redraw(); }, stats: function () { return stats(); }, project: function () { return P; } };
+  window.PlootsAgro = { bench: bench, open: open, close: close, importSexi: function (t) { var r = importSexi(t); crownIndices(); record(); redraw(); return r; }, exportSexi: function () { return exportSexi(); }, step: function () { step(); redraw(); }, stats: function () { return stats(); }, project: function () { return P; }, setView: function (v) { setView(v); }, camPreset: function (k) { camPreset(k); }, goYear: function (y) { restore(y); redraw(); }, renderer: function () { return G3 && G3.r; }, view3d: function () { return G3; } };
 })();

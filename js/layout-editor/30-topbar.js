@@ -82,6 +82,8 @@
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
   window.addEventListener('resize', closeMenu);
+  // Switching views (Data / Layout, Chart / Map) closes an open menu.
+  new MutationObserver(function () { if (menu.classList.contains('open')) closeMenu(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   function item(v, icon, text, checked, extra) {
     return '<button type="button" class="tb-item' + (checked ? ' checked' : '') + '" data-v="' + esc(v) + '">' +
@@ -159,10 +161,12 @@
     openMenu(addBtn,
       item('vector', sym('polyline'), 'Vector (GeoJSON, TopoJSON)') + item('raster', sym('grid_on'), 'Raster (GeoTIFF)') +
       item('xyz', sym('travel_explore'), 'XYZ tiles') + item('url', sym('link'), 'From URL or text') +
-      '<div class="tb-sep"></div>' + item('catalog', sym('travel_explore'), 'Data catalog (GFW, government, GBIF…)') + item('sample', sym('public'), 'Sample layer'),
+      '<div class="tb-sep"></div>' + item('catalog', sym('travel_explore'), 'Data catalog (GFW, government, GBIF…)') + item('sample', sym('public'), 'Sample layer') +
+      (GIS.native && GIS.native.available ? '<div class="tb-sep"></div>' + item('native', sym('bolt'), 'Big file, native (fast)…') : ''),
       function (v) {
         if (v === 'vector' || v === 'raster') { var inp = $(v === 'vector' ? 'gisVectorFile' : 'gisRasterFile'); if (inp) inp.click(); return; }
         if (v === 'sample') { GIS.loadSampleLayer(); return; }
+        if (v === 'native') { GIS.native.pick(); return; }
         if (v === 'catalog') { GIS.openCatalog(); return; }
         if (GIS.openAddForm) { GIS.openAddForm(v); return; }
         mapPanel();
@@ -236,6 +240,7 @@
   var exportBtn = document.createElement('button');
   exportBtn.type = 'button';
   exportBtn.className = 'btn-primary tb-export';
+  exportBtn.title = 'Export';
   exportBtn.innerHTML = '<span class="material-symbols-outlined">ios_share</span>Export';
   exportBtn.addEventListener('click', function () { activateSidebarPanel('panel-export'); });
   if (right) right.insertBefore(exportBtn, right.firstChild);

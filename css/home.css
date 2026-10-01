@@ -1,0 +1,44 @@
+/* Home: three wide cards with animated thumbnails (js/home-thumbs.js). */
+.home-card-wrap { width: min(980px, 94vw) !important; }
+.home-card { padding: 14px 14px 16px !important; gap: 8px !important; border-radius: 16px !important; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.home-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important; box-shadow: 0 18px 40px rgba(0, 0, 0, .22), inset 0 1px 0 var(--g-edge) !important; }
+.home-thumb { position: relative; height: 150px; border-radius: 11px; overflow: hidden; margin-bottom: 4px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px var(--g-line); }
+.home-thumb svg { width: 100%; height: 100%; display: block; }
+.home-card .home-icon { display: none; }
+.home-card h2 { display: flex; align-items: center; gap: 8px; margin: 4px 2px 0; }
+.home-card p { margin: 0 2px; }
+
+/* The loop: 6 s for every card. */
+.ht-slot { width: 100%; height: 100%; }
+.ht * { transform-box: fill-box; }
+.ht-t { font: 500 7px Inter, Arial, sans-serif; fill: #444; }
+
+/* Chart: the sample grouped bars grow in, settle, and fall back */
+.ht-gl { stroke: #000; opacity: .08; stroke-width: .6; }
+.ht-ax { stroke: #1a1a1a; stroke-width: .8; }
+.ht-bar { transform-origin: 50% 100%; animation: htBar 6s var(--d) ease-in-out infinite; }
+@keyframes htBar { 0%, 4% { transform: scaleY(0); } 30%, 82% { transform: scaleY(1); } 96%, 100% { transform: scaleY(0); } }
+
+/* Map: the sample countries fill with their YlGn class one by one */
+.ht-cty { fill: #f4f6ef; stroke: #fff; stroke-width: .6; stroke-linejoin: round; animation: htChoro 6s var(--d) ease-in-out infinite; }
+@keyframes htChoro { 0%, 5% { fill: #f4f6ef; } 25%, 85% { fill: var(--c); } 100% { fill: #f4f6ef; } }
+.ht-lbl { font: 600 6.5px Inter, Arial, sans-serif; fill: #1f2d16; paint-order: stroke; stroke: rgba(255,255,255,.8); stroke-width: 1.6px; }
+.ht-pin { fill: #4e8a2e; stroke: #fff; stroke-width: 1; transform-origin: center; animation: htPop 6s var(--d) ease-out infinite; }
+@keyframes htPop { 0%, 30% { transform: scale(0); } 36%, 86% { transform: scale(1); } 94%, 100% { transform: scale(0); } }
+.ht-pulse { fill: #4e8a2e; opacity: 0; transform-origin: center; animation: htPulse 2s var(--d) ease-out infinite; }
+@keyframes htPulse { 0% { transform: scale(.2); opacity: .5; } 100% { transform: scale(1.6); opacity: 0; } }
+
+/* Agroforestry: the simulator's 3D eye-level view, years 1 -> 3 -> 6 */
+.ht-agro3d { position: relative; width: 100%; height: 100%; overflow: hidden; background: #cfd9c8; }
+.ht-agro3d img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; animation: htWalk 6s var(--d) ease-in-out infinite; }
+@keyframes htWalk { 0% { opacity: 0; transform: scale(1); } 8%, 33% { opacity: 1; } 42%, 100% { opacity: 0; transform: scale(1.12); } }
+.ht-yr3 { position: absolute; top: 7px; right: 8px; padding: 2px 8px; border-radius: 999px; font: 700 10.5px Inter, Arial, sans-serif; color: #fff; background: rgba(63, 116, 36, .82); opacity: 0; animation: htYr3 6s var(--d) steps(1) infinite; }
+@keyframes htYr3 { 0% { opacity: 1; } 33.3%, 100% { opacity: 0; } }
+.ht-cam { position: absolute; left: 8px; bottom: 7px; padding: 2px 7px; border-radius: 6px; font: 600 9.5px Inter, Arial, sans-serif; color: #fff; background: rgba(0, 0, 0, .38); backdrop-filter: blur(4px); }
+
+@media (prefers-reduced-motion: reduce) { .ht * { animation: none !important; } }
+@media (max-width: 900px) { .home-thumb { height: 120px; } }
+.ht-video { width: 100%; height: 100%; object-fit: cover; display: block; background: #050505; }
+/* three Home cards (was in css/agro.css, which now loads with the simulator) */
+.home-cards { grid-template-columns: repeat(3, 1fr) !important; }
+@media (max-width: 900px) { .home-cards { grid-template-columns: 1fr !important; } }

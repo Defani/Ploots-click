@@ -223,6 +223,47 @@
     try { return fn.apply(null, args || []); } finally { M = prev; }
   }
   function views() { return [LAYOUT, ANALYSIS].filter(Boolean); }
+  // 3D terrain: the Mapzen / AWS Terrarium elevation under any basemap and
+  // layer, tilted; kept across basemap changes (style.load).
+  function applyTerrain(V) {
+    var map = V.map;
+    if (!map.getSource("gcs-terrain")) map.addSource("gcs-terrain", { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15, attribution: "Terrain: Mapzen / AWS" });
+    map.setTerrain({ source: "gcs-terrain", exaggeration: V.terrainX || 1.5 });
+  }
+  function setTerrain(V, on, x) {
+    V.terrain = !!on;
+    if (x) V.terrainX = x;
+    var b = V.tools && V.tools.querySelector('[data-act="terrain"]');
+    if (b) b.classList.toggle("active", V.terrain);
+    if (!V.map.isStyleLoaded()) { setTimeout(function () { setTerrain(V, V.terrain); }, 200); return; }
+    if (V.terrain) { applyTerrain(V); if (V.map.getPitch() < 30) V.map.easeTo({ pitch: 60, duration: 900 }); }
+    else { V.map.setTerrain(null); V.map.easeTo({ pitch: 0, duration: 700 }); }
+  }
+  // 3D globe (MapLibre globe projection), as in GeoLibre.
+  function setGlobe(V, on) {
+    V.globe = !!on;
+    var b = V.tools && V.tools.querySelector('[data-act="globe"]');
+    if (b) b.classList.toggle("active", V.globe);
+    if (!V.map.isStyleLoaded()) { setTimeout(function () { setGlobe(V, V.globe); }, 200); return; }
+    V.map.setProjection({ type: V.globe ? "globe" : "mercator" });
+    // Atmosphere around the globe, and a slow spin while zoomed out (as
+    // GeoLibre's spinning globe), paused by any interaction.
+    if (V.map.setSky) V.map.setSky(V.globe ? { "sky-color": "#0b1a2a", "horizon-color": "#2a4d6e", "fog-color": "#0a0f14", "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 5, 1, 7, 0] } : {});
+    if (V.globe && !V.spin) {
+      V.spin = true;
+      var last = 0, stop = function () { V.spinHold = Date.now() + 4000; };
+      ["mousedown", "touchstart", "wheel"].forEach(function (ev) { V.map.getCanvasContainer().addEventListener(ev, stop, { passive: true }); });
+      (function frame(ts) {
+        if (!V.globe) { V.spin = false; return; }
+        requestAnimationFrame(frame);
+        var dt = last ? (ts - last) / 1000 : 0; last = ts;
+        if (V.spinOff || V.map.getZoom() > 3.5 || V.map.isMoving() || Date.now() < (V.spinHold || 0)) return;
+        var c = V.map.getCenter(); c.lng -= 6 * dt; V.map.jumpTo({ center: c });
+      })(0);
+    }
+  }
+  GIS.globe = function (on, opts) { var v = activeView(); if (v) { v.spinOff = !!(opts && opts.spin === false); setGlobe(v, on == null ? !v.globe : on); } return !!(v && v.globe); };
+  GIS.terrain = function (on, exaggeration) { var v = activeView(); if (v) setTerrain(v, on == null ? !v.terrain : on, exaggeration); return !!(v && v.terrain); };
   function activeView() { return document.body.classList.contains("gis-analysis") && ANALYSIS ? ANALYSIS : LAYOUT; }
   // Map actions (tools, zooms, selection) act on the view on screen.
   function onActive(fn) { return function () { return inView(activeView(), fn, arguments); }; }
@@ -268,6 +309,8 @@
       '<button data-act="clear-sel" title="Clear selection"><span class="material-symbols-outlined">deselect</span></button>' +
       '<button data-act="prev" title="Previous extent"><span class="material-symbols-outlined">undo</span></button>' +
       '<button data-act="next" title="Next extent"><span class="material-symbols-outlined">redo</span></button>' +
+      '<span class="gis-tools-sep"></span><button data-act="terrain" title="3D terrain (Mapzen / AWS elevation)"><span class="material-symbols-outlined">landscape</span></button>' +
+      '<button data-act="globe" title="3D globe"><span class="material-symbols-outlined">public</span></button>' +
       (opts.analysis ? "" : '<span class="gis-tools-sep"></span><button data-act="done" class="gis-done">Done</button>');
     var box = document.createElement("div");
     box.className = "gis-select-box";
@@ -282,7 +325,7 @@
     var mopts = {
       container: mapDiv, style: styleFor(viewBasemap({ analysis: !!opts.analysis })), attributionControl: opts.analysis ? { compact: true } : false,
       canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },
-      preserveDrawingBuffer: true, fadeDuration: 0, pixelRatio: window.devicePixelRatio || 1
+      preserveDrawingBuffer: true, fadeDuration: 0, pixelRatio: window.devicePixelRatio || 1, maxPitch: 75
     };
     if (view) { mopts.center = view.center; mopts.zoom = view.zoom; mopts.bearing = view.bearing || 0; mopts.pitch = view.pitch || 0; }
     var map = new maplibregl.Map(mopts);
@@ -292,7 +335,7 @@
     map.boxZoom.disable();
     map.doubleClickZoom.disable();
 
-    map.on("style.load", run(function () { M.keys = {}; applyLayers(); drawMeasure(); }));
+    map.on("style.load", run(function () { M.keys = {}; applyLayers(); drawMeasure(); if (V.terrain) applyTerrain(V); if (V.globe) V.map.setProjection({ type: "globe" }); }));
     map.on("load", run(function () {
       M.loaded = true;
       if (!view) fitAll();
@@ -324,6 +367,8 @@
       else if (b.dataset.act === "zoom-full") fitAll();
       else if (b.dataset.act === "prev") stepExtent(-1);
       else if (b.dataset.act === "next") stepExtent(1);
+      else if (b.dataset.act === "terrain") setTerrain(V, !V.terrain);
+      else if (b.dataset.act === "globe") setGlobe(V, !V.globe);
       else if (b.dataset.act === "zoom-sel") zoomToSelection();
       else if (b.dataset.act === "clear-sel") clearSelection();
     }));
@@ -614,7 +659,7 @@
   function frameInset() {
     var s = state, z = { l: 0, t: 0, r: 0, b: 0 };
     if (!s.mapGrid || s.mapGridLabelPos !== "outside" || s.mapGridLabels === "none") return z;
-    var m = Math.round((s.mapGridFontSize || 9) + 10);
+    var m = Math.round((s.mapGridFontSize || 9) + 5); // just the label and a small gap
     z.l = z.b = m;
     if (s.mapGridLabels === "all") z.t = z.r = m;
     return z;
@@ -631,6 +676,7 @@
     var d = Math.floor(a + 1e-9), mf = (a - d) * 60, m = Math.floor(mf + 1e-9), sec = Math.round((mf - m) * 60);
     if (sec === 60) { sec = 0; m++; }
     if (m === 60) { m = 0; d++; }
+    if (state.mapGridFormat === "dmsfull") return d + "°" + String(m).padStart(2, "0") + "′" + String(sec).padStart(2, "0") + "″" + hemi;
     return d + "°" + (m || sec ? String(m).padStart(2, "0") + "′" : "") + (sec ? String(sec).padStart(2, "0") + "″" : "") + hemi;
   }
   function utmLabel(v, axis) {
@@ -730,7 +776,7 @@
     function label(txt, side, p) {
       var t = g.append("text").attr("font-size", fs).attr("font-family", font).attr("fill", "#1a1a1a").text(txt);
       if (!outside) t.attr("stroke", "rgba(255,255,255,0.9)").attr("stroke-width", 2.5).attr("paint-order", "stroke");
-      var gap = outside ? 6 : 3, tick = 4;
+      var gap = outside ? 3 : 3, tick = 4;
       if (outside) {
         var tk = side === "left" ? [x0, p[1], x0 - tick, p[1]] : side === "right" ? [x1, p[1], x1 + tick, p[1]] : side === "top" ? [p[0], y0, p[0], y0 - tick] : [p[0], y1, p[0], y1 + tick];
         g.append("line").attr("x1", tk[0]).attr("y1", tk[1]).attr("x2", tk[2]).attr("y2", tk[3]).attr("stroke", "#1a1a1a").attr("stroke-width", 0.8);
@@ -1054,6 +1100,23 @@
   GIS.setRotation = function (deg) { inView(LAYOUT, function () { if (!M) return; M.map.setBearing(-(+deg || 0)); saveView(); emitView(true); }); };
   GIS.getRotation = function () { return inView(LAYOUT, function () { return M ? -M.map.getBearing() : 0; }) || 0; };
 
+  // The first data layer of an empty map: both views go to it (a saved view
+  // from an earlier session would otherwise leave the map somewhere else).
+  var dataCount = 0;
+  GIS.on("layers", function () {
+    var n = GIS.layers.filter(function (l) { return l.kind !== "xyz"; }).length;
+    if (dataCount === 0 && n > 0 && !GIS.restoring) setTimeout(function () {
+      [ANALYSIS, LAYOUT].forEach(function (V) { if (V && V.loaded) inView(V, function () { fitAll(); if (!V.analysis) { saveView(); emitView(true); } }); });
+    }, 120);
+    dataCount = n;
+  });
+
+  // Opening a project: both views go back to their saved extents.
+  GIS.applyViews = function (analysisView) {
+    if (LAYOUT && LAYOUT.loaded && state.mapView) inView(LAYOUT, function () { M.map.jumpTo({ center: state.mapView.center, zoom: state.mapView.zoom, bearing: state.mapView.bearing || 0, pitch: state.mapView.pitch || 0 }); emitView(true); });
+    if (ANALYSIS && ANALYSIS.loaded && analysisView) ANALYSIS.map.jumpTo(analysisView);
+  };
+
   GIS.mapActions = {
     // Move mode is the layout map's; the analysis map is always live.
     setInteractive: function (on) { return inView(LAYOUT, setInteractive, [on]); },
@@ -1095,31 +1158,74 @@
 
   /* ------------------------------------------------------------ export */
 
+  // A small "loading" card while an export waits for the map.
+  function exportWait(on, msg) {
+    var el = document.getElementById("gcsExportWait");
+    if (!on) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement("div"); el.id = "gcsExportWait"; el.className = "gcs-export-wait";
+      el.innerHTML = '<div class="gew-card"><span class="gew-spin"></span><b>Preparing the map for export</b><span class="gew-msg"></span></div>';
+      document.body.appendChild(el);
+    }
+    el.querySelector(".gew-msg").textContent = msg || "";
+  }
+  GIS.exportWait = exportWait;
+
+  // Export: the map is drawn again at the export resolution and captured once
+  // every tile has loaded. Raster tiles (imagery, topo, GFW, Earth Engine…)
+  // are fetched one or two zoom levels deeper (a smaller tile size), so they
+  // are as sharp as the vector layers instead of stretched.
   function exportSvg(scale) {
     if (!M) return Promise.reject(new Error("Map not ready."));
-    var map = M.map, W = state.chartBox.w, H = state.chartBox.h, ir = innerRect(W, H);
+    var V = M, map = M.map, W = state.chartBox.w, H = state.chartBox.h, ir = innerRect(W, H);
     var prev = map.getPixelRatio();
     var ratio = Math.max(1, Math.min(scale || 2, 8192 / Math.max(W, H)));
-    M.exporting = true;
+    var tileRatio = Math.min(ratio, 4), restore = null;
+    V.exporting = true;
+    exportWait(true, "Loading the map at " + Math.round(ratio * 96) + " dpi…");
     return new Promise(function (resolve) {
-      var finished = false;
+      var finished = false, started = Date.now(), poll = 0;
       function capture() {
         if (finished) return;
         finished = true;
+        clearInterval(poll);
         var url;
         try { url = map.getCanvas().toDataURL("image/png"); } catch (e) { url = ""; }
-        M.exporting = false;
-        map.setPixelRatio(prev);
-        drawOverlay();
-        var inner = new XMLSerializer().serializeToString(M.overlay).replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "");
-        resolve('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
-          (url ? '<image x="' + ir.x + '" y="' + ir.y + '" width="' + ir.w + '" height="' + ir.h + '" preserveAspectRatio="none" href="' + url + '" xlink:href="' + url + '"/>' : "") +
-          inner + "</svg>");
+        inView(V, function () {
+          V.exporting = false;
+          map.setPixelRatio(prev);
+          if (restore) { try { map.setStyle(restore, { diff: true }); } catch (e) { } }
+          drawOverlay();
+          var inner = new XMLSerializer().serializeToString(M.overlay).replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "");
+          exportWait(false);
+          resolve('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
+            (url ? '<image x="' + ir.x + '" y="' + ir.y + '" width="' + ir.w + '" height="' + ir.h + '" preserveAspectRatio="none" href="' + url + '" xlink:href="' + url + '"/>' : "") +
+            inner + "</svg>");
+        });
       }
       map.setPixelRatio(ratio);
-      map.once("idle", capture);
+      if (tileRatio > 1.01) {
+        try {
+          var st = map.getStyle(), changed = false;
+          Object.keys(st.sources || {}).forEach(function (k) {
+            var src = st.sources[k];
+            if (src.type === "raster") { src.tileSize = Math.max(64, Math.round((src.tileSize || 512) / tileRatio)); changed = true; }
+          });
+          if (changed) { restore = map.getStyle(); map.setStyle(st, { diff: true }); }
+        } catch (e) { restore = null; }
+      }
       map.triggerRepaint();
-      setTimeout(capture, 10000);
+      // Ready when the style and every tile in view have loaded (and stay so).
+      var steady = 0;
+      poll = setInterval(function () {
+        var ok = false;
+        try { ok = map.isStyleLoaded() && map.areTilesLoaded() && map.loaded(); } catch (e) { ok = false; }
+        steady = ok ? steady + 1 : 0;
+        var secs = Math.round((Date.now() - started) / 1000);
+        exportWait(true, ok ? "Almost ready…" : "Loading map tiles… " + secs + " s");
+        if (steady >= 3) map.once("idle", capture), map.triggerRepaint();
+        if (Date.now() - started > 45000) capture();
+      }, 250);
     });
   }
 

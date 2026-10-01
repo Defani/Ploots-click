@@ -82,6 +82,8 @@
       (listeners[evt] || []).concat(listeners["*"] || []).forEach(function (fn) { try { fn(arg, evt); } catch (e) { console.error(e); } });
     },
 
+    // After opening a project: new ids continue after the loaded ones.
+    reserveIds: function (layerNum, mapNum) { nextId = Math.max(nextId, (layerNum || 0) + 1); nextMap = Math.max(nextMap, (mapNum || 0) + 1); },
     get: function (id) { return GIS.layers.filter(function (l) { return l.id === id; })[0] || null; },
 
     /* ------------------------------------------------------------ maps */
@@ -313,6 +315,7 @@
         if (!l.visible) return;
         if (l.kind === "vector") l.data.features.forEach(function (f) { walk(f.geometry.coordinates); });
         else if (l.kind === "raster") l.raster.coordinates.forEach(function (c) { xs.push(c[0]); ys.push(c[1]); });
+        else if (l.bbox) { xs.push(l.bbox[0], l.bbox[2]); ys.push(l.bbox[1], l.bbox[3]); } // native / tile layers with a known extent
       });
       if (!xs.length) return null;
       return [[d3.min(xs), d3.min(ys)], [d3.max(xs), d3.max(ys)]];

@@ -37,7 +37,8 @@
     tif: ["grid_on", "GeoTIFF"], tiff: ["grid_on", "GeoTIFF"],
     png: ["image", "Image"], jpg: ["image", "Image"], jpeg: ["image", "Image"], gif: ["image", "Image"], webp: ["image", "Image"], svg: ["image", "Image"],
     shp: ["polyline", "Shapefile"], kml: ["travel_explore", "KML"], kmz: ["travel_explore", "KMZ"], gpx: ["route", "GPX track"],
-    zip: ["folder_zip", "Zip (plugin or shapefile)"]
+    zip: ["folder_zip", "Zip (plugin or shapefile)"],
+    gcsproj: ["map", "GIS Consultant Studio project"]
   };
   // Shapefile sidecars, hidden when their .shp is in the same folder.
   var SIDECAR = /\.(shx|dbf|prj|cpg|sbn|sbx|qix|fix|shp\.xml|qmd)$/i;
@@ -379,6 +380,9 @@
       case "png": case "jpg": case "jpeg": case "gif": case "webp": case "svg":
         // Images go on the page, in either workspace.
         if (typeof addImageObjectFromFile === "function") addImageObjectFromFile(file); return;
+      case "gcsproj":
+        if (!window.PlootsGIS || !window.PlootsGIS.project) throw new Error("Projects are not loaded.");
+        return window.PlootsGIS.project.openFile(file);
       case "zip":
         if (!window.PlootsPlugins) throw new Error("Plugins are not loaded.");
         return file.arrayBuffer().then(window.PlootsPlugins.readZip).then(function (files) {
@@ -386,7 +390,7 @@
           return addLayers([file]);
         });
       default:
-        throw new Error("Ploots Click cannot open ." + (ext || "this") + " files.");
+        throw new Error("GIS Consultant Studio cannot open ." + (ext || "this") + " files.");
     }
   }
 
