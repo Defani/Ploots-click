@@ -82,6 +82,8 @@
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
   window.addEventListener('resize', closeMenu);
+  // Switching views (Data / Layout, Chart / Map) closes an open menu.
+  new MutationObserver(function () { if (menu.classList.contains('open')) closeMenu(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   function item(v, icon, text, checked, extra) {
     return '<button type="button" class="tb-item' + (checked ? ' checked' : '') + '" data-v="' + esc(v) + '">' +

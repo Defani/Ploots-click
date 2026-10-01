@@ -386,15 +386,34 @@
     if (GIS.processing && GIS.processing.build) GIS.processing.build(mapBtn);
   }
   // Panels that used to open "panel-map" for layers or styling now open these.
-  GIS.openLayersPanel = function () { if (GIS.enterMapMode) GIS.enterMapMode(); buildPanels(); showTab("layers"); };
-  GIS.openStylingPanel = function () { if (GIS.enterMapMode) GIS.enterMapMode(); buildPanels(); showTab("style"); };
+  // From Layout view the layer list and styling are in Data view (the layout's own Items tab lists the layers too).
+  GIS.openLayersPanel = function () { if (GIS.enterMapMode) GIS.enterMapMode(); if (view !== "analysis") setGisView("analysis"); buildPanels(); showTab("layers"); };
+  GIS.openStylingPanel = function () { if (GIS.enterMapMode) GIS.enterMapMode(); if (view !== "analysis") setGisView("analysis"); buildPanels(); showTab("style"); };
 
   function toast(m) { if (window.PlootsKobo && window.PlootsKobo.toast) window.PlootsKobo.toast(m); }
 
   /* -------------------------------------------------------------- boot */
 
+  // In Layout view the left sidebar is hidden (QGIS's layout window has no
+  // data panels). A menu that opens one of them from there (Add layer, Data
+  // catalog, GFW, Kobo…) goes to Data view first, so the panel is never
+  // opened out of sight; the layout's own panels show in the right dock.
+  function hookPanels() {
+    if (window._gcsPanelHook || typeof window.activateSidebarPanel !== "function") return;
+    window._gcsPanelHook = true;
+    var base = window.activateSidebarPanel;
+    window.activateSidebarPanel = function (id) {
+      if (document.body.classList.contains("gis-carto")) {
+        var el = document.getElementById(id), dockPane = el && el.closest("#cartoDock .cd-pane");
+        if (dockPane) { var t = document.querySelector('#cartoDock .cd-tabs [data-t="' + dockPane.dataset.t + '"]'); if (t) t.click(); return; }
+        setGisView("analysis");
+      }
+      return base.apply(this, arguments);
+    };
+  }
+
   function boot() {
-    buildPane(); buildSeg(); buildPanels(); hookSetView();
+    buildPane(); buildSeg(); buildPanels(); hookSetView(); hookPanels();
     // Follow the map workspace switching on and off.
     new MutationObserver(function () {
       var gis = isGis();

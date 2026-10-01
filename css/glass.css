@@ -151,7 +151,7 @@ button:disabled { opacity: .45; cursor: default; }
 }
 
 /* Top bar groups and buttons. */
-#mainTools .tool-group { background: var(--g-hover) !important; border: 1px solid var(--g-line); border-radius: var(--g-radius) !important; }
+#mainTools .tool-group { background: transparent !important; border: 0; border-radius: var(--g-radius) !important; }
 .tool-btn { border-radius: var(--g-radius-sm) !important; }
 .tb-btn { height: var(--g-ctl) !important; border-radius: var(--g-radius-sm) !important; }
 .tool-btn:hover, .tb-btn:hover { background: var(--g-hover) !important; }
@@ -512,3 +512,131 @@ body.gis-carto #tfbMini { display: none !important; }
 .gee-code-head { display: flex; align-items: center; }
 .gee-code-head .ss-icon { margin-left: auto; width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--ink-soft); border-radius: 6px; cursor: pointer; }
 .gee-code-head .ss-icon:hover { color: var(--accent); background: var(--g-hover); }
+
+/* Dock tabs: the hide button keeps its own small width, so "Layer styling" fits. */
+.gisw-dock-tabs > .gisw-dock-hide { flex: none !important; width: 26px !important; padding: 0 !important; }
+.gisw-dock-tabs > button > span:not(.material-symbols-outlined) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The AI button sits beside the right dock, never on top of it (js/tooltip.js sets --right-dock). */
+body.gis-mode .pb-launch { right: calc(var(--right-dock, 0px) + 18px) !important; transition: right .25s; }
+body.gis-mode .pb-chat { right: calc(var(--right-dock, 0px) + 18px) !important; }
+
+/* ==========================================================================
+   Glass everywhere (dark theme): light-tinted frosted panes over a coloured
+   field, instead of near-black slabs. Floating things (menus, dialogs) keep
+   a little more body so text stays easy to read.
+   ========================================================================== */
+html[data-theme=dark] {
+  --g-field: #0a0f0d;
+  --g-glass: rgba(255, 255, 255, .055);
+  --g-glass-strong: rgba(34, 42, 39, .72);
+  --g-edge: rgba(255, 255, 255, .12);
+  --g-line: rgba(255, 255, 255, .09);
+  --g-line-strong: rgba(255, 255, 255, .16);
+  --g-hover: rgba(255, 255, 255, .07);
+  --g-input: rgba(255, 255, 255, .06);
+  --g-blur: 22px;
+}
+html[data-theme=dark] body {
+  background-image:
+    radial-gradient(55vw 55vh at 6% -5%, rgba(110, 180, 70, .30), transparent 70%),
+    radial-gradient(45vw 50vh at 100% 15%, rgba(60, 170, 150, .20), transparent 70%),
+    radial-gradient(60vw 55vh at 55% 112%, rgba(220, 150, 40, .16), transparent 70%),
+    radial-gradient(40vw 40vh at 30% 60%, rgba(78, 138, 46, .10), transparent 70%) !important;
+}
+/* Surfaces that were solid: the rail, the canvas stage, scrollbars, small toolbars, docks. */
+html[data-theme=dark] .sidebar-container,
+html[data-theme=dark] .lt-tools,
+html[data-theme=dark] #cartoDock, html[data-theme=dark] .carto-dock,
+html[data-theme=dark] .gisw-status, html[data-theme=dark] #gisStatusBar,
+html[data-theme=dark] #canvasZoomBar, html[data-theme=dark] .canvas-zoom-bar,
+html[data-theme=dark] .ag-left, html[data-theme=dark] .ag-right, html[data-theme=dark] .ag-menubar, html[data-theme=dark] .ag-top {
+  background: var(--g-glass) !important;
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(170%);
+  backdrop-filter: blur(var(--g-blur)) saturate(170%);
+  border-color: var(--g-line) !important;
+}
+html[data-theme=dark] #canvasScroll, html[data-theme=dark] .canvas-scroll { background: transparent !important; }
+html[data-theme=dark] .canvas-hscroll, html[data-theme=dark] .canvas-vscroll { background: rgba(255, 255, 255, .03) !important; }
+/* Top bar: icons straight on the glass, no blocks behind groups or buttons. */
+.topbar .tool-group, .topbar .tb-group, .topbar [class*="tool-group"], .topbar .carto-bar, .topbar .arc-tools, .topbar .arc-insert {
+  background: transparent !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+.topbar .tool-btn, .topbar .tool-group button, .topbar .theme-toggle-btn, .topbar .carto-bar button, .cp-close {
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
+}
+.topbar .tool-btn:hover, .topbar .tool-group button:hover, .topbar .theme-toggle-btn:hover, .topbar .carto-bar button:hover, .cp-close:hover { background: var(--g-hover) !important; }
+.topbar .tool-btn.active, .topbar .tool-btn.on, .topbar .tool-group button.active, .topbar .tool-group button.on { background: var(--accent-soft) !important; color: var(--accent) !important; }
+/* A thin light top edge on the panes, like glass. */
+html[data-theme=dark] .topbar, html[data-theme=dark] .gisw-dock, html[data-theme=dark] #cartoDock,
+html[data-theme=dark] .sidebar-nav, html[data-theme=dark] .sidebar { box-shadow: inset 0 1px 0 var(--g-edge) !important; }
+/* Menus, popovers and dialogs: frosted, a little more opaque. */
+html[data-theme=dark] .gis-ctx, html[data-theme=dark] .tb-menu, html[data-theme=dark] .gis-dlg,
+html[data-theme=dark] .ag-dlg, html[data-theme=dark] .help-search-panel, html[data-theme=dark] .cp-popover {
+  background: var(--g-glass-strong) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid var(--g-line-strong) !important;
+  box-shadow: var(--g-shadow-float), inset 0 1px 0 var(--g-edge) !important;
+}
+/* Fields: glass, not black or white. */
+html[data-theme=dark] .sidebar input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+html[data-theme=dark] .sidebar select, html[data-theme=dark] .sidebar textarea,
+html[data-theme=dark] #cartoDock input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+html[data-theme=dark] #cartoDock select, html[data-theme=dark] #cartoDock textarea,
+html[data-theme=dark] .gisw-dock input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+html[data-theme=dark] .gisw-dock select, html[data-theme=dark] .gisw-dock textarea,
+html[data-theme=dark] .gis-dlg input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+html[data-theme=dark] .gis-dlg select, html[data-theme=dark] .gis-dlg textarea,
+html[data-theme=dark] .agro-app input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+html[data-theme=dark] .agro-app select {
+  background-color: var(--g-input) !important;
+  border-color: var(--g-line-strong) !important;
+  color: var(--ink) !important;
+}
+/* Colour inputs: just the colour, in a glass frame (no white box). */
+input[type=color] { -webkit-appearance: none; appearance: none; background: transparent !important; border: 1px solid var(--g-line-strong) !important; border-radius: 7px !important; padding: 3px !important; cursor: pointer; }
+input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type=color]::-webkit-color-swatch { border: 0; border-radius: 4px; }
+input[type=color]::-moz-color-swatch { border: 0; border-radius: 4px; }
+/* The ViewCube's zoom buttons follow the theme. */
+html[data-theme=dark] .vc-zoom button { background: rgba(255, 255, 255, .12) !important; color: #e9eee9 !important; border-color: rgba(255, 255, 255, .18) !important; }
+
+/* No blocks in the top bar (wins over the older group backgrounds). */
+html body .topbar .tool-group, html body .topbar .tb-group, html body .topbar .arc-scale {
+  background: transparent !important; border-color: transparent !important; box-shadow: none !important;
+}
+html body .topbar .arc-scale { border-bottom: 1px solid var(--g-line-strong) !important; border-radius: 0 !important; }
+
+/* Legibility. Panes beside or over the map get enough body for text to read
+   cleanly while still showing the colour behind (frosted, not clear). */
+html[data-theme=dark] {
+  --ink: #f1f4f1;
+  --ink-soft: #b4bcb6;
+  --g-glass: rgba(22, 30, 27, .56);
+  --g-glass-strong: rgba(26, 34, 31, .82);
+}
+html[data-theme=dark] .gisw-dock, html[data-theme=dark] #cartoDock, html[data-theme=dark] .sidebar,
+html[data-theme=dark] .gis-attr-dock {
+  background: rgba(20, 27, 24, .70) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
+  backdrop-filter: blur(26px) saturate(150%) !important;
+}
+:root { --ink-soft: #5d6670; }
+/* Small labels: a touch larger and clearer. */
+.field-label, .side-section-head .ss-lbl, .gisw-dock label, #cartoDock label > span, .cd-grid span,
+.sidebar .gfw-sub, .gfw-note, .status-bar, .gisw-status { letter-spacing: .2px; }
+.field-label, #cartoDock label > span, .cd-grid span { font-size: 11px !important; font-weight: 600 !important; color: var(--ink-soft) !important; }
+.gfw-note, .gfw-foot { font-size: 11.5px !important; line-height: 1.5 !important; color: var(--ink-soft) !important; }
+/* Text on the map (search box, readouts) keeps a backing so it reads over any basemap. */
+html[data-theme=dark] .gloc-bar, html[data-theme=dark] .gj-readout, html[data-theme=dark] .gj-tools {
+  background: rgba(20, 27, 24, .74) !important; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+}
+
+/* North arrow style picker: glass tiles; the black symbols turn light in the dark theme. */
+.north-grid button { background: var(--g-input) !important; border: 1px solid var(--g-line) !important; border-radius: 8px !important; box-shadow: none !important; }
+.north-grid button:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important; }
+.north-grid button.active { border-color: var(--accent) !important; background: var(--accent-soft) !important; }
+html[data-theme=dark] .north-grid button svg { filter: invert(1) hue-rotate(180deg) brightness(.95); }
+/* Rail labels a little larger for reading. */
+.sidebar-container .nav-lbl { font-size: 10.5px !important; font-weight: 500 !important; }
+.sidebar-nav .nav-add-sep { font-size: 10px !important; letter-spacing: .4px; }

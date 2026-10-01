@@ -28,3 +28,27 @@
   document.addEventListener("mousedown", hide, true);
   window.addEventListener("scroll", hide, true);
 })();
+
+/* Keeps floating buttons (the AI launcher and its chat) clear of the right
+   dock: --right-dock is the width the visible right dock takes. */
+(function () {
+  "use strict";
+  function place() {
+    var w = 0;
+    ["gisDock", "cartoDock"].forEach(function (id) {
+      var d = document.getElementById(id);
+      if (!d || !d.offsetParent || d.classList.contains("collapsed")) return;
+      var r = d.getBoundingClientRect();
+      if (r.width > 40 && r.right > window.innerWidth - 4) w = Math.max(w, window.innerWidth - r.left);
+    });
+    document.documentElement.style.setProperty("--right-dock", Math.round(w) + "px");
+  }
+  var ro = window.ResizeObserver ? new ResizeObserver(place) : null;
+  function watch() {
+    ["gisDock", "cartoDock"].forEach(function (id) { var d = document.getElementById(id); if (d && ro && !d._rdWatched) { d._rdWatched = true; ro.observe(d); } });
+    place();
+  }
+  window.addEventListener("resize", place);
+  new MutationObserver(function () { setTimeout(watch, 50); }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(watch, 600); }); else setTimeout(watch, 600);
+})();

@@ -106,7 +106,10 @@
     var gp = $("gisItemProps");
     if (gp) {
       if (!gp._home) gp._home = [gp.parentNode, gp.nextSibling];
-      if (o && o.gisItem && !isMap && item) { if (gp.parentNode !== item) item.appendChild(gp); gp.classList.add("cd-gis-props"); }
+      // Its inputs and buttons (north arrow styles, scale bar style and units,
+      // legend, inset basemap) are handled by delegation from the panel they
+      // sit in, so the panel it moves into gets the same handlers.
+      if (o && o.gisItem && !isMap && item) { if (gp.parentNode !== item) item.appendChild(gp); gp.classList.add("cd-gis-props"); if (GIS.wirePanelRoot) GIS.wirePanelRoot(item); }
       else if (gp.parentNode !== gp._home[0]) { gp._home[0].insertBefore(gp, gp._home[1] && gp._home[1].parentNode === gp._home[0] ? gp._home[1] : null); gp.classList.remove("cd-gis-props"); }
     }
   }

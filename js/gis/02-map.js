@@ -1100,6 +1100,17 @@
   GIS.setRotation = function (deg) { inView(LAYOUT, function () { if (!M) return; M.map.setBearing(-(+deg || 0)); saveView(); emitView(true); }); };
   GIS.getRotation = function () { return inView(LAYOUT, function () { return M ? -M.map.getBearing() : 0; }) || 0; };
 
+  // The first data layer of an empty map: both views go to it (a saved view
+  // from an earlier session would otherwise leave the map somewhere else).
+  var dataCount = 0;
+  GIS.on("layers", function () {
+    var n = GIS.layers.filter(function (l) { return l.kind !== "xyz"; }).length;
+    if (dataCount === 0 && n > 0) setTimeout(function () {
+      [ANALYSIS, LAYOUT].forEach(function (V) { if (V && V.loaded) inView(V, function () { fitAll(); if (!V.analysis) { saveView(); emitView(true); } }); });
+    }, 120);
+    dataCount = n;
+  });
+
   GIS.mapActions = {
     // Move mode is the layout map's; the analysis map is always live.
     setInteractive: function (on) { return inView(LAYOUT, setInteractive, [on]); },

@@ -64,6 +64,9 @@
   var pop = null;
   GIS.arcInsert = function (v) { insertItem(v); };
   function closePop() { if (pop) { pop.remove(); pop = null; } }
+  // Esc and switching between Data view and Layout view close it too.
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePop(); });
+  new MutationObserver(closePop).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   function openInsert(btn) {
     if (pop) { closePop(); return; }
     pop = document.createElement("div");
