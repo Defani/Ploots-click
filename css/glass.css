@@ -350,3 +350,38 @@ select:not([multiple]):not([size]) {
 }
 select:not([multiple]):not([size]):hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237cbf4a' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important; }
 select::-ms-expand { display: none; }
+
+/* Property-sheet sidebar (as in QGIS/ArcGIS item properties): flat sections
+   separated by hairlines, compact headers, small outlined buttons. */
+.sidebar .side-section { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--g-line) !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+.sidebar .side-section-head { min-height: 36px !important; padding: 0 12px !important; font-size: 12.5px !important; font-weight: 600 !important; background: transparent !important; }
+.sidebar .side-section-head .ss-lbl .material-symbols-outlined { font-size: 17px !important; color: var(--ink-soft) !important; }
+.sidebar .side-section.open > .side-section-head .ss-lbl .material-symbols-outlined { color: var(--accent) !important; }
+.sidebar .side-section-head .ss-chev { font-size: 18px !important; color: var(--ink-soft) !important; }
+.sidebar .side-section-body { padding: 2px 12px 12px !important; gap: 6px !important; }
+.sidebar .side-section-body button:not(.ss-icon):not(.sp-close):not([class*="swatch"]):not(.sw) {
+  min-height: 28px !important; height: auto !important; padding: 4px 10px !important; font-size: 12px !important; font-weight: 500 !important;
+  border-radius: 6px !important; background: transparent !important; border: 1px solid var(--g-line) !important; color: var(--ink) !important; box-shadow: none !important;
+}
+.sidebar .side-section-body button:not(.ss-icon):not(.sp-close):hover { border-color: color-mix(in srgb, var(--accent) 60%, transparent) !important; color: var(--accent) !important; background: transparent !important; }
+.sidebar .side-section-body button .material-symbols-outlined { font-size: 16px !important; }
+.sidebar .side-section-body .field-label, .sidebar .field-label { font-size: 11px !important; margin: 6px 0 3px !important; color: var(--ink-soft) !important; text-transform: none !important; letter-spacing: 0 !important; }
+.sidebar .side-section-body input[type=text], .sidebar .side-section-body input[type=number], .sidebar .side-section-body select { height: 28px !important; font-size: 12.5px !important; border-radius: 6px !important; }
+.sidebar .side-section-body .check-row { font-size: 12.5px !important; min-height: 26px; }
+.sidebar .side-section-body .anim-row, .sidebar .side-section-body .num-pair { gap: 6px !important; }
+
+/* Cartography is a GIS layout: no chart-builder tools or floating format bars. */
+body.gis-carto .nav-chart-only { display: none !important; }
+body.gis-carto #textFormatBar, body.gis-carto #shapeFormatBar, body.gis-carto #objFormatBar, body.gis-carto #chartFormatBar, body.gis-carto #imageFormatBar, body.gis-carto #mathFormatBar { display: none !important; }
+body:not(.gis-carto) .nav-carto[data-panel="panel-gis-item"] { display: none !important; }
+/* Item properties sheet */
+#gisItemBody .ip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+#gisItemBody .ip-row { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--ink-soft); }
+#gisItemBody .ip-row input, #gisItemBody .ip-row select { width: 100%; height: 28px; font-size: 12.5px; color: var(--ink); }
+#gisItemBody .ip-row input[type=color] { padding: 2px; height: 28px; }
+#gisItemBody textarea { width: 100%; font-size: 12.5px; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; }
+#gisItemBody .ip-btns { display: flex; gap: 4px; align-items: center; margin-top: 4px; }
+#gisItemBody .ip-btns button { width: 30px !important; min-height: 28px !important; padding: 0 !important; display: flex; align-items: center; justify-content: center; }
+#gisItemBody .ip-btns button.on { color: var(--accent) !important; border-color: var(--accent) !important; }
+#gisItemBody .ip-sep { width: 1px; height: 18px; background: var(--g-line); margin: 0 4px; }
+#gisItemBody .ip-empty { padding: 16px 12px; font-size: 12.5px; color: var(--ink-soft); }
