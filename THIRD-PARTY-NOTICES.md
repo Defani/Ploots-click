@@ -13,25 +13,73 @@ This project bundles these third-party files directly in the repository:
   sane-topojson from Natural Earth data, which is public domain). Served
   locally so the choropleth and bubble maps work offline.
 
-Every other library used by this project (Fabric.js, MathJax, KaTeX, Papa
-Parse, SheetJS, AG Grid Community, Google Fonts) is loaded live from a CDN at
-runtime and is never copied into this repository — see
-[Libraries & versions](./README.md#libraries--versions) in the README for
-their names, versions, and licenses.
+Every other library is loaded from a CDN at runtime in the web app and is not
+copied into this repository. The desktop build (`desktop/build_dist.py`)
+downloads the same files into the app at build time; each keeps its own
+licence header. See [Libraries & versions](./README.md#libraries--versions)
+for the full list. In short:
+
+| Library | Licence |
+|---|---|
+| MapLibre GL JS 5.9 | BSD-3-Clause |
+| Turf.js 7.2 | MIT |
+| geotiff.js 2.1 | MIT |
+| PMTiles 4.5 | BSD-3-Clause |
+| DuckDB-WASM 1.32 (and the spatial, json, parquet extensions) | MIT (extensions: MIT; spatial bundles GEOS LGPL-2.1, PROJ MIT, GDAL MIT) |
+| Google Earth Engine JS API 1.7 | Apache-2.0 |
+| maplibre-gl-earth-engine 0.4 (opengeos) | MIT |
+| Three.js r147 | MIT |
+| Fabric.js 5.3 | MIT |
+| MathJax 3.2 | Apache-2.0 |
+| math.js 12.4 | Apache-2.0 |
+| Papa Parse 5.4 | MIT |
+| SheetJS Community 0.18 | Apache-2.0 |
+| AG Grid Community 35 | MIT |
+| jsPDF 2.5 / svg2pdf.js 2.2 | MIT |
+| Tauri 2 | MIT / Apache-2.0 |
+
+## Data and services
+
+Data is read live from its provider and is not stored in this repository,
+except the Natural Earth topojson above. Each keeps its own terms, and the
+app shows the attribution on the map and in exports:
+
+- **Hansen / UMD Global Forest Change** (tree cover, loss, gain) — CC BY 4.0,
+  via Global Forest Watch; GFW datasets — mostly CC BY 4.0, see each dataset.
+- **Kementerian Kehutanan (KLHK), BNPB, BIG / Ina-Geoportal** — Indonesian
+  government open data, under each server's terms.
+- **GBIF** occurrences — CC0 / CC BY / CC BY-NC per record; **iNaturalist**
+  observations and photos — the licence chosen by each observer.
+- **Google Earth Engine** — Google's Earth Engine terms; each catalog dataset
+  keeps its own licence. **MapBiomas** — CC BY-SA 4.0.
+- **Basemaps** — OpenStreetMap (ODbL), OpenFreeMap, CARTO, Esri, OpenTopoMap
+  (CC BY-SA), EOX Sentinel-2 cloudless (CC BY-NC-SA 4.0 for 2018+), NASA GIBS,
+  Google Maps tiles, GBIF.
+- **Terrarium elevation tiles** (Mapzen / AWS Open Data) — sources and
+  attribution listed by the Joerd project.
+
+## Inspirations (no code copied)
+
+QGIS (GPL-2.0+), ArcMap / ArcGIS Pro (Esri), GeoLibre (opengeos, MIT),
+ICRAF's SExI-FS and Avenza Maps shaped how parts of this app work. No code
+from QGIS, ArcGIS, SExI-FS or GeoLibre is included; only the published
+maplibre-gl-earth-engine package is used as a library. The SExI-FS tree and
+topography file formats are read and written for compatibility.
 
 ## Icons
 
-- **Material Symbols (Outlined)** — Google, Apache License 2.0. Loaded live
-  from Google Fonts; no font file is bundled in this repository. See
+- **Material Symbols (Rounded)** — Google, Apache License 2.0. Loaded live
+  from Google Fonts in the web app, bundled in the desktop app. See
   [Icons — sources & licensing](./README.md#icons--sources--licensing).
 - **Custom inline SVGs** (chart-type thumbnails, draw-tool shapes, sidebar
   nav marks, export-format icons) — original artwork for this project,
   covered by this repo's own [MIT License](./LICENSE).
-- **Iconify** (Phosphor, Solar, Tabler, Fluent System Icons) — reserved for
-  future icons not covered by Material Symbols; not yet used in the current
-  build. All four sets are MIT-licensed — confirm per-icon at
-  [icon-sets.iconify.design](https://icon-sets.iconify.design/) before
-  adding one.
+- **Iconify** (Material Design Icons, Apache-2.0) — the chart-type icons.
+- **The logo** (`assets/logo.svg`) and provider logos — the logo is original
+  artwork under this repo's MIT License; provider logos (GFW, Kobo, Supabase,
+  Earth Engine, GBIF, iNaturalist, government agencies…) are loaded from each
+  provider's own site and remain their trademarks, used only to identify the
+  service.
 
 ## D3.js
 
