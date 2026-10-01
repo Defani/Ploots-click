@@ -297,7 +297,7 @@
 
   /* --------------------------------------------------------------- 2D */
 
-  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = true, realistic = true, flowering = false;
+  var view = "2d", tool = "select", sel = null, plantKey = "kopi", showLight = false, realistic = false, flowering = false, look3d = "sexi";
   // Camera presets: the whole plot from above a corner, or standing in a
   // coffee row at eye height (1.6 m), looking along the row.
   function camPreset(k) {
@@ -316,6 +316,21 @@
     if (realistic) rebuildPlants();
     G3.dirty = true;
   }
+  // 2D view as SExI-FS draws it: white sheet, fine pink metre grid, crowns as
+  // wire meshes (outline, spokes and rings from the crown radii) in one of
+  // four paint modes, stems as dots, and optional tree labels.
+  var paint = "transparent", showInfo = false;
+  function crownPts(t, sc, px, py, f) {
+    var n = t.radii && t.radii.length > 1 ? t.radii.length : 0, pts = [], K = 28;
+    for (var k = 0; k < K; k++) {
+      var ang = k / K * Math.PI * 2 + (t.rot || 0) * Math.PI / 180, rr = t.r;
+      if (n) { var q = (k / K * n) % n, i0 = Math.floor(q), i1 = (i0 + 1) % n; rr = t.radii[i0] + (t.radii[i1] - t.radii[i0]) * (q - i0); }
+      else rr = t.r * (1 + 0.06 * Math.sin(ang * 3 + t.id) + 0.04 * Math.sin(ang * 5 + t.id * 1.7)); // a living outline
+      pts.push([px + Math.cos(ang) * rr * sc * f, py - Math.sin(ang) * rr * sc * f]);
+    }
+    return pts;
+  }
+  function poly(g, pts) { g.beginPath(); pts.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.closePath(); }
   function draw2d() {
     var cv = $("agCanvas");
     if (!cv) return;
@@ -323,38 +338,76 @@
     if (box.width < 80 || box.height < 80) return; // hidden or not laid out yet
     cv.width = box.width * dpr; cv.height = box.height * dpr;
     cv.style.width = box.width + "px"; cv.style.height = box.height + "px";
-    var g = cv.getContext("2d"), pad = 40, sc = Math.min((box.width - 2 * pad) / P.w, (box.height - 2 * pad) / P.h);
+    var g = cv.getContext("2d"), pad = 46, sc = Math.min((box.width - 2 * pad) / P.w, (box.height - 2 * pad) / P.h);
     var ox = (box.width - P.w * sc) / 2, oy = (box.height - P.h * sc) / 2;
     cv._tx = { sc: sc, ox: ox, oy: oy };
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, box.width, box.height);
-    g.fillStyle = "#e9e3d3"; g.fillRect(ox, oy, P.w * sc, P.h * sc);
+    g.fillStyle = "#ffffff"; g.fillRect(0, 0, box.width, box.height);
     if (showLight) {
       var lm = lightMap(1.5);
       for (var j = 0; j < lm.ny; j++) for (var i = 0; i < lm.nx; i++) {
         var v = lm.v[j * lm.nx + i];
-        g.fillStyle = "rgba(20,40,30," + ((1 - v) * 0.55).toFixed(3) + ")";
+        g.fillStyle = "rgba(60,60,60," + ((1 - v) * 0.4).toFixed(3) + ")";
         g.fillRect(ox + i * CELL * sc, oy + (P.h - (j + 1) * CELL) * sc, CELL * sc + 0.5, CELL * sc + 0.5);
       }
     }
-    // grid every 10 m
-    g.strokeStyle = "rgba(0,0,0,.07)"; g.lineWidth = 1;
-    for (var x = 0; x <= P.w; x += 10) { g.beginPath(); g.moveTo(ox + x * sc, oy); g.lineTo(ox + x * sc, oy + P.h * sc); g.stroke(); }
-    for (var y = 0; y <= P.h; y += 10) { g.beginPath(); g.moveTo(ox, oy + y * sc); g.lineTo(ox + P.w * sc, oy + y * sc); g.stroke(); }
-    // lower crowns first
-    P.trees.filter(function (t) { return t.alive; }).sort(function (a, b) { return a.h - b.h; }).forEach(function (t) {
-      var s = sp(t), px = ox + t.x * sc, py = oy + (P.h - t.y) * sc;
-      g.beginPath();
-      if (t.radii && t.radii.length > 1) {
-        var n = t.radii.length;
-        for (var k = 0; k <= 36; k++) { var ang = k / 36 * Math.PI * 2 + (t.rot || 0) * Math.PI / 180, f = (k / 36 * n) % n, i0 = Math.floor(f), i1 = (i0 + 1) % n, rr = t.radii[i0] + (t.radii[i1] - t.radii[i0]) * (f - i0); var qx = px + Math.cos(ang) * rr * sc, qy = py - Math.sin(ang) * rr * sc; if (k) g.lineTo(qx, qy); else g.moveTo(qx, qy); }
-      } else g.arc(px, py, t.r * sc, 0, Math.PI * 2);
-      g.fillStyle = hexA(s.color, 0.55 - s.por * 0.3); g.fill();
-      g.strokeStyle = t === sel ? "#ff5a1f" : hexA(s.color, 0.95); g.lineWidth = t === sel ? 2.2 : 0.8; g.stroke();
-      g.fillStyle = "#4a3620"; g.beginPath(); g.arc(px, py, Math.max(1, t.dbh * 100 * sc / 200 + 0.8), 0, Math.PI * 2); g.fill();
+    // pink grid: every metre (when it reads), stronger every 10 m
+    var minor = sc >= 4 ? 1 : sc >= 1.2 ? 5 : 10;
+    g.lineWidth = 1;
+    for (var x = 0; x <= P.w + 1e-6; x += minor) { g.strokeStyle = x % 10 === 0 ? "rgba(214,72,110,.55)" : "rgba(232,140,165,.32)"; g.beginPath(); g.moveTo(ox + x * sc + .5, oy); g.lineTo(ox + x * sc + .5, oy + P.h * sc); g.stroke(); }
+    for (var y = 0; y <= P.h + 1e-6; y += minor) { g.strokeStyle = y % 10 === 0 ? "rgba(214,72,110,.55)" : "rgba(232,140,165,.32)"; g.beginPath(); g.moveTo(ox, oy + y * sc + .5); g.lineTo(ox + P.w * sc, oy + y * sc + .5); g.stroke(); }
+    // lower crowns first, so the canopy lies on top
+    var alive = P.trees.filter(function (t) { return t.alive; }).sort(function (a, b) { return a.h - b.h; });
+    alive.forEach(function (t) {
+      var s = sp(t), px = ox + t.x * sc, py = oy + (P.h - t.y) * sc, outer = crownPts(t, sc, px, py, 1);
+      if (paint !== "outline") {
+        poly(g, outer);
+        if (paint === "opaque") g.fillStyle = hexA(s.color, 1);
+        else if (paint === "transparent") g.fillStyle = hexA(s.color, 0.28);
+        else { var rg = g.createRadialGradient(px - t.r * sc * .35, py - t.r * sc * .35, t.r * sc * .1, px, py, t.r * sc * 1.05); rg.addColorStop(0, shade(s.color, 0.45)); rg.addColorStop(1, shade(s.color, -0.35)); g.fillStyle = rg; }
+        g.fill();
+      }
+      // the wire mesh: outline, rings at 1/3 and 2/3, spokes to the stem
+      var wire = paint === "opaque" ? shade(s.color, -0.45) : paint === "shaded" ? "rgba(0,0,0,.35)" : shade(s.color, -0.15);
+      g.strokeStyle = t === sel ? "#ff3d00" : wire; g.lineWidth = t === sel ? 2 : 0.8;
+      poly(g, outer); g.stroke();
+      if (t.r * sc > 6) {
+        g.lineWidth = 0.5;
+        [0.66, 0.33].forEach(function (f) { poly(g, crownPts(t, sc, px, py, f)); g.stroke(); });
+        g.beginPath(); for (var k = 0; k < outer.length; k += 4) { g.moveTo(px, py); g.lineTo(outer[k][0], outer[k][1]); } g.stroke();
+      }
+      g.fillStyle = "#3b2a1a"; g.beginPath(); g.arc(px, py, Math.max(1.2, t.dbh * sc / 2 + 0.8), 0, Math.PI * 2); g.fill();
     });
-    g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 1.2; g.strokeRect(ox, oy, P.w * sc, P.h * sc);
-    g.fillStyle = "rgba(0,0,0,.55)"; g.font = "11px Inter, Arial"; g.fillText("0", ox - 10, oy + P.h * sc + 12); g.fillText(P.w + " m", ox + P.w * sc - 20, oy + P.h * sc + 14); g.fillText(P.h + " m", ox - 34, oy + 4);
+    if (showInfo || sel) {
+      // Tallest trees first; a label that would overlap one already drawn is skipped.
+      g.font = "10px Inter, Arial"; g.textBaseline = "middle";
+      var placed = [];
+      alive.slice().sort(function (a, b) { return (b === sel) - (a === sel) || b.h - a.h; }).forEach(function (t) {
+        if (!(t === sel || showInfo)) return;
+        var px = ox + t.x * sc, py = oy + (P.h - t.y) * sc, label = sp(t).label + " " + t.id + " · " + fmt(t.h, 1) + " m";
+        var w = g.measureText(label).width + 8, r = [px + 4, py - 7, w, 14];
+        if (t !== sel && placed.some(function (q) { return r[0] < q[0] + q[2] && q[0] < r[0] + r[2] && r[1] < q[1] + q[3] && q[1] < r[1] + r[3]; })) return;
+        placed.push(r);
+        g.fillStyle = "rgba(255,255,255,.9)"; g.fillRect(r[0], r[1], r[2], r[3]);
+        g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 0.5; g.strokeRect(r[0], r[1], r[2], r[3]);
+        g.fillStyle = "#222"; g.fillText(label, px + 8, py);
+      });
+    }
+    g.strokeStyle = "#333"; g.lineWidth = 1.2; g.strokeRect(ox, oy, P.w * sc, P.h * sc);
+    // axis labels every 10 m
+    g.fillStyle = "#555"; g.font = "10px Inter, Arial"; g.textBaseline = "top"; g.textAlign = "center";
+    var step = P.w > 150 ? 50 : P.w > 60 ? 20 : 10;
+    for (var ax = 0; ax <= P.w; ax += step) g.fillText(ax + "", ox + ax * sc, oy + P.h * sc + 6);
+    g.textAlign = "right"; g.textBaseline = "middle";
+    for (var ay = 0; ay <= P.h; ay += step) g.fillText(ay + "", ox - 6, oy + (P.h - ay) * sc);
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    g.fillText(P.w + " × " + P.h + " m · " + alive.length + " trees · year " + P.year, ox, oy - 10);
+  }
+  function shade(c, f) {
+    var h = String(c).replace("#", ""); if (h.length === 3) h = h.split("").map(function (x) { return x + x; }).join("");
+    var r = parseInt(h.slice(0, 2), 16), gg = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    function m(v) { return Math.round(f >= 0 ? v + (255 - v) * f : v * (1 + f)); }
+    return "rgb(" + m(r) + "," + m(gg) + "," + m(b) + ")";
   }
   function hexA(c, a) {
     if (/^hsl/.test(c)) return c.replace("hsl(", "hsla(").replace(")", "," + a + ")");
@@ -406,6 +459,7 @@
     G3.r.setSize(W, H); G3.cam.aspect = W / H; G3.cam.updateProjectionMatrix(); G3.dirty = true; G3.bySp = null; G3.plants = null;
     if (G3.group) { G3.scene.remove(G3.group); G3.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
     var grp = new THREE.Group(), sc = G3.scene;
+    if (look3d === "sexi") { sexi3d(grp, sc); sc.add(grp); G3.group = grp; setSun(+($("agSun") ? $("agSun").value : 9)); return; }
     if (realistic && window.PlootsAgroReal) {
       // Realistic plants (js/agro/agro-3d-real.js): instanced procedural
       // coffee bushes, lamtoro trees and broadleaf trees.
@@ -459,6 +513,103 @@
     });
     sc.add(grp); G3.group = grp;
     setSun(+($("agSun") ? $("agSun").value : 9));
+  }
+  // "Virtual forest" as SExI-FS shows it: a white world, the plot as a floating
+  // slab of soil with thickness, crowns as lumpy textured volumes in varied
+  // greens (shaped by radius, depth and the crown radii), thin dark stems.
+  var SX = null;
+  function sexiParts() {
+    if (SX) return SX;
+    function tex(w, h, draw) { var c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); var tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; return tx; }
+    function rnd(i) { var x = Math.sin(i * 127.1) * 43758.5453; return x - Math.floor(x); }
+    var leaf = tex(256, 256, function (g, w, h) {
+      g.fillStyle = "#5f8f3a"; g.fillRect(0, 0, w, h);
+      var greens = ["#2f5a1f", "#3f7424", "#5a8f34", "#79a845", "#9cc25a", "#47702a", "#6d9a3c"];
+      for (var i = 0; i < 2600; i++) { g.fillStyle = greens[i % greens.length]; g.globalAlpha = 0.55 + rnd(i) * 0.45; g.beginPath(); g.ellipse(rnd(i + 1) * w, rnd(i + 2) * h, 2 + rnd(i + 3) * 5, 1.2 + rnd(i + 4) * 3, rnd(i + 5) * Math.PI, 0, Math.PI * 2); g.fill(); }
+      g.globalAlpha = 1;
+    });
+    var soil = tex(256, 256, function (g, w, h) {
+      g.fillStyle = "#8a6a43"; g.fillRect(0, 0, w, h);
+      for (var i = 0; i < 4000; i++) { g.fillStyle = ["#7a5a36", "#9a7a50", "#6d5030", "#a3865a", "#7f8a4a"][i % 5]; g.globalAlpha = 0.5; g.fillRect(rnd(i) * w, rnd(i + 9) * h, 2, 2); }
+      g.globalAlpha = 1;
+    });
+    var strata = tex(64, 256, function (g, w, h) {
+      var bands = ["#6b4a2b", "#7c5833", "#5c3f25", "#8a6740", "#4f3520", "#6e4d2d"];
+      var y = 0, i = 0; while (y < h) { var bh = 18 + rnd(i) * 40; g.fillStyle = bands[i % bands.length]; g.fillRect(0, y, w, bh); y += bh; i++; }
+      for (var k = 0; k < 600; k++) { g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(rnd(k) * w, rnd(k + 3) * h, 1.5, 1.5); }
+    });
+    // A lumpy crown: an icosphere pushed out and in by smooth noise.
+    function lumpy(seed) {
+      var geo = new THREE.IcosahedronGeometry(1, 3), pos = geo.attributes.position, v = new THREE.Vector3();
+      for (var i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        var n = 0.10 * Math.sin(v.x * 5.1 + seed) * Math.cos(v.y * 4.3 + seed * 1.3) + 0.07 * Math.sin(v.z * 7.7 + v.x * 3.1 + seed * 2.1) + 0.04 * Math.sin(v.y * 11 + seed);
+        v.multiplyScalar(1 + n); pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    }
+    var stem = new THREE.CylinderGeometry(0.55, 1, 1, 6); stem.translate(0, 0.5, 0);
+    SX = { leaf: leaf, soil: soil, strata: strata, crowns: [lumpy(1.7), lumpy(4.2), lumpy(7.9)], stem: stem,
+      crownMat: new THREE.MeshLambertMaterial({ map: leaf }), stemMat: new THREE.MeshLambertMaterial({ color: 0x3a2d22 }) };
+    return SX;
+  }
+  function sexi3d(grp, sc) {
+    var S = sexiParts();
+    sc.background = new THREE.Color(0xffffff); sc.fog = null;
+    G3.hemi.color.set(0xffffff); G3.hemi.groundColor.set(0x8a7a5a); G3.hemi.intensity = 0.75;
+    // The slab: soil on top, strata on the sides, 4 m thick (more with relief).
+    var thick = 4, base = P.topo ? P.topo.min - thick : -thick;
+    var seg = P.topo ? 60 : 1, top = new THREE.PlaneGeometry(P.w, P.h, seg, seg);
+    top.rotateX(-Math.PI / 2); top.translate(P.w / 2, 0, P.h / 2);
+    if (P.topo) { var pos = top.attributes.position; for (var i = 0; i < pos.count; i++) pos.setY(i, alt(pos.getX(i), P.h - pos.getZ(i))); top.computeVertexNormals(); }
+    S.soil.repeat.set(P.w / 12, P.h / 12);
+    var topMesh = new THREE.Mesh(top, new THREE.MeshLambertMaterial({ map: S.soil }));
+    topMesh.receiveShadow = true; grp.add(topMesh);
+    // Sides follow the top edge down to the base.
+    function side(pts) {
+      var g = new THREE.BufferGeometry(), v = [], uv = [], idx = [];
+      pts.forEach(function (p, i) { v.push(p[0], p[1], p[2], p[0], base, p[2]); var u = i / (pts.length - 1) * (pts.length * 0.4); uv.push(u, 1, u, 0); if (i) { var a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
+      g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+      return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: S.strata, side: THREE.DoubleSide }));
+    }
+    var N = 40, edges = [[], [], [], []];
+    for (var k = 0; k <= N; k++) {
+      var fx = P.w * k / N, fz = P.h * k / N;
+      edges[0].push([fx, alt(fx, P.h), 0]); edges[1].push([fx, alt(fx, 0), P.h]);
+      edges[2].push([0, alt(0, P.h - fz), fz]); edges[3].push([P.w, alt(P.w, P.h - fz), fz]);
+    }
+    edges.forEach(function (e) { grp.add(side(e)); });
+    var under = new THREE.Mesh(new THREE.PlaneGeometry(P.w, P.h), new THREE.MeshLambertMaterial({ color: 0x4a3420 }));
+    under.rotation.x = Math.PI / 2; under.position.set(P.w / 2, base, P.h / 2); grp.add(under);
+    // Trees, instanced per species and crown variant.
+    var m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), white = new THREE.Color(0xffffff), UPV = new THREE.Vector3(0, 1, 0);
+    Object.keys(P.species).forEach(function (key) {
+      var s = P.species[key], list = P.trees.filter(function (t) { return t.alive && t.sp === key; });
+      if (!list.length) return;
+      var stems = new THREE.InstancedMesh(S.stem, S.stemMat, list.length);
+      list.forEach(function (t, i) {
+        var z0 = alt(t.x, t.y), cb = t.h - t.depth, rad = Math.max(0.025, t.dbh / 2);
+        m.compose(new THREE.Vector3(t.x, z0, P.h - t.y), q.identity(), new THREE.Vector3(rad, Math.max(0.3, cb + t.depth * 0.5), rad));
+        stems.setMatrixAt(i, m);
+      });
+      stems.castShadow = true; grp.add(stems);
+      S.crowns.forEach(function (geo, vi) {
+        var mine = list.filter(function (t) { return t.id % S.crowns.length === vi; });
+        if (!mine.length) return;
+        var im = new THREE.InstancedMesh(geo, S.crownMat, mine.length);
+        mine.forEach(function (t, i) {
+          var z0 = alt(t.x, t.y), ry = t.depth / 2, rr = t.radii && t.radii.length ? t.radii.reduce(function (a, b) { return a + b; }, 0) / t.radii.length : t.r;
+          var curve = t.curve != null ? t.curve : t.depth * 0.6; // SExI-FS crown curvature: flatter crowns read wider
+          q.setFromAxisAngle(UPV, ((t.rot || 0) * Math.PI / 180) + t.id * 0.7);
+          m.compose(new THREE.Vector3(t.x, z0 + t.h - ry, P.h - t.y), q, new THREE.Vector3(rr * (1 + 0.04 * Math.sin(t.id)), ry * (0.75 + 0.25 * Math.min(1, curve / Math.max(0.1, t.depth))), rr));
+          im.setMatrixAt(i, m);
+          c.set(s.color).lerp(white, 0.45).offsetHSL((Math.sin(t.id * 3.1) * 0.5) * 0.03, 0, (Math.sin(t.id * 7.3) * 0.5) * 0.12);
+          im.setColorAt(i, c);
+        });
+        im.castShadow = true; im.receiveShadow = true; grp.add(im);
+      });
+    });
   }
   function rebuildPlants() {
     if (!G3 || !G3.bySp) return;
@@ -535,6 +686,76 @@
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(Object.assign({}, P, { history: P.history.slice(-60) }))); } catch (e) { } }
 
+  function menu(name, items) {
+    return '<div class="ag-menu"><button type="button" class="ag-menu-btn">' + name + '</button><div class="ag-menu-list">' +
+      items.map(function (it) { return it === "-" ? "<hr>" : '<button type="button" data-act="' + it[0] + '"><span>' + it[1] + "</span>" + (it[2] ? "<kbd>" + it[2] + "</kbd>" : "") + "</button>"; }).join("") + "</div></div>";
+  }
+  function setPaint(m) {
+    paint = m;
+    Array.prototype.forEach.call(root.querySelectorAll("[data-paint]"), function (b) { b.classList.toggle("active", b.dataset.paint === m); });
+    if (view !== "2d") setView("2d"); else draw2d();
+  }
+  function wireMenus() {
+    var bar = root.querySelector(".ag-menubar"), open = null;
+    function shut() { if (open) open.classList.remove("open"); open = null; }
+    bar.addEventListener("click", function (e) {
+      var b = e.target.closest(".ag-menu-btn");
+      if (b) { var m = b.parentNode; if (open === m) shut(); else { shut(); m.classList.add("open"); open = m; } return; }
+      var a = e.target.closest("[data-act]");
+      if (!a) return;
+      shut();
+      var k = a.dataset.act, click = function (id) { var el = $(id); if (el) el.click(); };
+      if (k === "new") newStand();
+      else if (k === "open") click("agOpenP"); else if (k === "save") click("agSaveP");
+      else if (k === "imp") click("agImp"); else if (k === "exp") click("agExp"); else if (k === "topo") click("agTopo"); else if (k === "csv") click("agCsv");
+      else if (k === "close") close();
+      else if (k === "plant") click("agPlant"); else if (k === "click") click("agTool"); else if (k === "clear") click("agClear");
+      else if (k === "run") click("agRun"); else if (k === "step") click("agStep"); else if (k === "reset") click("agReset");
+      else if (k === "v2d") setView("2d"); else if (k === "v3d") setView("3d");
+      else if (k.indexOf("p-") === 0) setPaint(k.slice(2));
+      else if (k === "info") { showInfo = !showInfo; $("agShowInfo").checked = showInfo; if (view !== "2d") setView("2d"); else draw2d(); }
+      else if (k === "light") { showLight = !showLight; $("agLight").checked = showLight; if (view !== "2d") setView("2d"); else draw2d(); }
+    });
+    bar.addEventListener("mouseover", function (e) { var m = e.target.closest(".ag-menu"); if (open && m && m !== open) { shut(); m.classList.add("open"); open = m; } });
+    document.addEventListener("mousedown", function (e) { if (open && !e.target.closest(".ag-menubar")) shut(); });
+  }
+  // New stand: name and size of the plot, slope, and what to plant first.
+  function newStand() {
+    var back = document.createElement("div");
+    back.className = "ag-dlg-back";
+    back.innerHTML = '<form class="ag-dlg">' +
+      '<div class="ag-dlg-head"><b>New stand</b><span>Plot (stand) definition, as in SExI-FS</span></div>' +
+      '<label class="field-label">Stand name</label><input name="name" value="' + esc(P && P.name || "Kopi Gayo – lamtoro") + '">' +
+      '<div class="num-pair"><div><label class="field-label">Width X (m)</label><input name="w" type="number" min="10" max="400" value="100"></div><div><label class="field-label">Length Y (m)</label><input name="h" type="number" min="10" max="400" value="100"></div></div>' +
+      '<div class="num-pair"><div><label class="field-label">Slope (%)</label><input name="slope" type="number" min="0" max="100" value="0"></div><div><label class="field-label">Slope faces</label><select name="aspect"><option value="0">North (Y+)</option><option value="90">East (X+)</option><option value="180">South (Y−)</option><option value="270">West (X−)</option></select></div></div>' +
+      '<label class="field-label">Start with</label><select name="start"><option value="pattern">Coffee 2.5 × 2.5 m under lamtoro 5 × 5 m</option><option value="coffee">Coffee only, 2.5 × 2.5 m</option><option value="empty">An empty stand</option></select>' +
+      '<p class="ag-note">Trees can be added later by pattern, by clicking, or from a SExI-FS tree file.</p>' +
+      '<div class="ag-dlg-foot"><button type="button" data-cancel>Cancel</button><button type="submit" class="btn-primary">Create stand</button></div></form>';
+    root.appendChild(back);
+    var f = back.querySelector("form");
+    setTimeout(function () { f.elements.w.focus(); f.elements.w.select(); }, 50);
+    back.querySelector("[data-cancel]").addEventListener("click", function () { back.remove(); });
+    back.addEventListener("mousedown", function (e) { if (e.target === back) back.remove(); });
+    f.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = f.elements, w = clamp(+v.w.value || 100, 10, 400), h = clamp(+v.h.value || 100, 10, 400), slope = clamp(+v.slope.value || 0, 0, 100) / 100, asp = +v.aspect.value;
+      P = newProject(); P.name = v.name.value || P.name; P.w = w; P.h = h;
+      if (slope > 0) {
+        // A plane rising toward the chosen side, as SExI-FS topography points every 5 m.
+        var rows = ["X Y Altitude"];
+        for (var x = 0; x <= w; x += 5) for (var y = 0; y <= h; y += 5) {
+          var d = asp === 0 ? y : asp === 90 ? x : asp === 180 ? h - y : w - x;
+          rows.push(x + " " + y + " " + (d * slope).toFixed(2));
+        }
+        importTopo(rows.join("\n"));
+      }
+      if (v.start.value !== "empty") plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false);
+      if (v.start.value === "pattern") plantPattern("lamtoro", 5, 5, 2.5, 2.5, true);
+      crownIndices(); record(); sel = null; info(); syncInputs(); save();
+      back.remove();
+      toast("Stand " + w + " × " + h + " m created");
+    });
+  }
   function build() {
     if (root) return;
     root = document.createElement("div");
@@ -544,6 +765,13 @@
         '<div class="ag-seg ag-views"><button data-view="2d" class="active">' + sym("grid_view") + '<span>2D plot</span></button><button data-view="3d">' + sym("view_in_ar") + "<span>3D</span></button></div>" +
         '<span class="ag-year" id="agYear">Year 0</span>' +
         '<button class="ag-close" title="Back to Home">' + sym("close") + "</button></header>" +
+      '<nav class="ag-menubar">' +
+        menu("File", [["new", "New stand…", "Ctrl+N"], ["open", "Open project…"], ["save", "Save project"], "-", ["imp", "Import trees (SExI-FS)…"], ["exp", "Export trees (SExI-FS)"], ["topo", "Import topography…"], "-", ["csv", "Export history (CSV)"], "-", ["close", "Close simulator"]]) +
+        menu("Stand", [["plant", "Plant pattern"], ["click", "Plant by clicking"], "-", ["clear", "Remove all trees"]]) +
+        menu("Simulation", [["run", "Run"], ["step", "One year"], ["reset", "Back to year 0"]]) +
+        menu("View", [["v2d", "2D plot"], ["v3d", "Virtual forest (3D)"], "-", ["p-outline", "Paint: outline"], ["p-opaque", "Paint: opaque"], ["p-transparent", "Paint: transparent"], ["p-shaded", "Paint: shaded"], "-", ["info", "Show info"], ["light", "Light map"]]) +
+        '<span class="ag-menu-stand" id="agStandLbl"></span>' +
+      "</nav>" +
       '<aside class="ag-left">' +
         '<section><h4>' + sym("crop_free") + 'Plot</h4><div class="num-pair"><div><label class="field-label">Width (m)</label><input type="number" id="agW" min="10" max="400"></div><div><label class="field-label">Length (m)</label><input type="number" id="agH" min="10" max="400"></div></div></section>' +
         '<section><h4>' + sym("grass") + 'Planting</h4>' +
@@ -572,9 +800,10 @@
           '<select id="agAddSp"><option value="">Add a species…</option>' + Object.keys(PRESETS).map(function (k) { return '<option value="' + k + '">' + esc(PRESETS[k].name) + "</option>"; }).join("") + "</select></section>" +
       "</aside>" +
       '<main class="ag-main"><div class="ag-view" id="agView2d"><canvas id="agCanvas"></canvas></div><div class="ag-view" id="agView3d" hidden></div>' +
-        '<div class="ag-float" id="agFloat2d"><label class="check-row"><input type="checkbox" id="agLight" checked>Light map (coffee layer)</label></div>' +
+        '<div class="ag-float" id="agFloat2d"><div class="ag-seg ag-paint">' + ["outline", "opaque", "transparent", "shaded"].map(function (m) { return '<button type="button" data-paint="' + m + '"' + (m === paint ? ' class="active"' : "") + ">" + m.charAt(0).toUpperCase() + m.slice(1) + "</button>"; }).join("") + "</div>" +
+          '<span class="ag-fsep"></span><label class="check-row"><input type="checkbox" id="agShowInfo">Show info</label><label class="check-row"><input type="checkbox" id="agLight">Light map</label></div>' +
         '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b>' +
-          '<span class="ag-fsep"></span><label class="check-row"><input type="checkbox" id="agReal" checked>Realistic</label><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
+          '<span class="ag-fsep"></span><div class="ag-seg ag-look"><button type="button" data-look="sexi" class="active">SExI-FS</button><button type="button" data-look="real">Realistic</button></div><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
           '<span class="ag-fsep"></span><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
         '<div class="ag-info" id="agInfo" hidden></div></main>' +
       '<aside class="ag-right"><h4>' + sym("monitoring") + 'Plot summary</h4><div id="agStats"></div>' +
@@ -583,7 +812,7 @@
 
     var saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { }
     P = saved && saved.trees ? saved : newProject();
-    if (!saved) { plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false); plantPattern("lamtoro", 5, 5, 2.5, 2.5, true); crownIndices(); record(); }
+    if (!saved) { plantPattern("kopi", 2.5, 2.5, 1.25, 1.25, false); plantPattern("lamtoro", 5, 5, 2.5, 2.5, true); crownIndices(); record(); setTimeout(newStand, 300); }
     syncInputs();
 
     root.querySelector(".ag-close").addEventListener("click", close);
@@ -613,7 +842,16 @@
     $("agReset").addEventListener("click", function () { restore(0); redraw(); syncReplay(); });
     $("agReplay").addEventListener("input", function () { restore(+this.value); redraw(); });
     $("agLight").addEventListener("change", function () { showLight = this.checked; draw2d(); });
-    $("agReal").addEventListener("change", function () { realistic = this.checked; if (G3) build3d(); });
+    document.addEventListener("keydown", function (e) { if (root.classList.contains("show") && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); newStand(); } });
+    root.querySelector(".ag-look").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-look]"); if (!b) return;
+      look3d = b.dataset.look; realistic = look3d === "real";
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("active", x === b); });
+      if (G3) build3d();
+    });
+    root.querySelector(".ag-paint").addEventListener("click", function (e) { var b = e.target.closest("[data-paint]"); if (b) setPaint(b.dataset.paint); });
+    $("agShowInfo").addEventListener("change", function () { showInfo = this.checked; draw2d(); });
+    wireMenus();
     $("agFlower").addEventListener("change", function () { flowering = this.checked; if (G3) build3d(); });
     $("agFloat3d").addEventListener("click", function (e) { var b = e.target.closest("[data-cam]"); if (b) camPreset(b.dataset.cam); });
     $("agSun").addEventListener("input", function () { var h = +this.value; $("agSunLbl").textContent = String(Math.floor(h)).padStart(2, "0") + ":" + String(Math.round((h % 1) * 60)).padStart(2, "0"); setSun(h); });
@@ -674,6 +912,7 @@
   }
   function syncInputs() {
     $("agW").value = P.w; $("agH").value = P.h;
+    $("agStandLbl").textContent = (P.name || "Stand") + " · " + P.w + " × " + P.h + " m" + (P.topo ? " · with topography" : "");
     speciesForm();
     var ck = cropKey(); $("agPruneC").value = ck ? P.species[ck].prune : "";
     var sk = $("agPatSp2").value; $("agPruneS").value = P.species[sk] ? P.species[sk].prune : "";
