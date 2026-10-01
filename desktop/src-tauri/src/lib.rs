@@ -19,6 +19,11 @@
 //!   app window, so this is how Earth Engine signs in on the desktop.
 //!   `google_refresh(client_id, client_secret, refresh_token)`  a new access
 //!   token when the old one expires (about an hour), without the browser.
+//!   `ee_local_token()`  as GeoLibre and geemap: the Earth Engine sign-in
+//!   already on this computer (`earthengine authenticate` / ee.Authenticate(),
+//!   kept by the earthengine-api Python package) gives a fresh access token
+//!   through that package, so no OAuth client has to be set up. Run only
+//!   when the user presses Connect; the token goes to the app, nowhere else.
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -191,6 +196,61 @@ fn google_signin_blocking(client_id: &str, client_secret: &str, scopes: &str) ->
     }
 }
 
+/// Python that asks the installed earthengine-api for a fresh token from the
+/// saved Earth Engine sign-in, and prints it with the saved project.
+const EE_LOCAL_PY: &str = r#"
+import json, sys
+try:
+    import ee.oauth as o
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
+except Exception as e:
+    print(json.dumps({"error": "noee", "detail": str(e)})); sys.exit(0)
+try:
+    a = o.get_credentials_arguments()
+    c = Credentials(None, **a)
+    c.refresh(Request())
+    try:
+        project = json.load(open(o.get_credentials_path())).get("project")
+    except Exception:
+        project = None
+    print(json.dumps({"access_token": c.token, "expires_in": 3300, "project": project}))
+except FileNotFoundError:
+    print(json.dumps({"error": "nologin"}))
+except Exception as e:
+    print(json.dumps({"error": "refresh", "detail": str(e)[:300]}))
+"#;
+
+fn ee_local_blocking() -> Result<HttpReply, String> {
+    let mut last = String::from("Python was not found.");
+    for (exe, pre) in [("python", vec![]), ("py", vec!["-3"]), ("python3", vec![])] {
+        let mut cmd = std::process::Command::new(exe);
+        cmd.args(&pre).arg("-c").arg(EE_LOCAL_PY);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x0800_0000); // no console window
+        }
+        match cmd.output() {
+            Ok(out) => {
+                let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if text.starts_with('{') {
+                    if text.contains("\"error\": \"noee\"") { last = text; continue; }
+                    return Ok(HttpReply { status: if text.contains("\"access_token\"") { 200 } else { 400 }, body: text });
+                }
+                last = String::from_utf8_lossy(&out.stderr).chars().take(300).collect();
+            }
+            Err(e) => last = e.to_string(),
+        }
+    }
+    Ok(HttpReply { status: 400, body: serde_json::json!({ "error": "nopython", "detail": last }).to_string() })
+}
+
+#[tauri::command]
+async fn ee_local_token() -> Result<HttpReply, String> {
+    tauri::async_runtime::spawn_blocking(ee_local_blocking).await.map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 async fn google_signin(client_id: String, client_secret: Option<String>, scopes: String) -> Result<HttpReply, String> {
     tauri::async_runtime::spawn_blocking(move || google_signin_blocking(&client_id, client_secret.as_deref().unwrap_or(""), &scopes))
@@ -228,7 +288,7 @@ async fn kobo_get(url: String, token: Option<String>) -> Result<HttpReply, Strin
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![kobo_get, kobo_token, google_signin, google_refresh])
+        .invoke_handler(tauri::generate_handler![kobo_get, kobo_token, google_signin, google_refresh, ee_local_token])
         .run(tauri::generate_context!())
         .expect("error while running GIS Consultant Studio");
 }
