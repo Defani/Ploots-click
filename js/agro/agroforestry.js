@@ -443,7 +443,7 @@
       scene.fog = new THREE.Fog(0xcfe3ee, 180, 420);
       var cam = new THREE.PerspectiveCamera(45, W / H, 0.5, 2000);
       var ctl = new THREE.OrbitControls(cam, r.domElement);
-      ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.49;
+      ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.49; ctl.screenSpacePanning = false; ctl.panSpeed = 1.2; ctl.zoomSpeed = 1.1;
       var hemi = new THREE.HemisphereLight(0xeaf4ff, 0x6b5a3a, 0.55);
       var sun = new THREE.DirectionalLight(0xfff3dd, 1.0);
       sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
@@ -696,6 +696,39 @@
     return '<div class="ag-menu"><button type="button" class="ag-menu-btn">' + name + '</button><div class="ag-menu-list">' +
       items.map(function (it) { return it === "-" ? "<hr>" : '<button type="button" data-act="' + it[0] + '"><span>' + it[1] + "</span>" + (it[2] ? "<kbd>" + it[2] + "</kbd>" : "") + "</button>"; }).join("") + "</div></div>";
   }
+  // 3D navigation: move over the ground, rotate around and tilt over the
+  // point looked at, zoom, and standard views.
+  function nav(k) {
+    if (!G3) return;
+    var c = G3.cam, tg = G3.ctl.target, off = new THREE.Vector3().subVectors(c.position, tg), dist = off.length();
+    var fwd = new THREE.Vector3(-off.x, 0, -off.z); if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1); fwd.normalize();
+    var right = new THREE.Vector3(-fwd.z, 0, fwd.x), step = Math.max(0.3, dist * 0.035), mv = new THREE.Vector3();
+    var S = Math.max(P.w, P.h);
+    if (k === "up") mv.copy(fwd).multiplyScalar(step);
+    else if (k === "down") mv.copy(fwd).multiplyScalar(-step);
+    else if (k === "left") mv.copy(right).multiplyScalar(-step);
+    else if (k === "right") mv.copy(right).multiplyScalar(step);
+    else if (k === "rotl" || k === "rotr") { off.applyAxisAngle(new THREE.Vector3(0, 1, 0), k === "rotl" ? 0.05 : -0.05); c.position.copy(tg).add(off); }
+    else if (k === "tiltu" || k === "tiltd") {
+      var sph = new THREE.Spherical().setFromVector3(off);
+      sph.phi = clamp(sph.phi + (k === "tiltu" ? -0.04 : 0.04), 0.02, G3.ctl.maxPolarAngle);
+      off.setFromSpherical(sph); c.position.copy(tg).add(off);
+    }
+    else if (k === "zin" || k === "zout") { off.multiplyScalar(k === "zin" ? 0.92 : 1.087); if (off.length() > 0.8 && off.length() < S * 6) c.position.copy(tg).add(off); }
+    else if (k === "home") { var d = new THREE.Vector3(P.w / 2, 0, P.h / 2).sub(tg); tg.add(d); c.position.add(d); }
+    else if (k.indexOf("v-") === 0) {
+      var v = k.slice(2), cx = P.w / 2, cz = P.h / 2;
+      tg.set(cx, 0, cz);
+      if (v === "top") c.position.set(cx, S * 1.15, cz + S * 0.02);
+      else if (v === "front") c.position.set(cx, S * 0.18, cz + S * 1.05);
+      else if (v === "side") c.position.set(cx + S * 1.05, S * 0.18, cz);
+      else c.position.set(-P.w * 0.25, S * 0.55, P.h * 1.25);
+    }
+    if (mv.lengthSq()) { tg.add(mv); c.position.add(mv); }
+    G3.ctl.update(); G3.dirty = true;
+    if (k.indexOf("v-") === 0 || k === "home") navStopLod();
+  }
+  function navStopLod() { if (realistic && G3) rebuildPlants(); }
   function setPaint(m) {
     paint = m;
     Array.prototype.forEach.call(root.querySelectorAll("[data-paint]"), function (b) { b.classList.toggle("active", b.dataset.paint === m); });
@@ -813,6 +846,14 @@
         '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b>' +
           '<span class="ag-fsep"></span><select id="agFloor" title="Garden floor"><option value="grass">Floor: grass</option><option value="soil">Floor: soil</option><option value="litter">Floor: leaf litter</option><option value="rows">Floor: soil rows, grass alleys</option></select><span class="ag-fsep"></span><div class="ag-seg ag-look"><button type="button" data-look="real" class="active">Realistic</button><button type="button" data-look="sexi">SExI-FS</button></div><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
           '<span class="ag-fsep"></span><button type="button" data-cam="top" title="From above">' + sym("crop_free") + '</button><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
+        '<div class="ag-nav3d" id="agNav3d" hidden>' +
+          '<div class="ag-nav-pad"><button data-nav="up" title="Move forward (W)">' + sym("keyboard_arrow_up") + '</button><button data-nav="left" title="Move left (A)">' + sym("keyboard_arrow_left") + '</button><button data-nav="home" title="Centre on the plot">' + sym("filter_center_focus") + '</button><button data-nav="right" title="Move right (D)">' + sym("keyboard_arrow_right") + '</button><button data-nav="down" title="Move back (S)">' + sym("keyboard_arrow_down") + "</button></div>" +
+          '<div class="ag-nav-col"><button data-nav="rotl" title="Rotate left (Q)">' + sym("rotate_left") + '</button><button data-nav="rotr" title="Rotate right (E)">' + sym("rotate_right") + "</button></div>" +
+          '<div class="ag-nav-col"><button data-nav="tiltu" title="Tilt up (R)">' + sym("expand_less") + '</button><button data-nav="tiltd" title="Tilt down (F)">' + sym("expand_more") + "</button></div>" +
+          '<div class="ag-nav-col"><button data-nav="zin" title="Zoom in (+)">' + sym("add") + '</button><button data-nav="zout" title="Zoom out (−)">' + sym("remove") + "</button></div>" +
+          '<div class="ag-nav-views"><button data-nav="v-top">Top</button><button data-nav="v-front">Front</button><button data-nav="v-side">Side</button><button data-nav="v-iso">3D</button></div>' +
+          '<p>Drag: rotate · Right-drag: move · Wheel: zoom</p>' +
+        "</div>" +
         '<div class="ag-info" id="agInfo" hidden></div></main>' +
       '<aside class="ag-right"><h4>' + sym("monitoring") + 'Plot summary</h4><div id="agStats"></div>' +
         '<p class="ag-note">Growth follows SExI-FS style species parameters; yield and carbon are indicative. Calibrate with your field data.</p></aside>';
@@ -857,6 +898,18 @@
       Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("active", x === b); });
       if (G3) { build3d(); if (look3d === "sexi") camPreset("top"); }
     });
+    var navHold = null;
+    function navStart(k) { nav(k); clearInterval(navHold); if (!/^v-|home/.test(k)) navHold = setInterval(function () { nav(k); }, 60); }
+    function navStop() { clearInterval(navHold); navHold = null; if (realistic && G3 && G3.lodAt && G3.cam.position.distanceTo(G3.lodAt) > 6) rebuildPlants(); }
+    $("agNav3d").addEventListener("mousedown", function (e) { var b = e.target.closest("[data-nav]"); if (b) { e.preventDefault(); navStart(b.dataset.nav); } });
+    document.addEventListener("mouseup", function () { if (navHold) navStop(); });
+    var KEYS = { w: "up", arrowup: "up", s: "down", arrowdown: "down", a: "left", arrowleft: "left", d: "right", arrowright: "right", q: "rotl", e: "rotr", r: "tiltu", f: "tiltd", "+": "zin", "=": "zin", "-": "zout" };
+    document.addEventListener("keydown", function (e) {
+      if (!root.classList.contains("show") || view !== "3d" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input,select,textarea")) return;
+      var k = KEYS[e.key.toLowerCase()]; if (!k) return;
+      e.preventDefault(); nav(k);
+    });
+    document.addEventListener("keyup", function (e) { if (root.classList.contains("show") && view === "3d" && KEYS[e.key.toLowerCase()]) navStop(); });
     $("agFloor").addEventListener("change", function () { P.floor = this.value; save(); if (G3) build3d(); });
     root.querySelector(".ag-paint").addEventListener("click", function (e) { var b = e.target.closest("[data-paint]"); if (b) setPaint(b.dataset.paint); });
     $("agShowInfo").addEventListener("change", function () { showInfo = this.checked; draw2d(); });
@@ -933,7 +986,7 @@
     view = v;
     Array.prototype.forEach.call(root.querySelectorAll(".ag-views [data-view]"), function (b) { b.classList.toggle("active", b.dataset.view === v); });
     $("agView2d").hidden = v !== "2d"; $("agView3d").hidden = v !== "3d";
-    $("agFloat2d").hidden = v !== "2d"; $("agFloat3d").hidden = v !== "3d";
+    $("agFloat2d").hidden = v !== "2d"; $("agFloat3d").hidden = v !== "3d"; $("agNav3d").hidden = v !== "3d";
     if (v === "3d") ensure3d().then(build3d).catch(function (e) { toast(e.message); setView("2d"); });
     else draw2d();
   }
