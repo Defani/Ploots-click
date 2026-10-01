@@ -272,20 +272,20 @@
   function lamtoroTemplate(seed) {
     var r = rng(seed), stems = new Builder(), leaves = new Builder(), fruit = new Builder();
     var cyl = new THREE.CylinderGeometry(0.72, 1, 1, 6, 1), bark = new THREE.Color("#ffffff"), tips = [];
-    var n = 2 + (r() * 3 | 0);
+    var n = 1 + (r() * 2 | 0);
     for (var s = 0; s < n; s++) {
       var az = r() * Math.PI * 2, lean = 0.08 + r() * 0.16;
       var a = new THREE.Vector3(0, 0, 0), b = new THREE.Vector3(Math.cos(az) * lean * 4.5, 4.5 + r() * 0.8, Math.sin(az) * lean * 4.5);
-      stems.add(cyl, between(a, b, 0.07 - s * 0.008), bark);
-      var forks = 2 + (r() * 2 | 0);
+      stems.add(cyl, between(a, b, 0.14 - s * 0.03), bark);
+      var forks = 3 + (r() * 2 | 0);
       for (var f = 0; f < forks; f++) {
         var fa = az + (r() - 0.5) * 2.2, spread = 0.9 + r() * 1.3;
         var c = new THREE.Vector3(b.x + Math.cos(fa) * spread, LAM_H * (0.78 + r() * 0.18), b.z + Math.sin(fa) * spread);
-        stems.add(cyl, between(b, c, 0.04), bark);
+        stems.add(cyl, between(b, c, 0.07), bark);
         // twigs
-        for (var t = 0; t < 3; t++) {
+        for (var t = 0; t < 5; t++) {
           var ta = fa + (r() - 0.5) * 2, d = new THREE.Vector3(c.x + Math.cos(ta) * (0.5 + r()), c.y + 0.2 + r() * 0.6, c.z + Math.sin(ta) * (0.5 + r()));
-          stems.add(cyl, between(c, d, 0.014), bark);
+          stems.add(cyl, between(c, d, 0.025), bark);
           tips.push(d);
         }
         tips.push(c);
@@ -293,9 +293,9 @@
     }
     // Feathery foliage around the twig tips, and hanging pods.
     tips.forEach(function (p) {
-      var cnt = 16 + (r() * 8 | 0);
+      var cnt = 30 + (r() * 12 | 0);
       for (var k = 0; k < cnt; k++) {
-        var off = new THREE.Vector3((r() - 0.5) * 1.9, (r() - 0.4) * 1.1, (r() - 0.5) * 1.9);
+        var off = new THREE.Vector3((r() - 0.5) * 2.1, (r() - 0.45) * 1.4, (r() - 0.5) * 2.1);
         var q = p.clone().add(off);
         var dir = new THREE.Vector3((r() - 0.5), -0.35 - r() * 0.5, (r() - 0.5));
         var tint = new THREE.Color().setHSL(0.24 + (r() - 0.5) * 0.03, 0.35 + r() * 0.1, 0.55 + r() * 0.12);
