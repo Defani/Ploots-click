@@ -63,7 +63,17 @@ jobs:
       # reading, tiling, vector tile encoding).
       - name: Test the native code
         working-directory: desktop/src-tauri
-        run: cargo test --lib
+        shell: bash
+        run: |
+          set +e
+          cargo test --lib --color never 2>&1 | tee test.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            # The errors as one annotation, readable on the run page without logging in.
+            msg=$(grep -E -A12 "^error|panicked|^---- |FAILED" test.log | head -150 | sed -e 's/%/%25/g' -e 's///g' | awk 'BEGIN{ORS="%0A"}{print}')
+            echo "::error title=cargo test::$msg"
+          fi
+          exit $code
 
       - name: Install the Tauri CLI
         run: npm install -g @tauri-apps/cli@^2
