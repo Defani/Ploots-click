@@ -311,7 +311,10 @@
   function camPreset(k) {
     if (!G3) return;
     var c = G3.cam, ctl = G3.ctl;
-    if (k === "eye") {
+    if (k === "top") {
+      c.position.set(P.w / 2, Math.max(P.w, P.h) * 1.15, P.h / 2 + Math.max(P.w, P.h) * 0.02);
+      ctl.target.set(P.w / 2, 0, P.h / 2);
+    } else if (k === "eye") {
       // In the alley between two coffee rows (plants at 1.25 + 2.5 k).
       var x = Math.min(P.w - 1, 2.5 * Math.round(P.w / 5)), z0 = P.h - 2;
       c.position.set(x, 1.6 + alt(x, 3), z0);
@@ -560,64 +563,63 @@
       return geo;
     }
     var stem = new THREE.CylinderGeometry(0.55, 1, 1, 6); stem.translate(0, 0.5, 0);
-    SX = { leaf: leaf, soil: soil, strata: strata, crowns: [lumpy(1.7), lumpy(4.2), lumpy(7.9)], stem: stem,
+    function lumpyLL(seed) {
+      var geo = new THREE.SphereGeometry(1, 20, 14), pos = geo.attributes.position, v = new THREE.Vector3();
+      for (var i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        var n = 0.13 * Math.sin(v.x * 3.1 + seed) * Math.cos(v.z * 2.7 + seed * 1.7) + 0.08 * Math.sin(v.y * 4.3 + v.x * 2 + seed * 2.3);
+        v.multiplyScalar(1 + n); pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      return geo;
+    }
+    SX = { leaf: leaf, soil: soil, strata: strata, crowns: [lumpy(1.7), lumpy(4.2), lumpy(7.9)], wires: [lumpyLL(1.1), lumpyLL(3.6), lumpyLL(6.2), lumpyLL(9.4)], stem: stem,
       crownMat: new THREE.MeshLambertMaterial({ map: leaf }), stemMat: new THREE.MeshLambertMaterial({ color: 0x3a2d22 }) };
     return SX;
   }
+  // SExI-FS 3D view: white world, a fine maroon grid on the plot, crowns as
+  // irregular wire-mesh volumes (no texture) in bright per-species colours
+  // with a faint fill, stems as thin dark lines. Seen from above by default.
+  var SEXI_COLORS = ["#c63fc3", "#a9cf2e", "#4f86e0", "#2fbcc6", "#e0567d", "#8a58d6", "#e0a326"];
   function sexi3d(grp, sc) {
     var S = sexiParts();
     sc.background = new THREE.Color(0xffffff); sc.fog = null;
-    G3.hemi.color.set(0xffffff); G3.hemi.groundColor.set(0x8a7a5a); G3.hemi.intensity = 0.75;
-    // The slab: soil on top, strata on the sides, 4 m thick (more with relief).
-    var thick = 4, base = P.topo ? P.topo.min - thick : -thick;
-    var seg = P.topo ? 60 : 1, top = new THREE.PlaneGeometry(P.w, P.h, seg, seg);
-    top.rotateX(-Math.PI / 2); top.translate(P.w / 2, 0, P.h / 2);
-    if (P.topo) { var pos = top.attributes.position; for (var i = 0; i < pos.count; i++) pos.setY(i, alt(pos.getX(i), P.h - pos.getZ(i))); top.computeVertexNormals(); }
-    S.soil.repeat.set(P.w / 12, P.h / 12);
-    var topMesh = new THREE.Mesh(top, new THREE.MeshLambertMaterial({ map: S.soil }));
-    topMesh.receiveShadow = true; grp.add(topMesh);
-    // Sides follow the top edge down to the base.
-    function side(pts) {
-      var g = new THREE.BufferGeometry(), v = [], uv = [], idx = [];
-      pts.forEach(function (p, i) { v.push(p[0], p[1], p[2], p[0], base, p[2]); var u = i / (pts.length - 1) * (pts.length * 0.4); uv.push(u, 1, u, 0); if (i) { var a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
-      g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
-      return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: S.strata, side: THREE.DoubleSide }));
+    G3.hemi.color.set(0xffffff); G3.hemi.groundColor.set(0xffffff); G3.hemi.intensity = 1;
+    // Grid: every metre (every 2 or 5 m on big plots), following the topography.
+    var step = Math.max(P.w, P.h) > 150 ? 5 : Math.max(P.w, P.h) > 60 ? 2 : 1, pts = [], N = 4;
+    function seg(x0, y0, x1, y1) {
+      for (var k = 0; k < N; k++) {
+        var ta = k / N, tb = (k + 1) / N, xa = x0 + (x1 - x0) * ta, ya = y0 + (y1 - y0) * ta, xb = x0 + (x1 - x0) * tb, yb = y0 + (y1 - y0) * tb;
+        pts.push(xa, alt(xa, ya) + 0.02, P.h - ya, xb, alt(xb, yb) + 0.02, P.h - yb);
+      }
     }
-    var N = 40, edges = [[], [], [], []];
-    for (var k = 0; k <= N; k++) {
-      var fx = P.w * k / N, fz = P.h * k / N;
-      edges[0].push([fx, alt(fx, P.h), 0]); edges[1].push([fx, alt(fx, 0), P.h]);
-      edges[2].push([0, alt(0, P.h - fz), fz]); edges[3].push([P.w, alt(P.w, P.h - fz), fz]);
-    }
-    edges.forEach(function (e) { grp.add(side(e)); });
-    var under = new THREE.Mesh(new THREE.PlaneGeometry(P.w, P.h), new THREE.MeshLambertMaterial({ color: 0x4a3420 }));
-    under.rotation.x = Math.PI / 2; under.position.set(P.w / 2, base, P.h / 2); grp.add(under);
-    // Trees, instanced per species and crown variant.
-    var m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), white = new THREE.Color(0xffffff), UPV = new THREE.Vector3(0, 1, 0);
-    Object.keys(P.species).forEach(function (key) {
-      var s = P.species[key], list = P.trees.filter(function (t) { return t.alive && t.sp === key; });
+    for (var x = 0; x <= P.w + 1e-6; x += step) seg(x, 0, x, P.h);
+    for (var y = 0; y <= P.h + 1e-6; y += step) seg(0, y, P.w, y);
+    var gg = new THREE.BufferGeometry(); gg.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    grp.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ color: 0x8e2240, transparent: true, opacity: 0.8 })));
+    var m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), UPV = new THREE.Vector3(0, 1, 0);
+    Object.keys(P.species).forEach(function (key, si) {
+      var list = P.trees.filter(function (t) { return t.alive && t.sp === key; });
       if (!list.length) return;
-      var stems = new THREE.InstancedMesh(S.stem, S.stemMat, list.length);
-      list.forEach(function (t, i) {
-        var z0 = alt(t.x, t.y), cb = t.h - t.depth, rad = Math.max(0.025, t.dbh / 2);
-        m.compose(new THREE.Vector3(t.x, z0, P.h - t.y), q.identity(), new THREE.Vector3(rad, Math.max(0.3, cb + t.depth * 0.5), rad));
-        stems.setMatrixAt(i, m);
-      });
-      stems.castShadow = true; grp.add(stems);
-      S.crowns.forEach(function (geo, vi) {
-        var mine = list.filter(function (t) { return t.id % S.crowns.length === vi; });
+      var base = new THREE.Color(SEXI_COLORS[si % SEXI_COLORS.length]);
+      // stems: thin dark lines from the ground to the crown
+      var sp2 = [];
+      list.forEach(function (t) { var z0 = alt(t.x, t.y); sp2.push(t.x, z0, P.h - t.y, t.x, z0 + t.h - t.depth * 0.5, P.h - t.y); });
+      var sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.Float32BufferAttribute(sp2, 3));
+      grp.add(new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0x3a2d22 })));
+      S.wires.forEach(function (geo, vi) {
+        var mine = list.filter(function (t) { return t.id % S.wires.length === vi; });
         if (!mine.length) return;
-        var im = new THREE.InstancedMesh(geo, S.crownMat, mine.length);
+        var wire = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ wireframe: true, transparent: true, opacity: 0.85 }), mine.length);
+        var fill = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.16, depthWrite: false }), mine.length);
         mine.forEach(function (t, i) {
           var z0 = alt(t.x, t.y), ry = t.depth / 2, rr = t.radii && t.radii.length ? t.radii.reduce(function (a, b) { return a + b; }, 0) / t.radii.length : t.r;
-          var curve = t.curve != null ? t.curve : t.depth * 0.6; // SExI-FS crown curvature: flatter crowns read wider
           q.setFromAxisAngle(UPV, ((t.rot || 0) * Math.PI / 180) + t.id * 0.7);
-          m.compose(new THREE.Vector3(t.x, z0 + t.h - ry, P.h - t.y), q, new THREE.Vector3(rr * (1 + 0.04 * Math.sin(t.id)), ry * (0.75 + 0.25 * Math.min(1, curve / Math.max(0.1, t.depth))), rr));
-          im.setMatrixAt(i, m);
-          c.set(s.color).lerp(white, 0.45).offsetHSL((Math.sin(t.id * 3.1) * 0.5) * 0.03, 0, (Math.sin(t.id * 7.3) * 0.5) * 0.12);
-          im.setColorAt(i, c);
+          m.compose(new THREE.Vector3(t.x, z0 + t.h - ry, P.h - t.y), q, new THREE.Vector3(rr * (1 + 0.08 * Math.sin(t.id)), ry, rr * (1 + 0.08 * Math.cos(t.id * 1.3))));
+          wire.setMatrixAt(i, m); fill.setMatrixAt(i, m);
+          c.copy(base).offsetHSL(Math.sin(t.id * 2.3) * 0.03, 0, Math.sin(t.id * 5.1) * 0.08);
+          wire.setColorAt(i, c); fill.setColorAt(i, c);
         });
-        im.castShadow = true; im.receiveShadow = true; grp.add(im);
+        grp.add(fill, wire);
       });
     });
   }
@@ -816,7 +818,7 @@
           '<span class="ag-fsep"></span><label class="check-row"><input type="checkbox" id="agShowInfo">Show info</label><label class="check-row"><input type="checkbox" id="agLight">Light map</label></div>' +
         '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b>' +
           '<span class="ag-fsep"></span><select id="agFloor" title="Garden floor"><option value="grass">Floor: grass</option><option value="soil">Floor: soil</option><option value="litter">Floor: leaf litter</option><option value="rows">Floor: soil rows, grass alleys</option></select><span class="ag-fsep"></span><div class="ag-seg ag-look"><button type="button" data-look="real" class="active">Realistic</button><button type="button" data-look="sexi">SExI-FS</button></div><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
-          '<span class="ag-fsep"></span><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
+          '<span class="ag-fsep"></span><button type="button" data-cam="top" title="From above">' + sym("crop_free") + '</button><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
         '<div class="ag-info" id="agInfo" hidden></div></main>' +
       '<aside class="ag-right"><h4>' + sym("monitoring") + 'Plot summary</h4><div id="agStats"></div>' +
         '<p class="ag-note">Growth follows SExI-FS style species parameters; yield and carbon are indicative. Calibrate with your field data.</p></aside>';
@@ -859,7 +861,7 @@
       var b = e.target.closest("[data-look]"); if (!b) return;
       look3d = b.dataset.look; realistic = look3d === "real";
       Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("active", x === b); });
-      if (G3) build3d();
+      if (G3) { build3d(); if (look3d === "sexi") camPreset("top"); }
     });
     $("agFloor").addEventListener("change", function () { P.floor = this.value; save(); if (G3) build3d(); });
     root.querySelector(".ag-paint").addEventListener("click", function (e) { var b = e.target.closest("[data-paint]"); if (b) setPaint(b.dataset.paint); });

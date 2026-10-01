@@ -115,3 +115,4 @@ body.agro-open { overflow: hidden; }
 .ag-paint, .ag-look { display: inline-flex !important; width: auto !important; }
 .ag-paint button, .ag-look button { width: auto !important; min-width: 0 !important; padding: 0 9px !important; white-space: nowrap; flex: none !important; }
 #agFloor { width: auto !important; min-width: 170px; height: 28px; font-size: 12px; }
+#agFloor { max-width: 190px; flex: none; }
