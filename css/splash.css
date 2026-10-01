@@ -1,0 +1,37 @@
+/* Splash (js/splash.js): animated logo, then Defani's welcome. Light, dark glass. */
+.intro.intro-splash { display: grid; place-items: center; padding: 0; overflow: hidden; background: radial-gradient(80vmax 60vmax at 50% 40%, #12180f 0%, #070907 70%); color: #eef1ec; font-family: Inter, "Segoe UI", Arial, sans-serif; }
+.intro-splash .gcs-logo { display: block; }
+.sp-load { display: flex; flex-direction: column; align-items: center; gap: 16px; transition: opacity .45s, transform .45s; }
+.sp-load b { font-size: 17px; letter-spacing: .3px; animation: spUp .6s .35s both; }
+.sp-logo { animation: spLogo .9s cubic-bezier(.2, .9, .3, 1.25) both; filter: drop-shadow(0 10px 30px rgba(124, 191, 74, .35)); }
+.sp-logo .sp-pin { transform-origin: 32px 40px; animation: spDrop .7s .45s cubic-bezier(.3, 1.4, .5, 1) both; }
+.sp-logo .sp-bean { animation: spFade .4s .9s both; }
+@keyframes spLogo { from { opacity: 0; transform: scale(.6) rotate(-12deg); } }
+@keyframes spDrop { from { transform: translateY(-14px) scale(.85); opacity: 0; } }
+@keyframes spFade { from { opacity: 0; } }
+@keyframes spUp { from { opacity: 0; transform: translateY(8px); } }
+.sp-bar { width: 160px; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.sp-bar i { display: block; height: 100%; width: 0; background: #7cbf4a; animation: spBar 1.4s .1s ease-in-out forwards; }
+@keyframes spBar { to { width: 100%; } }
+.intro-splash.hello .sp-load { opacity: 0; transform: scale(.96); pointer-events: none; position: absolute; }
+.sp-hello { display: none; width: min(440px, calc(100vw - 32px)); flex-direction: column; gap: 14px; }
+.intro-splash.hello .sp-hello { display: flex; }
+.sp-who { display: flex; align-items: center; gap: 12px; animation: spUp .45s both; }
+.sp-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 0 4px rgba(124, 191, 74, .35); }
+.sp-who b { display: block; font-size: 15px; }
+.sp-who span { display: block; font-size: 12px; color: #9fd66f; }
+.sp-bubbles { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-left: 64px; }
+.sp-bubbles p { margin: 0; padding: 10px 14px; border-radius: 18px; font-size: 14.5px; line-height: 1.5; background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .12); animation: spUp .45s var(--d) cubic-bezier(.2, .9, .3, 1.2) both; }
+.sp-bubbles p:first-child { border-top-left-radius: 4px; }
+.sp-bubbles b { color: #c7e8a6; }
+.sp-act { padding-left: 64px; animation: spUp .45s var(--d) both; }
+.intro-splash .intro-form { margin: 4px 0 0; max-width: none; }
+.intro-splash .intro-form-title { color: #eef1ec; }
+.intro-splash .intro-field span { color: #aab2a7; }
+.intro-splash .intro-field input { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .14); color: #fff; }
+.intro-splash .intro-field input:focus { border-color: #7cbf4a; box-shadow: 0 0 0 3px rgba(124, 191, 74, .2); }
+.intro-splash .intro-note { color: #9aa39a; }
+.intro-splash .sp-go { width: auto; height: 40px; padding: 0 26px; border-radius: 999px; }
+.sp-ver { margin: 6px 0 0 64px; font-size: 11px; color: #6f786c; }
+.intro-splash h1, .intro-splash h2 { text-transform: none; border: 0; }
+@media (prefers-reduced-motion: reduce) { .intro-splash * { animation: none !important; transition: none !important; } }

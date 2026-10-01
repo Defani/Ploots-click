@@ -26,8 +26,8 @@
   // mode: "intro" (auto-closes), "signin", "setup", "about"
   function build(mode) {
     // Launch and lock: the full-screen showcase with sign-in at the top right.
-    if (mode !== "about" && window.GCSLanding) {
-      return window.GCSLanding.build({
+    if (mode !== "about" && window.GCSSplash) {
+      return window.GCSSplash.build({
         form: mode === "signin" ? signinForm() : mode === "setup" ? setupForm() : "",
         button: mode === "setup" ? "Set up account" : mode === "signin" ? "Sign in" : "Open the app",
         owner: esc(OWNER),
@@ -42,7 +42,7 @@
     el.innerHTML =
       '<div class="intro-card">' +
         (mode === "about" ? '<button type="button" class="intro-close" title="Close">' + sym("close") + "</button>" : "") +
-        '<div class="intro-logo">' + (window.GCSLanding ? window.GCSLanding.logo(64) : "") + "</div>" +
+        '<div class="intro-logo">' + (window.GCSSplash ? window.GCSSplash.logo(64) : "") + "</div>" +
         '<h1 class="intro-welcome">Welcome to GIS Consultant Studio</h1>' +
         '<p class="intro-tag">Personal GIS, data analysis, visualization and field monitoring</p>' +
         '<div class="intro-rule"></div>' +
@@ -81,6 +81,7 @@
     if (!el || el.classList.contains("out")) return;
     el.classList.add("out");
     document.removeEventListener("keydown", el._key, true);
+    if (el.classList.contains("intro-splash") && window.PlootsHome && !document.body.classList.contains("gis-mode") && !document.body.classList.contains("agro-open")) setTimeout(function () { window.PlootsHome.show(); }, 300);
     setTimeout(function () { el.remove(); }, 450);
   }
 
@@ -124,10 +125,7 @@
         form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake");
       });
     });
-    if (el._openLogin) {
-      // Typing anywhere opens the sign-in menu.
-      document.addEventListener("keydown", function k(e) { if (!document.body.contains(el)) { document.removeEventListener("keydown", k, true); return; } if (!e.target.closest(".lp-login,.intro-dlg") && (e.key.length === 1 || e.key === "Enter")) el._openLogin(true); }, true);
-    } else setTimeout(function () { var f = form.querySelector("input"); if (f) f.focus(); }, 350);
+    if (!el.classList.contains("intro-splash")) setTimeout(function () { var f = form.querySelector("input"); if (f) f.focus(); }, 350);
   }
 
   function lockScreen() {
@@ -145,7 +143,7 @@
 
   function plainIntro() {
     var el = build("intro");
-    if (el._openLogin) { el.addEventListener("click", function (e) { if (e.target.closest(".lp-login-btn,.lp-start")) close(el); }); return; }
+    if (el.classList.contains("intro-splash")) { el.addEventListener("click", function (e) { if (e.target.closest(".sp-go")) close(el); }); return; }
     el._key = function (e) { if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) close(el); };
     el.addEventListener("click", function () { close(el); });
     document.addEventListener("keydown", el._key, true);
