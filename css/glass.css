@@ -711,3 +711,22 @@ body.agro-open .pb-launch, body.agro-open .pb-chat { display: none !important; }
 /* Dropdown menus of the simulator: frosted but solid enough to read over the panels. */
 .agro-app .ag-menu-list { background: var(--g-glass-strong) !important; -webkit-backdrop-filter: blur(24px) saturate(160%) !important; backdrop-filter: blur(24px) saturate(160%) !important; border: 1px solid var(--g-line-strong) !important; box-shadow: var(--g-shadow-float) !important; }
 html[data-theme=dark] .agro-app .ag-menu-list { background: rgba(24, 31, 28, .94) !important; }
+
+/* Glass dropdown lists (js/glass-select.js) */
+.gsel-pop {
+  position: fixed; z-index: 9500; overflow-y: auto; overflow-x: hidden; padding: 4px;
+  border-radius: 10px; background: var(--g-glass-strong); border: 1px solid var(--g-line-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: var(--g-shadow-float), inset 0 1px 0 var(--g-edge); color: var(--ink);
+  font: 12.5px/1.3 Inter, "Segoe UI", Arial, sans-serif; animation: gselIn .12s ease-out;
+}
+html[data-theme=dark] .gsel-pop { background: rgba(24, 31, 28, .92); }
+@keyframes gselIn { from { opacity: 0; transform: translateY(-3px); } }
+.gsel-opt { display: block; width: 100%; text-align: left; white-space: nowrap; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.gsel-opt:hover, .gsel-opt.hi { background: var(--g-hover); }
+.gsel-opt.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.gsel-opt[disabled] { opacity: .45; cursor: default; }
+.gsel-grp { padding: 8px 10px 3px; font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink-soft); }
+select.gsel-open { border-color: var(--accent) !important; }
+/* System lists that remain (multiple selects): readable in the dark theme. */
+html[data-theme=dark] option, html[data-theme=dark] optgroup { background: #1c2320; color: #eef1ee; }
