@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v33";
+const CACHE_NAME = "ploots-click-v34";
 
 const PRECACHE_URLS = [
   "./",
@@ -133,6 +133,7 @@ const PRECACHE_URLS = [
   "./css/home.css",
   "./js/home-thumbs.js",
   "./js/landing.js",
+  "./js/agro/agro-loader.js",
   "./css/landing.css",
   "./assets/logo.svg",
   "./assets/landing/defani.jpg",

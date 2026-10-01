@@ -198,6 +198,26 @@ def localize_duckdb() -> None:
     print(f"  DuckDB {DUCKDB_CORE} and {', '.join(DUCKDB_EXTENSIONS)}: {size / 1e6:.1f} MB")
 
 
+def minify() -> None:
+    """Make the app's own JS and CSS smaller (GeoLibre-style lean desktop
+    bundle). Vendor files are already minified; skipped if the minifiers are
+    not installed."""
+    try:
+        import rjsmin, rcssmin
+    except ImportError:
+        print("  rjsmin/rcssmin not installed; skipping minification")
+        return
+    before = after = 0
+    for f in list((DIST / "js").rglob("*.js")) + list((DIST / "css").rglob("*.css")) + list((DIST / "plugins").rglob("*.js")):
+        if f.name.endswith(".min.js"):
+            continue
+        src = f.read_text(encoding="utf-8")
+        out = rjsmin.jsmin(src) if f.suffix == ".js" else rcssmin.cssmin(src)
+        before += len(src.encode()); after += len(out.encode())
+        f.write_text(out, encoding="utf-8")
+    print(f"  minified app code: {before / 1e6:.2f} MB -> {after / 1e6:.2f} MB")
+
+
 def check() -> None:
     left = []
     for p in text_files():
@@ -221,6 +241,8 @@ def main() -> None:
     localize_icons()
     print("Bundling the desktop engines…")
     localize_duckdb()
+    print("Minifying the app code…")
+    minify()
     check()
 
 

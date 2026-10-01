@@ -270,54 +270,56 @@
   // Normalised to an 8 m tree with a 2.5 m crown radius.
   var LAM_H = 8, LAM_R = 2.5;
   function lamtoroTemplate(seed) {
+    // As in Gayo coffee gardens (Pramulya et al. 2026, Fig. 1): one straight
+    // trunk, then a spreading, rounded umbrella crown of many forking limbs
+    // carrying airy bipinnate foliage; pods and pom-pom flowers at the tips.
     var r = rng(seed), stems = new Builder(), leaves = new Builder(), fruit = new Builder();
     var cyl = new THREE.CylinderGeometry(0.72, 1, 1, 6, 1), bark = new THREE.Color("#ffffff"), tips = [];
-    var n = 1 + (r() * 2 | 0);
-    for (var s = 0; s < n; s++) {
-      var az = r() * Math.PI * 2, lean = 0.08 + r() * 0.16;
-      var a = new THREE.Vector3(0, 0, 0), b = new THREE.Vector3(Math.cos(az) * lean * 4.5, 4.5 + r() * 0.8, Math.sin(az) * lean * 4.5);
-      stems.add(cyl, between(a, b, 0.14 - s * 0.03), bark);
-      var forks = 3 + (r() * 2 | 0);
-      for (var f = 0; f < forks; f++) {
-        var fa = az + (r() - 0.5) * 2.2, spread = 0.9 + r() * 1.3;
-        var c = new THREE.Vector3(b.x + Math.cos(fa) * spread, LAM_H * (0.78 + r() * 0.18), b.z + Math.sin(fa) * spread);
-        stems.add(cyl, between(b, c, 0.07), bark);
-        // twigs
-        for (var t = 0; t < 5; t++) {
-          var ta = fa + (r() - 0.5) * 2, d = new THREE.Vector3(c.x + Math.cos(ta) * (0.5 + r()), c.y + 0.2 + r() * 0.6, c.z + Math.sin(ta) * (0.5 + r()));
-          stems.add(cyl, between(c, d, 0.025), bark);
-          tips.push(d);
+    var forkH = LAM_H * (0.32 + r() * 0.08), top = new THREE.Vector3((r() - .5) * 0.15, forkH, (r() - .5) * 0.15);
+    stems.add(cyl, between(new THREE.Vector3(), top, 0.13), bark);
+    var nLimb = 5 + (r() * 3 | 0);
+    for (var l = 0; l < nLimb; l++) {
+      var az = l / nLimb * Math.PI * 2 + r() * 0.5, out = 0.45 + r() * 0.35;
+      var start = top.clone().add(new THREE.Vector3(0, -r() * 0.4, 0));
+      var mid = start.clone().add(new THREE.Vector3(Math.cos(az) * LAM_R * out * 0.55, LAM_H * (0.2 + r() * 0.08), Math.sin(az) * LAM_R * out * 0.55));
+      stems.add(cyl, between(start, mid, 0.065), bark);
+      // each limb forks two or three times toward the crown surface
+      var nf = 2 + (r() * 2 | 0);
+      for (var f = 0; f < nf; f++) {
+        var fa = az + (f - (nf - 1) / 2) * 0.6 + (r() - .5) * 0.3, reach = LAM_R * (0.55 + r() * 0.4);
+        var end = new THREE.Vector3(Math.cos(fa) * reach, LAM_H * (0.72 + r() * 0.2) - reach * 0.25, Math.sin(fa) * reach); // rounded: the outer tips sit lower
+        stems.add(cyl, between(mid, end, 0.032), bark);
+        for (var tw = 0; tw < 3; tw++) {
+          var ta = fa + (r() - .5) * 1.4, tip = end.clone().add(new THREE.Vector3(Math.cos(ta) * (0.4 + r() * 0.6), (r() - .3) * 0.5, Math.sin(ta) * (0.4 + r() * 0.6)));
+          stems.add(cyl, between(end, tip, 0.012), bark);
+          tips.push(tip);
         }
-        tips.push(c);
+        tips.push(end);
       }
     }
-    // Feathery foliage around the twig tips, and hanging pods.
+    // Feathery foliage: fronds around each tip, held level and drooping at the edge.
     tips.forEach(function (p) {
-      var cnt = 30 + (r() * 12 | 0);
+      var cnt = 18 + (r() * 6 | 0);
       for (var k = 0; k < cnt; k++) {
-        var off = new THREE.Vector3((r() - 0.5) * 2.1, (r() - 0.45) * 1.4, (r() - 0.5) * 2.1);
-        var q = p.clone().add(off);
-        var dir = new THREE.Vector3((r() - 0.5), -0.35 - r() * 0.5, (r() - 0.5));
+        var off = new THREE.Vector3((r() - 0.5) * 1.6, (r() - 0.5) * 1.7, (r() - 0.5) * 1.6), q = p.clone().add(off);
+        var outward = new THREE.Vector3(q.x, 0, q.z).normalize();
+        var dir = outward.multiplyScalar(0.8).add(new THREE.Vector3((r() - .5) * 0.6, -0.25 - r() * 0.35, (r() - .5) * 0.6));
         var tint = new THREE.Color().setHSL(0.24 + (r() - 0.5) * 0.03, 0.35 + r() * 0.1, 0.55 + r() * 0.12);
-        leaves.add(LEAF, leafMatrix(q, dir, 0.55 + r() * 0.25, 0.7 + r() * 0.35, r() * 6), tint);
+        leaves.add(LEAF, leafMatrix(q, dir, 0.6 + r() * 0.25, 0.75 + r() * 0.35, r() * 6), tint);
       }
-      for (var pd = 0; pd < 5; pd++) {
-        if (r() < 0.35) continue;
-        var pp = p.clone().add(new THREE.Vector3((r() - 0.5) * 1.2, -0.3 - r() * 0.4, (r() - 0.5) * 1.2));
-        // Flat pods, reddish brown when ripe, green when young.
-        fruit.add(new THREE.BoxGeometry(1, 1, 1), new THREE.Matrix4().compose(pp.clone().add(new THREE.Vector3(0, -0.1, 0)), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(r(), 0, r()).normalize(), 0.25), new THREE.Vector3(0.022, 0.19, 0.004)), new THREE.Color(["#7a3f2a", "#8a4a30", "#6b5a2e", "#5f7a34"][r() * 4 | 0]));
+      if (r() < 0.55) {
+        var pp = p.clone().add(new THREE.Vector3((r() - .5) * .8, -0.35 - r() * 0.3, (r() - .5) * .8));
+        fruit.add(new THREE.BoxGeometry(1, 1, 1), new THREE.Matrix4().compose(pp, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(r(), 0, r()).normalize(), 0.25), new THREE.Vector3(0.022, 0.19, 0.004)), new THREE.Color(["#7a3f2a", "#8a4a30", "#6b5a2e", "#5f7a34"][r() * 4 | 0]));
       }
-      // Pom-pom flower heads, creamy white.
-      if (r() < 0.5) fruit.add(new THREE.IcosahedronGeometry(1, 1), new THREE.Matrix4().compose(p.clone().add(new THREE.Vector3((r() - .5) * .8, .1, (r() - .5) * .8)), new THREE.Quaternion(), new THREE.Vector3(0.025, 0.025, 0.025)), new THREE.Color("#f1ead2"));
+      if (r() < 0.3) fruit.add(new THREE.IcosahedronGeometry(1, 1), new THREE.Matrix4().compose(p.clone().add(new THREE.Vector3((r() - .5) * .6, .15, (r() - .5) * .6)), new THREE.Quaternion(), new THREE.Vector3(0.025, 0.025, 0.025)), new THREE.Color("#f1ead2"));
     });
     return { stems: stems.geometry(), leaves: leaves.geometry(), fruit: fruit.geometry(), H: LAM_H, R: LAM_R };
   }
-  // Avocado: normalised to a 10 m tree with a 3.5 m crown radius.
-  var AVO_H = 10, AVO_R = 3.5;
+  // Avocado fruit: a pear shape hanging from its stalk.
   var PEAR = (function () {
     var pts = [];
     for (var i = 0; i <= 12; i++) { var y = i / 12, rr = Math.sin(Math.PI * Math.pow(y, 0.75)) * (y < 0.6 ? 1 : 1 - (y - 0.6) * 1.2); pts.push(new THREE.Vector2(Math.max(0.02, rr * 0.5), y)); }
-    var g = new THREE.LatheGeometry(pts, 10); g.translate(0, -1, 0); // hangs from the stalk
+    var g = new THREE.LatheGeometry(pts, 10); g.translate(0, -1, 0);
     return g;
   })();
   // Bumpy jackfruit: an elongated ellipsoid with knobbly skin.
