@@ -19,6 +19,9 @@
 //!   app window, so this is how Earth Engine signs in on the desktop.
 //!   `google_refresh(client_id, client_secret, refresh_token)`  a new access
 //!   token when the old one expires (about an hour), without the browser.
+//!   `native_pick / native_open / native_close / native_feature`  the native
+//!   vector engine (src/native_vec.rs): big shapefiles opened in place and
+//!   drawn as vector tiles through the `gcs` URI scheme, as QGIS reads them.
 //!   `ee_local_token()`  as GeoLibre and geemap: the Earth Engine sign-in
 //!   already on this computer (`earthengine authenticate` / ee.Authenticate(),
 //!   kept by the earthengine-api Python package) gives a fresh access token
@@ -30,6 +33,8 @@ use std::net::TcpListener;
 use std::time::{Duration, Instant};
 
 use sha2::{Digest, Sha256};
+
+mod native_vec;
 
 #[derive(serde::Serialize)]
 struct HttpReply {
@@ -270,6 +275,37 @@ async fn google_refresh(client_id: String, client_secret: Option<String>, refres
     .map_err(|e| e.to_string())?
 }
 
+/// Native vector engine (src/native_vec.rs): pick a big file, open it in
+/// place, describe one feature, close it. Its tiles come through the `gcs`
+/// URI scheme registered in run().
+#[tauri::command]
+async fn native_pick() -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        rfd::FileDialog::new()
+            .set_title("Open a big vector file (native engine)")
+            .add_filter("Shapefile", &["shp"])
+            .pick_file()
+            .map(|p| p.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn native_open(path: String) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || native_vec::open_json(&path)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn native_close(id: u32) {
+    native_vec::close(id);
+}
+
+#[tauri::command]
+async fn native_feature(id: u32, fid: u64) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || native_vec::feature_json(id, fid)).await.map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 async fn kobo_token(server: String, username: String, password: String) -> Result<HttpReply, String> {
     tauri::async_runtime::spawn_blocking(move || kobo_token_request(&server, &username, &password))
@@ -288,7 +324,22 @@ async fn kobo_get(url: String, token: Option<String>) -> Result<HttpReply, Strin
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![kobo_get, kobo_token, google_signin, google_refresh, ee_local_token])
+        // Vector tiles of the native engine, cut on their own threads.
+        .register_asynchronous_uri_scheme_protocol("gcs", |_ctx, request, responder| {
+            std::thread::spawn(move || {
+                let uri = request.uri();
+                let (status, ctype, body) = native_vec::handle(uri.path(), uri.query().unwrap_or(""));
+                let resp = tauri::http::Response::builder()
+                    .status(status)
+                    .header("Content-Type", ctype)
+                    .header("Access-Control-Allow-Origin", "*")
+                    .header("Cache-Control", "no-cache")
+                    .body(body)
+                    .unwrap_or_else(|_| tauri::http::Response::new(Vec::new()));
+                responder.respond(resp);
+            });
+        })
+        .invoke_handler(tauri::generate_handler![kobo_get, kobo_token, google_signin, google_refresh, ee_local_token, native_pick, native_open, native_close, native_feature])
         .run(tauri::generate_context!())
         .expect("error while running GIS Consultant Studio");
 }

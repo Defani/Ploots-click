@@ -23,6 +23,7 @@ ureq = "2"
 url = "2"
 sha2 = "0.10"
 getrandom = "0.2"
+rfd = "0.15"
 
 [profile.release]
 codegen-units = 1

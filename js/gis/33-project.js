@@ -111,7 +111,9 @@
     // Page size first, so the layout lands where it was.
     var MM = GIS.cartography && GIS.cartography.MM;
     if (p.page && MM && GIS.cartography.setPage) GIS.cartography.setPage(p.page[0] / MM, p.page[1] / MM);
-    return wait(150).then(function () {
+    var allLayers = [];
+    GIS.maps.forEach(function (m) { allLayers = allLayers.concat(m.layers); });
+    return Promise.resolve(GIS.native ? GIS.native.reopen(allLayers) : null).then(function () { return wait(150); }).then(function () {
       return new Promise(function (res) {
         if (typeof historyApply !== "function") { Object.assign(state, p.state || {}); res(); return; }
         historyApply({ chart: p.state || {}, dv: p.dv || { header: [], rows: [], roles: [], shape: "wide" }, layout: p.layout });
