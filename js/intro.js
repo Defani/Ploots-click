@@ -129,6 +129,7 @@
   }
 
   function lockScreen() {
+    return; // no account in this app
     if (document.querySelector(".intro.intro-locked:not(.out)")) return;
     var L = Lk(), el = build(L.configured() ? "signin" : "setup");
     el.classList.add("intro-locked");
@@ -136,14 +137,19 @@
     wireForm(el, function () { close(el); });
   }
 
-  function launch() {
-    if (!Lk()) { plainIntro(); return; }
-    lockScreen();
-  }
+  // No account: the app opens straight to the splash and then Home.
+  function launch() { plainIntro(); }
 
   function plainIntro() {
     var el = build("intro");
-    if (el.classList.contains("intro-splash")) { el.addEventListener("click", function (e) { if (e.target.closest(".sp-go")) close(el); }); return; }
+    if (el.classList.contains("intro-splash")) {
+      // Loading, the welcome, then Home on its own (a click or key goes there at once).
+      el.addEventListener("click", function () { close(el); });
+      el._key = function (e) { if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) close(el); };
+      document.addEventListener("keydown", el._key, true);
+      setTimeout(function () { close(el); }, 6200);
+      return;
+    }
     el._key = function (e) { if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) close(el); };
     el.addEventListener("click", function () { close(el); });
     document.addEventListener("keydown", el._key, true);

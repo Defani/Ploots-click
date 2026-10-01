@@ -19,7 +19,7 @@
    on activate.
    ========================================================================== */
 
-const CACHE_NAME = "ploots-click-v44";
+const CACHE_NAME = "ploots-click-v45";
 
 const PRECACHE_URLS = [
   "./",

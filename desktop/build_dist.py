@@ -40,6 +40,11 @@ HERE = Path(__file__).resolve().parent
 DIST = HERE / "dist"
 CACHE = HERE / ".cache"
 OFFLINE = "vendor/offline"
+# Libraries that only work online anyway (they talk to an online service),
+# so they stay on the CDN in the desktop build.
+ONLINE_ONLY = (
+    "https://cdn.jsdelivr.net/npm/maplibre-gl-earth-engine@",  # Earth Engine control (needs Google)
+)
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 TEXT = {".html", ".js", ".css", ".json"}
 
@@ -222,6 +227,8 @@ def check() -> None:
     left = []
     for p in text_files():
         for m in LEFTOVER_RE.findall(p.read_text(encoding="utf-8", errors="ignore")):
+            if any(m.startswith(u) for u in ONLINE_ONLY):
+                continue
             left.append(f"{p.relative_to(DIST)}: {m}")
     if left:
         print("CDN URLs left in dist:\n  " + "\n  ".join(left))

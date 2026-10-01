@@ -29,7 +29,7 @@
           '<p style="--d:.9s">Welcome to <b>GIS Consultant Studio</b>.</p>' +
           '<p style="--d:1.7s">This is my private tool. It supports my work on the Gayo coffee landscape: field data, forest and deforestation checks, agroforestry models, and the maps and charts that come out of them.</p>' +
         "</div>" +
-        '<div class="sp-act" style="--d:2.6s">' + (opts.form || '<button type="button" class="btn-primary sp-go">' + (opts.button || "Open") + "</button>") + "</div>" +
+
         '<p class="sp-ver">' + (opts.version || "") + "</p>" +
       "</div>";
     document.body.appendChild(el);

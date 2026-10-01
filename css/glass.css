@@ -498,3 +498,4 @@ body.gis-carto #tfbMini { display: none !important; }
 .tb-export { width: 36px !important; height: 36px !important; min-width: 0 !important; padding: 0 !important; border-radius: 50% !important; font-size: 0 !important; gap: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; }
 .tb-export .material-symbols-outlined { font-size: 19px !important; margin: 0 !important; }
 .tb-export > :not(.material-symbols-outlined) { display: none !important; }
+#appLockBtn { display: none !important; }
