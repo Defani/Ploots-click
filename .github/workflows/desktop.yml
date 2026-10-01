@@ -70,7 +70,7 @@ jobs:
           code=${PIPESTATUS[0]}
           if [ $code -ne 0 ]; then
             # The errors as one annotation, readable on the run page without logging in.
-            msg=$(grep -E -A12 "^error|panicked|^---- |FAILED" test.log | head -150 | sed -e 's/%/%25/g' -e 's///g' | awk 'BEGIN{ORS="%0A"}{print}')
+            msg=$(grep -E -A12 "^error|panicked|^---- |FAILED" test.log | head -150 | tr -d '\015' | sed -e "s/%/%25/g" | awk 'BEGIN{ORS="%0A"}{print}')
             echo "::error title=cargo test::$msg"
           fi
           exit $code
