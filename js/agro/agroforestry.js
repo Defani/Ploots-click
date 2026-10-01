@@ -438,8 +438,10 @@
     var host = $("agView3d"), W = host.clientWidth, H = host.clientHeight;
     if (!G3) {
       var r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-      r.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
-      r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+      r.setPixelRatio(Math.min(1.25, window.devicePixelRatio || 1));
+      // Shadows are drawn from the sun, so they only change when the plot or
+      // the sun changes, not when the camera moves: redraw them only then.
+      r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFShadowMap; r.shadowMap.autoUpdate = false;
       host.appendChild(r.domElement);
       var scene = new THREE.Scene();
       scene.background = new THREE.Color(0xcfe3ee);
@@ -453,13 +455,22 @@
       scene.add(hemi, sun, sun.target);
       G3 = { r: r, scene: scene, cam: cam, ctl: ctl, sun: sun, hemi: hemi, group: null };
       // Render only when something changed (camera moving, scene rebuilt).
-      (function loop() {
+      // While the camera moves on a slow GPU, draw at a lower resolution so the
+      // motion stays fluid; back to full sharpness as soon as it stops.
+      var PR = Math.min(1.25, window.devicePixelRatio || 1), lastT = 0, still = 0, low = false, slowFrames = 0;
+      (function loop(now) {
         if (!G3) return;
         requestAnimationFrame(loop);
         if (view !== "3d") return;
-        var moved = G3.ctl.update();
-        if (moved || G3.dirty) { G3.r.render(G3.scene, G3.cam); G3.dirty = false; }
-      })();
+        var moved = G3.ctl.update(); syncCube();
+        var dt = now - lastT; lastT = now;
+        if (moved) {
+          still = 0;
+          slowFrames = dt > 34 ? slowFrames + 1 : 0;
+          if (!low && slowFrames >= 2) { low = true; G3.r.setPixelRatio(PR * 0.5); }
+        } else if (low && ++still > 6) { low = false; G3.r.setPixelRatio(PR); G3.sharp = true; }
+        if (moved || G3.dirty || G3.sharp) { if (G3.dirty) G3.r.shadowMap.needsUpdate = true; G3.r.render(G3.scene, G3.cam); G3.dirty = G3.sharp = false; }
+      })(0);
       // After a move, the nearest plants get the detailed models.
       ctl.addEventListener("end", function () { if (realistic && G3.lodAt && G3.cam.position.distanceTo(G3.lodAt) > 6) rebuildPlants(); });
       cam.position.set(-P.w * 0.25, Math.max(P.w, P.h) * 0.55, P.h * 1.25); ctl.target.set(P.w / 2, 0, P.h / 2);
@@ -626,7 +637,7 @@
     var c = G3.cam.position, t = G3.ctl.target;
     // Detail around what the camera looks at when high up, around the camera at eye level.
     var at = c.y > 12 ? { x: t.x, z: t.z } : { x: c.x, z: c.z };
-    G3.plants = window.PlootsAgroReal.plants(P.species, G3.bySp, { flowering: flowering, cam: at });
+    G3.plants = window.PlootsAgroReal.plants(P.species, G3.bySp, { flowering: flowering, cam: at, close: c.y < 4 || c.distanceTo(t) < 9 });
     G3.group.add(G3.plants);
     G3.lodAt = c.clone();
     G3.dirty = true;
@@ -720,16 +731,55 @@
     else if (k === "zin" || k === "zout") { off.multiplyScalar(k === "zin" ? 0.92 : 1.087); if (off.length() > 0.8 && off.length() < S * 6) c.position.copy(tg).add(off); }
     else if (k === "home") { var d = new THREE.Vector3(P.w / 2, 0, P.h / 2).sub(tg); tg.add(d); c.position.add(d); }
     else if (k.indexOf("v-") === 0) {
-      var v = k.slice(2), cx = P.w / 2, cz = P.h / 2;
-      tg.set(cx, 0, cz);
-      if (v === "top") c.position.set(cx, S * 1.15, cz + S * 0.02);
-      else if (v === "front") c.position.set(cx, S * 0.18, cz + S * 1.05);
-      else if (v === "side") c.position.set(cx + S * 1.05, S * 0.18, cz);
-      else c.position.set(-P.w * 0.25, S * 0.55, P.h * 1.25);
+      // ViewCube faces. The plot's north (+y) is -z in 3D, so FRONT looks from the south.
+      var v = k.slice(2), cx = P.w / 2, cz = P.h / 2, to = new THREE.Vector3();
+      var D = { top: [0, 1.15, 0.02], bottom: [0, 0.05, 1.05], front: [0, 0.18, 1.05], side: [1.05, 0.18, 0], back: [0, 0.18, -1.05], left: [-1.05, 0.18, 0], right: [1.05, 0.18, 0] }[v];
+      if (D) to.set(cx + S * D[0], S * D[1], cz + S * D[2]); else to.set(-P.w * 0.25, S * 0.55, P.h * 1.25);
+      return flyTo(to, new THREE.Vector3(cx, 0, cz));
+    }
+    else if (k.indexOf("h-") === 0 || k.indexOf("r-") === 0) {
+      // Compass letters: look from that side, keeping the tilt. Curved arrows: turn 90 degrees.
+      var sp2 = new THREE.Spherical().setFromVector3(off);
+      if (k[0] === "h") { sp2.theta = { n: Math.PI, e: Math.PI / 2, s: 0, w: -Math.PI / 2 }[k.slice(2)]; if (sp2.phi < 0.35) sp2.phi = 1.05; }
+      else sp2.theta += k === "r-l" ? -Math.PI / 2 : Math.PI / 2;
+      return flyTo(new THREE.Vector3().setFromSpherical(sp2).add(tg), tg.clone());
     }
     if (mv.lengthSq()) { tg.add(mv); c.position.add(mv); }
     G3.ctl.update(); G3.dirty = true;
     if (k.indexOf("v-") === 0 || k === "home") navStopLod();
+  }
+  // Smooth camera move (about a third of a second); the plants' detail follows at the end.
+  var fly = null;
+  function flyTo(pos, tgt) {
+    var c = G3.cam, ctl = G3.ctl, t0 = ctl.target.clone();
+    var s0 = new THREE.Spherical().setFromVector3(c.position.clone().sub(t0)), s1 = new THREE.Spherical().setFromVector3(pos.clone().sub(tgt)), start = performance.now();
+    var dth = ((s1.theta - s0.theta) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI; // the short way round
+    if (fly) cancelAnimationFrame(fly);
+    (function stepFly() {
+      var u = Math.min(1, (performance.now() - start) / 350), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      var sp = new THREE.Spherical(s0.radius + (s1.radius - s0.radius) * e, s0.phi + (s1.phi - s0.phi) * e, s0.theta + dth * e);
+      ctl.target.lerpVectors(t0, tgt, e); c.position.setFromSpherical(sp).add(ctl.target); ctl.update();
+      if (u < 1) fly = requestAnimationFrame(stepFly); else { fly = null; navStopLod(); }
+    })();
+  }
+  // The ViewCube turns with the camera.
+  var vcLast = "";
+  function syncCube() {
+    var cube = $("agVcCube"); if (!cube || !G3) return;
+    var sp = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(G3.cam.position, G3.ctl.target));
+    var t = "rotateX(" + (-(Math.PI / 2 - sp.phi)).toFixed(4) + "rad) rotateY(" + (-sp.theta).toFixed(4) + "rad)";
+    if (t === vcLast) return;
+    cube.style.transform = t; vcLast = t;
+    // Compass ring drawn flat on screen: an ellipse that opens up as the view
+    // tilts toward the top, with N / E / S / W where those directions point.
+    var RX = 46, RY = Math.max(9, RX * Math.cos(sp.phi)), cx = 50, cy = 50 + 30 * Math.sin(sp.phi) * 0.9, ring = $("agVcRing");
+    ring.style.cssText = "left:" + (cx - RX) + "px;top:" + (cy - RY) + "px;width:" + RX * 2 + "px;height:" + RY * 2 + "px";
+    Array.prototype.forEach.call(root.querySelectorAll(".vc-dir"), function (b) {
+      var a = { "h-n": Math.PI, "h-e": Math.PI / 2, "h-s": 0, "h-w": -Math.PI / 2 }[b.dataset.nav] - sp.theta;
+      var y = Math.cos(a);
+      b.style.left = (cx + (RX + 7) * Math.sin(a)) + "px"; b.style.top = (cy + (RY + 7) * y) + "px";
+      b.style.zIndex = y > -0.2 ? 3 : 0; // letters behind the cube go under it
+    });
   }
   function navStopLod() { if (realistic && G3) rebuildPlants(); }
   function setPaint(m) {
@@ -849,13 +899,19 @@
         '<div class="ag-float" id="agFloat3d" hidden><span>' + sym("wb_sunny") + '</span><input type="range" id="agSun" min="6" max="18" step="0.25" value="9"><b id="agSunLbl">09:00</b>' +
           '<span class="ag-fsep"></span><select id="agFloor" title="Garden floor"><option value="grass">Floor: grass</option><option value="soil">Floor: soil</option><option value="litter">Floor: leaf litter</option><option value="rows">Floor: soil rows, grass alleys</option></select><span class="ag-fsep"></span><div class="ag-seg ag-look"><button type="button" data-look="real" class="active">Realistic</button><button type="button" data-look="sexi">SExI-FS</button></div><label class="check-row"><input type="checkbox" id="agFlower">Flowering</label>' +
           '<span class="ag-fsep"></span><button type="button" data-cam="top" title="From above">' + sym("crop_free") + '</button><button type="button" data-cam="over" title="Whole plot">' + sym("zoom_out_map") + '</button><button type="button" data-cam="eye" title="Eye level, in a coffee row">' + sym("directions_walk") + "</button></div>" +
-        '<div class="ag-nav3d" id="agNav3d" hidden>' +
-          '<div class="ag-nav-pad"><button data-nav="up" title="Move forward (W)">' + sym("keyboard_arrow_up") + '</button><button data-nav="left" title="Move left (A)">' + sym("keyboard_arrow_left") + '</button><button data-nav="home" title="Centre on the plot">' + sym("filter_center_focus") + '</button><button data-nav="right" title="Move right (D)">' + sym("keyboard_arrow_right") + '</button><button data-nav="down" title="Move back (S)">' + sym("keyboard_arrow_down") + "</button></div>" +
-          '<div class="ag-nav-col"><button data-nav="rotl" title="Rotate left (Q)">' + sym("rotate_left") + '</button><button data-nav="rotr" title="Rotate right (E)">' + sym("rotate_right") + "</button></div>" +
-          '<div class="ag-nav-col"><button data-nav="tiltu" title="Tilt up (R)">' + sym("expand_less") + '</button><button data-nav="tiltd" title="Tilt down (F)">' + sym("expand_more") + "</button></div>" +
-          '<div class="ag-nav-col"><button data-nav="zin" title="Zoom in (+)">' + sym("add") + '</button><button data-nav="zout" title="Zoom out (−)">' + sym("remove") + "</button></div>" +
-          '<div class="ag-nav-views"><button data-nav="v-top">Top</button><button data-nav="v-front">Front</button><button data-nav="v-side">Side</button><button data-nav="v-iso">3D</button></div>' +
-          '<p>Drag: rotate · Right-drag: move · Wheel: zoom</p>' +
+        '<div class="ag-nav3d ag-vc" id="agNav3d" hidden>' +
+          '<button type="button" class="vc-home" data-nav="v-iso" title="Home view">' + sym("home") + '</button>' +
+          '<button type="button" class="vc-rot vc-rotl" data-nav="r-l" title="Rotate 90° left">' + sym("undo") + '</button>' +
+          '<button type="button" class="vc-rot vc-rotr" data-nav="r-r" title="Rotate 90° right">' + sym("redo") + '</button>' +
+          '<div class="vc-stage" id="agVcStage"><div class="vc-ring" id="agVcRing"></div><b class="vc-dir" data-nav="h-n">N</b><b class="vc-dir" data-nav="h-e">E</b><b class="vc-dir" data-nav="h-s">S</b><b class="vc-dir" data-nav="h-w">W</b><div class="vc-cube" id="agVcCube">' +
+            '<div class="vc-f vc-top" data-nav="v-top">TOP</div>' +
+            '<div class="vc-f vc-bottom" data-nav="v-bottom">BOTTOM</div>' +
+            '<div class="vc-f vc-front" data-nav="v-front">FRONT</div>' +
+            '<div class="vc-f vc-back" data-nav="v-back">BACK</div>' +
+            '<div class="vc-f vc-left" data-nav="v-left">LEFT</div>' +
+            '<div class="vc-f vc-right" data-nav="v-right">RIGHT</div>' +
+          '</div></div>' +
+          '<div class="vc-zoom"><button type="button" data-nav="zin" title="Zoom in (+)">' + sym("add") + '</button><button type="button" data-nav="zout" title="Zoom out (−)">' + sym("remove") + '</button></div>' +
         "</div>" +
         '<div class="ag-info" id="agInfo" hidden></div></main>' +
       '<aside class="ag-right"><h4>' + sym("monitoring") + 'Plot summary</h4><div id="agStats"></div>' +
@@ -904,7 +960,23 @@
     var navHold = null;
     function navStart(k) { nav(k); clearInterval(navHold); if (!/^v-|home/.test(k)) navHold = setInterval(function () { nav(k); }, 60); }
     function navStop() { clearInterval(navHold); navHold = null; if (realistic && G3 && G3.lodAt && G3.cam.position.distanceTo(G3.lodAt) > 6) rebuildPlants(); }
-    $("agNav3d").addEventListener("mousedown", function (e) { var b = e.target.closest("[data-nav]"); if (b) { e.preventDefault(); navStart(b.dataset.nav); } });
+    $("agNav3d").addEventListener("mousedown", function (e) {
+      var b = e.target.closest("[data-nav]"); if (!b) return;
+      e.preventDefault();
+      if (!b.closest("#agVcStage")) { if (/^(v-|r-|h-)/.test(b.dataset.nav)) nav(b.dataset.nav); else navStart(b.dataset.nav); return; }
+      // On the cube: drag to orbit, click to pick a face or a compass letter.
+      var x0 = e.clientX, y0 = e.clientY, dragged = false;
+      function mv(ev) {
+        var dx = ev.clientX - x0, dy = ev.clientY - y0;
+        if (!dragged && Math.abs(dx) + Math.abs(dy) < 4) return;
+        dragged = true; x0 = ev.clientX; y0 = ev.clientY;
+        var tg = G3.ctl.target, sp = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(G3.cam.position, tg));
+        sp.theta -= dx * 0.012; sp.phi = clamp(sp.phi - dy * 0.012, 0.02, G3.ctl.maxPolarAngle);
+        G3.cam.position.setFromSpherical(sp).add(tg); G3.ctl.update();
+      }
+      function up() { document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); if (dragged) navStopLod(); else nav(b.dataset.nav); }
+      document.addEventListener("mousemove", mv); document.addEventListener("mouseup", up);
+    });
     document.addEventListener("mouseup", function () { if (navHold) navStop(); });
     var KEYS = { w: "up", arrowup: "up", s: "down", arrowdown: "down", a: "left", arrowleft: "left", d: "right", arrowright: "right", q: "rotl", e: "rotr", r: "tiltu", f: "tiltd", "+": "zin", "=": "zin", "-": "zout" };
     document.addEventListener("keydown", function (e) {

@@ -157,7 +157,7 @@
   // normals, uvs, vertex colours).
   function Builder() { this.p = []; this.n = []; this.u = []; this.c = []; this.i = []; }
   Builder.prototype.add = function (geo, m, color) {
-    var g = geo.index ? geo.toNonIndexed() : geo, pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv;
+    var g = geo.index ? (geo._flat || (geo._flat = geo.toNonIndexed())) : geo, pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv;
     var nm = new THREE.Matrix3().getNormalMatrix(m), v = new THREE.Vector3(), base = this.p.length / 3;
     for (var k = 0; k < pos.count; k++) {
       v.fromBufferAttribute(pos, k).applyMatrix4(m); this.p.push(v.x, v.y, v.z);
@@ -186,9 +186,9 @@
   // A leaf card: a plane, stem end at the origin, pointing along `dir`.
   var LEAF = (function () { var g = new THREE.PlaneGeometry(1, 1, 1, 1); g.translate(0, 0.5, 0); return g; })();
   var LEAF_FOLD = (function () {
-    var g = new THREE.PlaneGeometry(1, 1, 2, 5); g.translate(0, 0.5, 0);
+    var g = new THREE.PlaneGeometry(1, 1, 2, 1); g.translate(0, 0.5, 0);
     var p = g.attributes.position;
-    for (var i = 0; i < p.count; i++) { var x = p.getX(i), y = p.getY(i); p.setZ(i, Math.abs(x) * 0.14 - y * y * 0.16); }
+    for (var i = 0; i < p.count; i++) { var x = p.getX(i), y = p.getY(i); p.setZ(i, Math.abs(x) * 0.14 - y * 0.08); }
     g.computeVertexNormals();
     return g;
   })();
@@ -203,9 +203,12 @@
   /* ---------------------------------------------------- coffee model */
   // Normalised to a 1.8 m plant with a 0.9 m crown radius.
   var COFFEE_H = 1.8, COFFEE_R = 0.9;
-  function coffeeTemplate(seed, flowering) {
+  // lite: the same plant with fewer, larger flat leaves and fewer cherries,
+  // for every coffee except the nearest few (about a sixth of the triangles).
+  function coffeeTemplate(seed, flowering, lite) {
     var r = rng(seed), stems = new Builder(), leaves = new Builder(), fruit = new Builder(), flowers = new Builder();
-    var cyl = new THREE.CylinderGeometry(0.6, 1, 1, 5, 1), bead = new THREE.IcosahedronGeometry(1, 0);
+    var cyl = new THREE.CylinderGeometry(0.6, 1, 1, lite ? 3 : 5, 1, true), bead = new THREE.OctahedronGeometry(1, 0);
+    var LF = lite ? LEAF : LEAF_FOLD, keep = lite ? 0.3 : 1, grow = lite ? 1.6 : 1;
     var wood = new THREE.Color("#4e4134"), H = COFFEE_H;
     var nStem = 2;
     for (var s = 0; s < nStem; s++) {
@@ -224,7 +227,7 @@
           var dir = new THREE.Vector3(Math.cos(az), droop, Math.sin(az)).normalize();
           var a2 = c.clone(), mid = a2.clone().addScaledVector(dir, L * 0.5), b2 = a2.clone().addScaledVector(dir, L);
           mid.y -= L * L * 0.05; b2.y -= L * L * 0.16; // plagiotropic branches arch down toward the tips
-          stems.add(cyl, between(a2, mid, 0.006), wood); stems.add(cyl, between(mid, b2, 0.004), wood);
+          if (lite) stems.add(cyl, between(a2, b2, 0.006), wood); else { stems.add(cyl, between(a2, mid, 0.006), wood); stems.add(cyl, between(mid, b2, 0.004), wood); }
           var n = Math.max(4, Math.round(L / 0.045));
           for (var k = 1; k <= n; k++) {
             var tt = k / (n + 0.3), p = tt < 0.5 ? a2.clone().lerp(mid, tt * 2) : mid.clone().lerp(b2, (tt - 0.5) * 2);
@@ -233,19 +236,20 @@
             var col = young ? new THREE.Color().setHSL(0.24, 0.75, 0.82) : new THREE.Color().setHSL(0.3 + (r() - 0.5) * 0.04, 0.22, 0.6 + r() * 0.2);
             for (var s2 = -1; s2 <= 1; s2 += 2) {
               if (!young && r() < 0.15) continue; // a few fallen leaves leave gaps
+              if (r() > keep) continue;
               // Opposite pairs, held out to the side and hanging a little, never in neat rows.
               var side3 = new THREE.Vector3().crossVectors(bdir, UP).normalize().multiplyScalar(s2);
               var ld = side3.clone().add(bdir.clone().normalize().multiplyScalar(0.2 + r() * 0.2)).add(new THREE.Vector3((r() - 0.5) * 0.4, -0.18 + r() * 0.26, (r() - 0.5) * 0.4));
-              var len = (0.18 + r() * 0.08) * size, wid = len * 0.45;
-              leaves.add(LEAF_FOLD, leafMatrixF(p, ld, wid, len, Math.PI / 2 + (r() - 0.5) * 0.7), col); // blade faces up
+              var len = (0.18 + r() * 0.08) * size * grow, wid = len * 0.45;
+              leaves.add(LF, leafMatrixF(p, ld, wid, len, Math.PI / 2 + (r() - 0.5) * 0.7), col); // blade faces up
             }
             // Cherries clustered in the axils along the older wood.
-            if (!young && tt > 0.12 && tt < 0.72 && r() < 0.3) {
-              var cnt = 3 + (r() * 6 | 0);
+            if (!young && tt > 0.12 && tt < 0.72 && r() < (lite ? 0.12 : 0.3)) {
+              var cnt = lite ? 1 : 2 + (r() * 4 | 0), cs = lite ? 2.2 : 1;
               for (var cc = 0; cc < cnt; cc++) {
                 var ang = cc / cnt * Math.PI * 2, off = new THREE.Vector3(Math.cos(ang) * 0.016, -0.008 - r() * 0.01, Math.sin(ang) * 0.016);
                 var ripe = r(), fc = ripe < 0.2 ? "#a8201c" : ripe < 0.3 ? "#c9471f" : ripe < 0.4 ? "#b5a032" : ripe < 0.75 ? "#4f8a2c" : "#3d7424";
-                fruit.add(bead, new THREE.Matrix4().compose(p.clone().add(off), new THREE.Quaternion(), new THREE.Vector3(0.0075, 0.009, 0.0075)), new THREE.Color(fc));
+                fruit.add(bead, new THREE.Matrix4().compose(p.clone().add(off), new THREE.Quaternion(), new THREE.Vector3(0.0075 * cs, 0.009 * cs, 0.0075 * cs)), new THREE.Color(fc));
               }
             }
             if (flowering && !young && tt > 0.1 && r() < 0.4) {
@@ -258,7 +262,7 @@
         }
       }
       // Young light-green flush at the top of each stem.
-      for (var tp = 0; tp < 8; tp++) {
+      for (var tp = 0; tp < (lite ? 3 : 8); tp++) {
         var ta = r() * Math.PI * 2;
         leaves.add(LEAF_FOLD, leafMatrixF(top.clone().add(new THREE.Vector3(0, -0.04, 0)), new THREE.Vector3(Math.cos(ta), -0.15, Math.sin(ta)), 0.05, 0.11, Math.PI / 2 + (r() - 0.5) * 0.6), new THREE.Color().setHSL(0.26, 0.6, 0.7));
       }
@@ -444,10 +448,10 @@
       return { m: m, d: d };
     }
     MAT = {
-      coffeeLeaf: (function () { var l = leafMat(coffeeLeafTex(), 0.32); l.m = new THREE.MeshPhysicalMaterial({ map: coffeeLeafTex(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.34, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.35 }); return l; })(),
+      coffeeLeaf: (function () { var l = leafMat(coffeeLeafTex(), 0.32); l.m = new THREE.MeshStandardMaterial({ map: coffeeLeafTex(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.4, metalness: 0 }); return l; })(),
       lamLeaf: leafMat(lamtoroLeafTex(), 0.8),
       broadLeaf: leafMat(broadLeafTex(), 0.7),
-      avoLeaf: (function () { var l = leafMat(avocadoLeafTex(), 0.35); l.m = new THREE.MeshPhysicalMaterial({ map: avocadoLeafTex(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.36, clearcoat: 0.45, clearcoatRoughness: 0.4 }); return l; })(),
+      avoLeaf: (function () { var l = leafMat(avocadoLeafTex(), 0.35); l.m = new THREE.MeshStandardMaterial({ map: avocadoLeafTex(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.42 }); return l; })(),
       pineLeaf: leafMat(pineTex(), 0.85),
       wood: new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9 }),
       bark: new THREE.MeshStandardMaterial({ map: barkTex(), vertexColors: true, roughness: 0.95 }),
@@ -459,11 +463,11 @@
 
   /* -------------------------------------------------------- scene */
   var TPL = {};
-  function templates(kind, color, flowering) {
-    var key = kind + (flowering ? ":f" : "") + (kind === "broad" ? ":" + color : "");
+  function templates(kind, color, flowering, lite) {
+    var key = kind + (flowering ? ":f" : "") + (lite ? ":lite" : "") + (kind === "broad" ? ":" + color : "");
     if (TPL[key]) return TPL[key];
     var list = [];
-    for (var v = 0; v < 3; v++) list.push(kind === "coffee" ? coffeeTemplate(11 + v * 31, flowering) : kind === "lamtoro" ? lamtoroTemplate(5 + v * 17) : kind === "avocado" ? avocadoTemplate(7 + v * 19) : kind === "jackfruit" ? jackfruitTemplate(9 + v * 29) : kind === "pine" ? pineTemplate(13 + v * 23) : broadTemplate(3 + v * 13, color));
+    for (var v = 0; v < 3; v++) list.push(kind === "coffee" ? coffeeTemplate(11 + v * 31, flowering, lite) : kind === "lamtoro" ? lamtoroTemplate(5 + v * 17) : kind === "avocado" ? avocadoTemplate(7 + v * 19) : kind === "jackfruit" ? jackfruitTemplate(9 + v * 29) : kind === "pine" ? pineTemplate(13 + v * 23) : broadTemplate(3 + v * 13, color));
     return (TPL[key] = list);
   }
   function kindOf(s) {
@@ -479,6 +483,7 @@
   // the full procedural model; the others a light stand-in (a leafy bush or
   // an umbrella crown on a stem), which the mist hides at distance anyway.
   var BUDGET = { coffee: 320, lamtoro: 150, avocado: 90, jackfruit: 90, pine: 90, broad: 120 };
+  var COFFEE_FULL = 6; // nearest coffee plants with the full model; the rest of the budget gets the lite one
   var SIMPLE = null;
   function simpleParts() {
     if (SIMPLE) return SIMPLE;
@@ -498,7 +503,7 @@
     var im = new THREE.InstancedMesh(geo, mat, list.length), m = new THREE.Matrix4();
     list.forEach(function (t, i) { place(t, m); im.setMatrixAt(i, m); });
     im.instanceMatrix.needsUpdate = true;
-    im.castShadow = !!cast; im.receiveShadow = true;
+    im.castShadow = !!cast; im.receiveShadow = true; im.frustumCulled = false;
     return im;
   }
 
@@ -509,10 +514,12 @@
     Object.keys(treesBySp).forEach(function (k) {
       var s = species[k], list = treesBySp[k];
       if (!list.length) return;
-      var kind = kindOf(s), tpls = templates(kind, s.color, opts.flowering && kind === "coffee");
+      var kind = kindOf(s), fl = opts.flowering && kind === "coffee";
       var sorted = list.slice().sort(function (a, b) { return (a.x - cam.x) * (a.x - cam.x) + (a.z - cam.z) * (a.z - cam.z) - ((b.x - cam.x) * (b.x - cam.x) + (b.z - cam.z) * (b.z - cam.z)); });
-      var near = sorted.slice(0, BUDGET[kind]), far = sorted.slice(BUDGET[kind]);
-      tpls.forEach(function (tp, vi) {
+      var far = sorted.slice(BUDGET[kind]), sets = [[templates(kind, s.color, fl), sorted.slice(0, BUDGET[kind])]];
+      var nFull = opts.close ? COFFEE_FULL : 0;
+      if (kind === "coffee" && !opts.full) sets = [[templates(kind, s.color, fl), sorted.slice(0, nFull)], [templates(kind, s.color, fl, true), sorted.slice(nFull, BUDGET[kind])]];
+      sets.forEach(function (set) { var tpls = set[0], near = set[1]; tpls.forEach(function (tp, vi) {
         var mine = near.filter(function (t) { return t.id % tpls.length === vi; });
         if (!mine.length) return;
         var LM = { coffee: M.coffeeLeaf, lamtoro: M.lamLeaf, avocado: M.avoLeaf, jackfruit: M.avoLeaf, pine: M.pineLeaf, broad: M.broadLeaf }[kind];
@@ -531,7 +538,7 @@
           if (pt[2]) im.customDepthMaterial = pt[2];
           grp.add(im);
         });
-      });
+      }); });
       if (!far.length) return;
       q.identity();
       if (kind === "coffee") {
