@@ -332,11 +332,10 @@
   // four paint modes, stems as dots, and optional tree labels.
   var paint = "transparent", showInfo = false;
   function crownPts(t, sc, px, py, f) {
-    var n = t.radii && t.radii.length > 1 ? t.radii.length : 0, pts = [], K = 28;
+    var n = t.radii && t.radii.length > 1 ? t.radii.length : 0, pts = [], K = 48;
     for (var k = 0; k < K; k++) {
       var ang = k / K * Math.PI * 2 + (t.rot || 0) * Math.PI / 180, rr = t.r;
       if (n) { var q = (k / K * n) % n, i0 = Math.floor(q), i1 = (i0 + 1) % n; rr = t.radii[i0] + (t.radii[i1] - t.radii[i0]) * (q - i0); }
-      else rr = t.r * (1 + 0.06 * Math.sin(ang * 3 + t.id) + 0.04 * Math.sin(ang * 5 + t.id * 1.7)); // a living outline
       pts.push([px + Math.cos(ang) * rr * sc * f, py - Math.sin(ang) * rr * sc * f]);
     }
     return pts;
@@ -378,15 +377,10 @@
         else { var rg = g.createRadialGradient(px - t.r * sc * .35, py - t.r * sc * .35, t.r * sc * .1, px, py, t.r * sc * 1.05); rg.addColorStop(0, shade(s.color, 0.45)); rg.addColorStop(1, shade(s.color, -0.35)); g.fillStyle = rg; }
         g.fill();
       }
-      // the wire mesh: outline, rings at 1/3 and 2/3, spokes to the stem
+      // the crown edge
       var wire = paint === "opaque" ? shade(s.color, -0.45) : paint === "shaded" ? "rgba(0,0,0,.35)" : shade(s.color, -0.15);
       g.strokeStyle = t === sel ? "#ff3d00" : wire; g.lineWidth = t === sel ? 2 : 0.8;
       poly(g, outer); g.stroke();
-      if (t.r * sc > 6) {
-        g.lineWidth = 0.5;
-        [0.66, 0.33].forEach(function (f) { poly(g, crownPts(t, sc, px, py, f)); g.stroke(); });
-        g.beginPath(); for (var k = 0; k < outer.length; k += 4) { g.moveTo(px, py); g.lineTo(outer[k][0], outer[k][1]); } g.stroke();
-      }
       g.fillStyle = "#3b2a1a"; g.beginPath(); g.arc(px, py, Math.max(1.2, t.dbh * sc / 2 + 0.8), 0, Math.PI * 2); g.fill();
     });
     if (showInfo || sel) {
