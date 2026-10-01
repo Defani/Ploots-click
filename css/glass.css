@@ -683,3 +683,24 @@ body:not(.gis-mode) #gcsProjBtns { display: none !important; }
 .home-card[data-mode="map"] .home-actions { display: grid !important; grid-template-columns: 0.8fr 1.3fr 0.8fr; gap: 6px; }
 .home-card .home-actions button { white-space: nowrap; padding-left: 8px !important; padding-right: 8px !important; }
 .home-card[data-mode="map"] .home-actions button { height: 36px !important; min-height: 0 !important; display: flex !important; align-items: center; justify-content: center; }
+
+/* Toggle switches: one rounded switch everywhere (panels, docks, dialogs, simulator). */
+html body .check-row input[type=checkbox] {
+  -webkit-appearance: none !important; appearance: none !important;
+  width: 34px !important; height: 20px !important; min-width: 34px; margin: 0 !important; padding: 0 !important;
+  border-radius: 999px !important; border: 1px solid var(--g-line-strong) !important;
+  background: rgba(127, 140, 132, .28) !important; position: relative; cursor: pointer; flex-shrink: 0;
+  transition: background .18s, border-color .18s; box-shadow: none !important;
+}
+html body .check-row input[type=checkbox]::after {
+  content: "" !important; position: absolute !important; top: 2px !important; left: 2px !important;
+  width: 14px !important; height: 14px !important; border-radius: 50% !important;
+  background: #fff !important; box-shadow: 0 1px 3px rgba(0, 0, 0, .35) !important; transition: left .18s !important;
+}
+html body .check-row input[type=checkbox]:checked { background: var(--accent) !important; border-color: var(--accent) !important; }
+html body .check-row input[type=checkbox]:checked::after { left: 16px !important; }
+html body .check-row input[type=checkbox]:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+html[data-theme=dark] body .check-row input[type=checkbox]:not(:checked) { background: rgba(255, 255, 255, .14) !important; }
+/* In the simulator the AI button sits above the 3D navigation cube, not on it. */
+body.agro-open .pb-launch { right: 22px !important; bottom: 196px !important; }
+body.agro-open .pb-chat { right: 22px !important; bottom: 254px !important; }
