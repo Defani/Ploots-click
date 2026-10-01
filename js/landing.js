@@ -125,8 +125,8 @@
         '<div class="lp-shade"></div>' +
         '<div class="lp-hero-in">' +
           '<p class="lp-kicker">EUDR · Rainforest Alliance · Sustainable forest management · Sustainable farming</p>' +
-          "<h1>Deforestation-free Gayo coffee,<br><em>mapped from farm to forest.</em></h1>" +
-          '<p class="lp-lede">One studio for the field surveys, forest checks, maps, charts and agroforestry models behind sustainable, deforestation-free coffee from the Gayo landscape. Your files stay on your device.</p>' +
+          "<h1>GIS Consultant <em>Studio</em></h1>" +
+          '<p class="lp-lede"><b>A private tool for Defani.</b> It carries his day-to-day work on the Gayo coffee landscape: field surveys, forest and deforestation checks, maps, charts and agroforestry models for deforestation-free coffee. Files stay on this device.</p>' +
           '<div class="lp-cta"><button type="button" class="btn-primary lp-start">' + opts.button + '</button><a class="lp-ghost" href="#lp-story">Why it matters</a></div>' +
         "</div>" +
         '<div class="lp-now lp-glass"><span class="lp-now-tag"></span><b></b><small></small></div>' +
@@ -154,11 +154,15 @@
         '<ol class="lp-refs">' + REFS.map(function (r) { return "<li>" + r + "</li>"; }).join("") + "</ol>" +
       "</div></footer>" +
       // Welcome from Defani, shown first.
-      '<div class="lp-hello"><div class="lp-hello-card lp-glass">' +
-        '<img class="lp-avatar" src="' + BASE + 'defani.jpg" alt="Defani Arman Alfitriansyah">' +
-        "<h2>Hello, welcome to<br>GIS Consultant Studio</h2>" +
-        "<p>I’m Defani. I built this studio to support my work on the Gayo coffee landscape: collecting field data, checking forests and deforestation, modelling agroforestry and delivering the maps and charts, all in one place.</p>" +
-        '<button type="button" class="btn-primary lp-hello-go">Show me</button>' +
+      '<div class="lp-hello"><div class="lp-chat">' +
+        '<div class="lp-chat-who"><img class="lp-avatar" src="' + BASE + 'defani.jpg" alt=""><div><b>Defani Arman</b><span>GIS Consultant Studio</span></div></div>' +
+        '<div class="lp-bubbles">' +
+          '<p class="lp-bubble" style="--d:.3s">Hello! 👋</p>' +
+          '<p class="lp-bubble" style="--d:1.1s">Welcome to <b>GIS Consultant Studio</b>.</p>' +
+          '<p class="lp-bubble" style="--d:2s">This is my private tool. It supports my work on the Gayo coffee landscape: field data, forest and deforestation checks, agroforestry models, and the maps and charts that come out of them.</p>' +
+          '<p class="lp-bubble" style="--d:3.2s">Here is a quick look at what it does.</p>' +
+        "</div>" +
+        '<button type="button" class="btn-primary lp-hello-go" style="--d:3.8s">Show me</button>' +
       "</div></div>";
     document.body.appendChild(el);
 
@@ -232,7 +236,7 @@
     function go() { if (hello.classList.contains("out")) return; hello.classList.add("out"); setTimeout(function () { hello.remove(); }, 500); if (cur < 0) show(0); }
     el.querySelector(".lp-hello-go").addEventListener("click", go);
     hello.addEventListener("click", function (e) { if (e.target === hello) go(); });
-    setTimeout(go, 7000);
+    setTimeout(go, 9000);
     load(SLIDES[0]);
 
     /* sign-in menu, top right */
